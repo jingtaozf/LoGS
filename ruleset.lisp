@@ -40,7 +40,7 @@
 ;; find a rule in the ruleset by its name
 (defmethod get-rule ((ruleset ruleset) (name t))
   (let ((rule (gethash name (elements ruleset))))
-    (if *debug*
+    (if +debug+
         (or rule (format t "can't find rule named: ~A in ruleset: ~A~%" name ruleset))
         rule)))
 
@@ -79,7 +79,7 @@ both matches and continuep is nil."))
   (let ((head (head ruleset))
         (*ruleset* ruleset))
     (when
-        *debug*
+        +debug+
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
     (loop with *current-rule* = head
        and found = ()  
@@ -87,7 +87,7 @@ both matches and continuep is nil."))
 ;;; there are no (more) rules in this ruleset
        when (not *current-rule*)
        do
-       (when *debug*
+       (when +debug+
          (format t "no more rules~%"))
        (return found)
          
@@ -98,13 +98,13 @@ both matches and continuep is nil."))
          (if (dead-p data)
              (dll-delete ruleset *current-rule*)
              (progn
-               (when *debug* (format t "checking rule~%"))
+               (when +debug+ (format t "checking rule~%"))
                (and 
                 (multiple-value-bind
                       (matchp bind-list)
                     (check-rule data message)
                   (declare (ignore bind-list))
-                  (when *debug*
+                  (when +debug+
                     (format t "match is: ~A~%" matchp))
                   (setq found matchp))
                   

@@ -24,7 +24,7 @@
 
 (defmethod (setf dead-p) :after (new-value (killable-item killable-item))
   (when
-      *debug*
+      +debug+
     (format t "killing item: ~A~%" killable-item)))
 
 (defmethod kill ((killable-item killable-item))

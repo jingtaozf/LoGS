@@ -13,7 +13,7 @@
 (defmethod enqueue ((pq priority-queue) item)
   (let ((x ()))
 
-    (when *debug*
+    (when +debug+
       (format t "inserting item: ~A into priority queue ~A~%" item pq))
     ;; find the right place to insert the item
     (loop initially (setf x (head pq))
@@ -22,17 +22,17 @@
                      (not
                       (funcall (comparison-function pq) item (data x))))
                  (progn
-                   (when *debug* (format t "inserting before item: ~A~%" (when x (data x))))
+                   (when +debug+ (format t "inserting before item: ~A~%" (when x (data x))))
                    (return (dll-insert pq x item :direction :before))))
                 ((eq x (tail pq))
                  (progn
-                   (when *debug* (format t "inserting after item: ~A~%" (when x (data x))))
+                   (when +debug+ (format t "inserting after item: ~A~%" (when x (data x))))
                    (return (dll-insert pq x item :direction :after))))
                 (t (setf x (rlink x)))))))
 
 (defmethod check-limits ((pq priority-queue))
   (loop as dlli = (head pq)
-        when *debug*
+        when +debug+
         do (format t "checking pq: ~A dlli: ~A~%" pq dlli)
         when (not dlli)
         do

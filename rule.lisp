@@ -89,7 +89,7 @@
 ;;     (multiple-value-bind (matches sub-matches)
 ;;         (rule-matches-p rule message)
 ;;       (declare (special matches sub-matches))
-;;       (when *debug* 
+;;       (when +debug+ 
 ;;         (format t "checking rule: ~A~%" (name rule)))
 ;;       (if matches
 ;;           (with-slots (delete-rule no-delete-rule actions) 
@@ -114,7 +114,7 @@
 
 (defmethod check-rule ((rule rule) (message message))
   (unless (dead-p rule)
-    (when *debug* 
+    (when +debug+ 
         (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
       
       (in-given-environment 
@@ -122,7 +122,7 @@
        
        (multiple-value-bind (matchp environment)
            (rule-matches-p rule message)
-         ;(when *debug* 
+         ;(when +debug+ 
          ;  (format t "matchp: ~A environment: ~A~%" matchp environment))
 
          (when matchp
@@ -141,7 +141,7 @@
                   (setf (dead-p rule) t)
                   (dll-delete *ruleset* rule)))
                
-               ;; (when *debug*
+               ;; (when +debug+
 ;;                  (format t "about to return ~A and ~A~%" matchp environment))
                
                (values matchp environment)))))))
@@ -149,7 +149,7 @@
 (defmethod check-rule ((rule rule) (message message))
   (unless (dead-p rule)
 
-    (when *debug* 
+    (when +debug+ 
         (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
 
     (with-slots (environment) rule
@@ -188,7 +188,7 @@
          (declare (function action))
          
          (progn
-           (when *debug*
+           (when +debug+
              (format t "running action ~A in env ~A with args: ~A~%"
                      action 
                      matchesQ
@@ -199,7 +199,7 @@
             action
             message)
 
-           (when *debug* 
+           (when +debug+ 
              (format t "ran action~%"))))
        actions))))
 
@@ -208,5 +208,5 @@
        (setf (dead-p rule) t)))
 
 (defmethod (setf dead-p) :after (new-value (rule rule))
-  (when *debug*
+  (when +debug+
     (format t "killing rule: ~A name: ~A~%" rule (name rule))))

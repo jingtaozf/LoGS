@@ -18,12 +18,12 @@
 ;; this is very simple, better implementations will come... seems to work for now!
 
 (defmacro exec (program &rest args)
-  `(lambda (messages matches sub-matches) 
-    (declare (ignore messages matches sub-matches))
+  `(lambda (messages) 
+    (declare (ignore messages))
     #+cmu
     (extensions:run-program ,program (quote ,args) :wait () :output t)
     #+sbcl
-    (extensions:run-program ,program (quote ,args) :wait () :output t)
+    (run-program ,program (quote ,args) :wait () :output t)
     #+openmcl
     (run-program ,program (quote ,args) :wait () :output t)
     ))
@@ -38,7 +38,13 @@
       (format file "~A~%" (message message)))))
 
 (defmethod pipe ((message message) (program string) &rest args)
+  #+cmu
   (extensions:run-program 
+   program args 
+   :wait t 
+   :input (make-string-input-stream (message message)))
+  #+sbcl
+  (run-program 
    program args 
    :wait t 
    :input (make-string-input-stream (message message))))
@@ -49,7 +55,13 @@
     (format output-stream "Context: ~A~%" (name context))
     (write-context context output-stream)
 
+    #+cmu
     (extensions:run-program
+     program args
+     :wait t
+     :input (make-string-input-stream (get-output-stream-string output-stream)))
+    #+sbcl
+    (run-program
      program args
      :wait t
      :input (make-string-input-stream (get-output-stream-string output-stream)))))

@@ -19,13 +19,16 @@
 
 ; proper optimizations?
 ;(declaim  (OPTIMIZE (SPEED 3) (size 0) (SAFETY 0) (compile-speed 0)))
-;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-(declaim (optimize (speed 0) (debug 3) (safety 2)))
+(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+;(declaim (optimize (speed 0) (debug 3) (safety 2)))
 
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
 (declaim (EXTENSIONS:FREEZE-TYPE file-follower priority-queue context collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object rule ruleset killable-item message string-message))
+
+#+sbcl
+(require :sb-posix)
 
 ; set this to something *BIG* 
 #+cmu
@@ -53,7 +56,8 @@
 (in-package :LoGS)
 
 ;; this is a constant so we can optimize out the checks for production runs
-(defconstant *debug* () "should debugging information be displayed?")
+;(defconstant *debug* () "should debugging information be displayed?")
+(defconstant +debug+ () "should debugging information be displayed?")
 
 (defvar *use-internal-real-time* t "should LoGS use the intenal-real-time?")
 
@@ -160,6 +164,7 @@
                                 position)))))
 
 
+#+cmu
 (ext:defswitch 
     "-files" 
     #'(lambda (switch)

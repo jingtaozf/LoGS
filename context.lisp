@@ -69,7 +69,7 @@
 (defmethod make-instance :around ((instance (eql 'CONTEXT)) &rest rest &key name &allow-other-keys)
   (declare (ignore rest))
   (progn
-    (when *debug* 
+    (when +debug+ 
       (if (and name (get-context name))
           (format t "a context named ~A already exists~%" name)))
     (or
@@ -103,12 +103,10 @@
 ;; if its in the alias, remove that
 ;; else, remove the actual context (assuming that exists)
 (defmethod delete-context ((context t))
-  (progn 
-    (format t "removing context: ~A~%" context)
-    (when context
-      (if (gethash context *contexts-alias-hash*)
-          (remhash context *contexts-alias-hash*)
-          (delete-real-context context)))))
+  (when context
+    (if (gethash context *contexts-alias-hash*)
+        (remhash context *contexts-alias-hash*)
+        (delete-real-context context))))
 
 (defgeneric alias-context (context alias)
   (:documentation "give a context an alias"))
@@ -152,7 +150,7 @@
 (defmethod add-to-context :after ((context context) (message message))
   (if (context-exceeded-limit-p context *now*)
       (progn
-        (when *debug*
+        (when +debug+
           (format t "expiring context ~A (named ~A)~%" context (name context)))
         (expire-context context))))
 
@@ -187,7 +185,7 @@
 (defmethod run-context-actions ((context context))
   "Run the actions associated with a context."
   (progn
-    (when *debug*
+    (when +debug+
       (format t "running context actions~%"))
     (when (actions context)
       (mapcar 
@@ -234,7 +232,7 @@
 ;; will do the trick!
 (defmacro ensure-context (&rest rest &key name &allow-other-keys)
   `(progn
-    (when *debug* 
+    (when +debug+ 
       (if (and ,name (get-context ,name))
           (format t "a context named ~A already exists~%" ,name)))
     (or

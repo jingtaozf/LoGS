@@ -1342,6 +1342,7 @@
              t)
            (list 
             (lambda (message)
+              (declare (ignore message))
               (incf match-count))))))
     
     (enqueue *root-ruleset* catch-all-rule)

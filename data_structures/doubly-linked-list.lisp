@@ -49,7 +49,7 @@
   (cond
     ((equal direction :before)
      (progn
-       (when *debug* 
+       (when +debug+ 
          (format t "inserting ~A into ~A before ~A~%" insert-item doubly-linked-list neighbor-item))
        (when (llink neighbor-item)
          (setf (rlink (llink neighbor-item)) insert-item))
@@ -61,7 +61,7 @@
          (setf (head doubly-linked-list) insert-item))))
     ((equal direction :after)
      (progn
-       (when *debug*
+       (when +debug+
          (format t "inserting ~A into ~A after ~A~%" insert-item doubly-linked-list neighbor-item))
         (when (rlink neighbor-item)
          (setf (llink (rlink neighbor-item)) insert-item))
@@ -92,7 +92,7 @@
                        &key direction)
   (cond ((equal direction :before)
          (progn
-           (when *debug*
+           (when +debug+
              (format t "inserting item ~A into ~A before nil~%" insert-item doubly-linked-list))
            (if (head doubly-linked-list)
                (dll-insert doubly-linked-list (head doubly-linked-list) insert-item :direction direction)
@@ -101,7 +101,7 @@
                  (setf (tail doubly-linked-list) insert-item)))))
         ((equal direction :after)
          (progn
-           (when *debug*
+           (when +debug+
              (format t "inserting item ~A into ~A after nil~%" insert-item doubly-linked-list))
            (if (tail doubly-linked-list)
                (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item :direction direction)

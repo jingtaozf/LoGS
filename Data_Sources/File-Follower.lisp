@@ -15,7 +15,32 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#+sbcl
+(require :sb-posix)
+
+(format t "foo!~%")
+
 (defparameter *remember-file* ())
+
+(defun fifo-p (filename)
+  (if
+   (logand 4096 
+           (nth-value 3 
+                      #+cmu
+                      (unix:unix-stat filename)
+                      #+sbcl
+                      (sb-unix:unix-stat filename)
+                      ))
+   t ()))
+
+(defun get-file-length-from-filename (filename)
+  "Given a filename, return the number of bytes currently in the file."
+  #+cmu
+  (nth-value 8 (unix:unix-stat filename))
+
+  #+sbcl
+  (nth-value 8 (sb-unix:unix-stat filename))
+  )
 
 (defclass File-Follower ()
   ((Filename   :accessor Filename :initarg :Filename)
@@ -33,13 +58,24 @@
           (progn
             (setf (Inode ff) ino)
             (if
-             (logand 4096 (nth-value 3 (unix:unix-stat (Filename ff))))
-             (let ((fifofd (unix:unix-open
-                            (filename ff)
-                            (logior unix:o_rdonly unix:o_nonblock)
-                            #o444)))
-               (setf (Filestream ff) 
-                     (system:make-fd-stream fifofd :input t)))
+             (fifo-p (filename ff))
+             (let ((fifofd 
+                    #+cmu
+                     (unix:unix-open
+                      (filename ff)
+                      (logior unix:o_rdonly unix:o_nonblock)
+                      #o444)
+                     #+sbcl
+                     (sb-unix:unix-open
+                      (filename ff)
+                      (logior sb-unix:o_rdonly SB-POSIX:O-NONBLOCK)
+                      #o444)
+                     ))
+               (setf (Filestream ff)
+                     #+cmu
+                     (system:make-fd-stream fifofd :input t)
+                     #+sbcl
+                     (sb-sys:make-fd-stream fifofd :input t)))
              (setf (Filestream ff) 
                    (open (Filename ff) :direction :input))))))))
 
@@ -60,16 +96,11 @@
   #+lispworks
   (system::file-stat-inode (system::get-file-stat filename)))
 
-(defun get-file-length-from-filename (filename)
-  "Given a filename, return the number of bytes currently in the file."
-  #+cmu
-  (nth-value 8 (unix:unix-stat filename))
 
-  #+sbcl
-  (nth-value 8 (sb-unix:unix-stat filename))
-  )
+(defgeneric set-file-follower-position (file-follower position)
+  (:documentation "set the offset into the file of the file-follower"))
 
-(Defmethod set-file-follower-position ((file-follower file-follower)
+(defmethod set-file-follower-position ((file-follower file-follower)
                                        (position number))
   (file-position
    (filestream file-follower)
@@ -114,4 +145,5 @@ associated with our filename. if there is, we start following that filename."
       (let ((stat-inode (get-inode-from-filename (filename ff))))
         (and (not (eql (inode ff) stat-inode))
              (read-line (start-file-follower ff) nil)))))
+
 
