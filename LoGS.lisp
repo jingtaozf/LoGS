@@ -19,13 +19,15 @@
 
 ; proper optimizations?
 ;(declaim  (OPTIMIZE (SPEED 3) (size 0) (SAFETY 0) (compile-speed 0)))
-(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-;(declaim (optimize (speed 0) (debug 3) (safety 2)))
-; set this to something *BIG* 
+;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+(declaim (optimize (speed 0) (debug 3) (safety 2)))
 
+
+;; freeze the LoGS classes if we're on cmucl 19
+#+CMU19
 (declaim (EXTENSIONS:FREEZE-TYPE file-follower priority-queue context collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object rule ruleset killable-item message string-message))
 
-
+; set this to something *BIG* 
 #+cmu
 (LISP::%SET-BYTES-CONSED-BETWEEN-GCS 114500000)
 
@@ -49,7 +51,7 @@
 
 (in-package :LoGS)
 
-(defvar *debug* ())
+(defvar *debug* () "should debugging information be displayed?")
 (defvar *use-internal-real-time* t "should LoGS use the intenal-real-time?")
 
 (defvar *now* (get-internal-real-time)
@@ -62,10 +64,13 @@
                  :defaults (parse-namestring *load-truename*))
   "Where LoGS lives.")
 
+;; 0.03 seems to be a good value for my laptop.
+;; how do I properly set this?
 (defparameter *LoGS-sleep-time* .03
   "How long to sleep when there is no input")
 
 (defun load-LoGS-file (filename)
+  "load the named file"
   (load 
    (compile-file
     (make-pathname :name filename
@@ -75,6 +80,9 @@
 
 ;(defun load-LoGS-file (filename)
 ;  (load filename))
+
+
+;;;; XXX CLEAN THIS SECTION UP XXX!
 
 ;; load fundamental data structures
 (load-LoGS-file "data_structures/doubly-linked-list")
@@ -96,6 +104,8 @@
 (load-LoGS-file "ruleset")
 (load-LoGS-file "actions")
 
+(load-LoGS-file "Jims")
+
 ;; XXX This is where the loser stars go XXX
 (defvar *messages* ()
   "The current message source.")
@@ -114,18 +124,9 @@
 (defvar *run-forever* ()
   "Should we keep going once we've reached the end of the file?")
 
+;; does nothing... yet.
 (defvar *die-die-die* ()
   "a list of functions to call when LoGS is done running (before exiting).")
-
-;; (defvar *rule-timeout-queue* 
-;;   (make-instance 'priority-queue 
-;;                  :comparison-function 
-;;                  (lambda (x y)
-;;                    (let ((t-x (timeout x))
-;;                          (t-y (timeout y)))
-;;                      (declare (fixnum t-x t-y))
-;;                      (> t-x t-y))))
-;;   "A priority queue to hold rules that can time out.")
 
 (defgeneric get-logline (message-source)
   (:documentation
@@ -158,11 +159,12 @@ both matches and continuep is nil."))
                  (unless (continuep data)
                    (return t)))))
           (let ((rlink (rlink *current-rule*)))
-            (if (eq rlink head)
+            (if (eq rlink (head ruleset))
                 (return found)
                 (setq *current-rule* rlink))))))
 
-(defgeneric check-limits (thing))
+(defgeneric check-limits (thing)
+  (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
 (defmethod check-limits ((rule rule))
   (and (rule-exceeded-limit-p rule *now*)
@@ -220,7 +222,7 @@ both matches and continuep is nil."))
                                    (make-instance 'File-Follower 
                                                   :FileName 
                                                   filename))
-                             ;; do some file position logic here
+                             ;; if position is specified, start there
                              (when position
                                (set-file-follower-position
                                 *messages*
@@ -267,5 +269,3 @@ Main currently does:
         
         (when (head *timeout-object-timeout-queue*)
           (check-limits *timeout-object-timeout-queue*))))
-
-

@@ -20,10 +20,14 @@
 ;; When the underlying array runs out of space, it is dynamically
 ;; resized.
 (defclass collection (named-object) 
-  ((Ecount :initform 0 :accessor Ecount :type fixnum) ; current number
-   (Emax   :initform 0 :accessor Emax :initarg :Emax :type fixnum) ; max until resize
-   (curr-pow :initform 0 :accessor curr-pow :type fixnum) ; book keeping
-   (data :initform (make-array '(0) :adjustable t) :accessor data))
+  ((Ecount :initform 0 :accessor Ecount :type fixnum
+           :documentation "the current number of items in the collection")
+   (Emax   :initform 0 :accessor Emax :initarg :Emax :type fixnum
+           :documentation "the maximum number of entries before a resize of the collection.")
+   (curr-pow :initform 0 :accessor curr-pow :type fixnum 
+             :documentation "book keeping; what power of 2 is the number of elements?  Increment when we resize.")
+   (data :initform (make-array '(0) :adjustable t) :accessor data 
+         :documentation "the array of entries in the collection"))
   (:documentation "A fancy array class that dynamically grows as needed"))
 
 (defgeneric add-item (collection item &rest rest)
@@ -33,7 +37,7 @@
 (defmethod add-item ((collection collection) (item t) &rest rest)
   "add an item to a collection.  The collecton will dynamically re-size
 if it needs to."
-  (declare (ignore rest))
+  (declare (ignore rest)) 
   (let ((Ecount (Ecount collection))
         (Emax (Emax collection))
         (curr-pow (curr-pow collection)))

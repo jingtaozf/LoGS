@@ -20,7 +20,8 @@
 ;;; for ruleset creation elsewhere.
 
 (defclass ruleset (rule doubly-linked-list)
-  ((elements :initform (make-hash-table :test #'equal) :accessor elements))
+  ((elements :initform (make-hash-table :test #'equal) :accessor elements
+             :documentation "a hash table to hold all of the rules in this ruleset"))
   (:documentation "A class to store rules."))
 
 (defmethod enqueue :around ((ruleset ruleset) (rule rule))
@@ -36,6 +37,7 @@
     (setf (gethash (name insert-item) (elements ruleset)) insert-item)
     (call-next-method)))
 
+;; find a rule in the ruleset by its name
 (defmethod get-rule ((ruleset ruleset) (name t))
   (gethash name (elements ruleset)))
 
@@ -75,7 +77,8 @@
     (error "no current rule"))
   (dll-insert
      *ruleset*
-     (gethash (data *current-rule*) (list-entries *ruleset*))
+     (or (gethash (data *current-rule*) (list-entries *ruleset*))
+         (error "WTF?"))
      rule))
 
 (defmethod rule-after ((rule rule))

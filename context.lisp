@@ -36,10 +36,12 @@
 (defclass context (collection timeout-object killable-item)
   ((actions :initarg :actions
                   :initform ()
-                  :accessor actions)
+                  :accessor actions
+                  :documentation "A list of functions to call when the context dies")
    (max-lines :initarg :max-lines
               :initform ()
-              :accessor max-lines))
+              :accessor max-lines
+              :documentation "An artificial limit on the number of lines this context can hold"))
   (:documentation "A data structure that stores messages."))
 
 ;; (defmethod (setf timeout) :after (new-value (context context))
@@ -48,6 +50,9 @@
 ;;     (dll-delete *context-timeout-queue* context)
 ;;     (enqueue *context-timeout-queue* context)))
 
+;; when createing an instance of a context,
+;; if a context with the same name already exists, return it
+;; else, return a new instance with that name
 (defmethod make-instance :around ((instance (eql 'CONTEXT)) &rest rest &key name &allow-other-keys)
   (declare (ignore rest))
   (or
@@ -56,10 +61,11 @@
    (let ((inst (call-next-method)))
      (setf (gethash (name inst) *contexts-hash*) inst))))
 
+;; after we initialize the context, put it into the contexts collection
 (defmethod initialize-instance :after ((instance context) &rest rest)
   (declare (ignore rest))
   (enqueue *contexts* instance))
-  
+
 
 (defgeneric delete-context (context)
   (:documentation "remove a context from the namehash."))

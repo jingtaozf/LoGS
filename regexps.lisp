@@ -66,7 +66,7 @@
   "This regular expression matches the date and time fields of a syslog message.")
 
 (defconstant *hostname-regexp*
-  "(?imsx-imsx:\\w|.)+"
+  "(?imsx-imsx:\\w|\\.)+"
   "This regular expression matches a hostname field.")
 
 
