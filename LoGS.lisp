@@ -146,11 +146,13 @@
 (defgeneric check-limits (thing)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
+;; don't use internal time?
 #+cmu
 (ext:defswitch "-no-internal-time" #'(lambda (switch) 
                                        (setq
                                         *use-internal-real-time* ())))
 
+;; the name of the file to process
 #+cmu
 (ext:defswitch "-file" #'(lambda (switch)
                            (let ((filename (car (ext:cmd-switch-words switch)))
@@ -166,6 +168,7 @@
                                 position)))))
 
 
+;; the names of multiple files
 #+cmu
 (ext:defswitch 
     "-files" 
@@ -188,18 +191,21 @@
                (add-item *messages* follower)))
            (ext:cmd-switch-words switch)))))
           
+;; the ruleset
 #+cmu
 (ext:defswitch "-ruleset" 
     #'(lambda (switch)
         (let ((filename (car (ext:cmd-switch-words switch))))
           (load (compile-file filename)))))
 
+;; run forever?
 #+cmu
 (ext:defswitch "-run-forever"
     #'(lambda (switch)
         (declare (ignore switch))
         (setq *run-forever* t)))
 
+;; remember which file the message came from?
 #+cmu
 (ext:defswitch "-remember-file"
     #'(lambda (switch)
@@ -231,18 +237,22 @@ Main currently does:
 2. Check to see if any rules need to be removed.
 3. Check to see if any contexts need to be removed."
   (loop as *message* = (get-logline *messages*)
+        ;; exit if there is no message and we're not running forever
         when (and (not *run-forever*) (not *message*))
         do
         (return)
-
+        ;; if we are running forever and there is no message sleep 
         when (and *run-forever* (not *message*))
         do
         (sleep *LoGS-sleep-time*)
-
+        
+        ;; update the internal time
         when *use-internal-real-time*
         do
         (setq *now* (get-internal-real-time))
-
+        
+        ;; check the message against the ruleset if it exists
+        ;; and check the timeout objects
         when t
         do
         (when (and *message* (head *root-ruleset*))
