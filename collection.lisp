@@ -20,11 +20,11 @@
 ;; When the underlying array runs out of space, it is dynamically
 ;; resized.
 (defclass collection (named-object) 
-  ((Ecount :initform 0 :accessor Ecount :type fixnum
+  ((Ecount :initform 0 :accessor Ecount 
            :documentation "the current number of items in the collection")
-   (Emax   :initform 0 :accessor Emax :initarg :Emax :type fixnum
+   (Emax   :initform 0 :accessor Emax :initarg :Emax 
            :documentation "the maximum number of entries before a resize of the collection.")
-   (curr-pow :initform 0 :accessor curr-pow :type fixnum 
+   (curr-pow :initform 0 :accessor curr-pow  
              :documentation "book keeping; what power of 2 is the number of elements?  Increment when we resize.")
    (data :initform (make-array '(0) :adjustable t) :accessor data 
          :documentation "the array of entries in the collection"))
@@ -39,9 +39,7 @@
 if it needs to."
   (declare (ignore rest)) 
   (let ((Ecount (Ecount collection))
-        (Emax (Emax collection))
-        (curr-pow (curr-pow collection)))
-    (declare (fixnum Ecount Emax curr-pow))
+        (Emax (Emax collection)))
     (when
         (>= Ecount Emax)
       (setf (data collection)

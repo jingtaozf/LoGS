@@ -15,16 +15,6 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-;; (defvar *context-timeout-queue*
-;;   (make-instance 'priority-queue 
-;;                  :comparison-function 
-;;                  (lambda (x y)
-;;                    (let ((t-x (timeout x))
-;;                          (t-y (timeout y)))
-;;                      (declare (fixnum t-x t-y))
-;;                      (> t-x t-y))))
-;;   "A priority queue to hold contexts that can time out.")
-
 (defvar *contexts-hash* (make-hash-table :test #'equal)
   "a hash to hold all of their contexts so that we can find them by name.")
 
@@ -57,12 +47,6 @@
               :documentation "An artificial limit on the number of lines this context can hold"))
   (:documentation "A data structure that stores messages."))
 
-;; (defmethod (setf timeout) :after (new-value (context context))
-;;   (declare (ignore new-value))
-;;   (progn
-;;     (dll-delete *context-timeout-queue* context)
-;;     (enqueue *context-timeout-queue* context)))
-
 ;; when createing an instance of a context,
 ;; if a context with the same name already exists, return it
 ;; else, return a new instance with that name
@@ -84,7 +68,6 @@
   (progn
     (enqueue *contexts* instance)
     (setf (gethash (name instance) *contexts-hash*) instance)))
-
 
 (defgeneric delete-context (context)
   (:documentation "remove a context from the namehash."))

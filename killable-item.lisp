@@ -18,9 +18,9 @@
 (defclass killable-item () 
   ((dead :initform ()
          :accessor dead-p
-         :initarg :dead))
+         :initarg :dead
+         :type (or null t)))
   (:documentation "an item that can be killed; if it is dead, it should be removed."))
-
 
 (defmethod (setf dead-p) :after (new-value (killable-item killable-item))
   (when

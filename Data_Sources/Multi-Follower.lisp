@@ -27,26 +27,26 @@
   (when (> (Ecount Mf) 0)
     (let ((starting-follower (current-follower Mf)))
       (loop with current-follower = starting-follower
-         do
-           (let ((line (get-logline (aref (data Mf) current-follower))))
-             (setf (current-follower Mf)
-                   (mod (1+ (current-follower Mf)) 
-                        (Ecount Mf)))
-             (when line
-               (return line)))
+            do
+            (let ((line (get-logline (aref (data Mf) current-follower))))
+              (setf (current-follower Mf)
+                    (mod (1+ (current-follower Mf)) 
+                         (Ecount Mf)))
+              (when line
+                (return line)))
+            
+            when ;; if we've already tried them all, return NIL
+            (equal starting-follower
+                   (mod (current-follower Mf)
+                        (ecount Mf)))
+            do
+            (return NIL)
+            
+            when t
+            do
+            (setf current-follower 
+                  (mod (1+ current-follower) 
+                       (Ecount Mf)))))))
 
-         when ;; if we've already tried them all, return NIL
-           (equal starting-follower
-                  (mod (current-follower Mf)
-                       (ecount Mf)))
-         do
-           (return NIL)
-
-         when t
-         do
-           (setf current-follower 
-                 (mod (1+ current-follower) 
-                      (Ecount Mf)))))))
-    
     
     

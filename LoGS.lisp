@@ -15,16 +15,15 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-;(proclaim '(optimize (speed 3)))
-
 ; proper optimizations?
 (declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+;(declaim (optimize (speed 3)))
 ;(declaim (optimize (speed 0) (debug 3) (safety 2)))
 
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
-(declaim (EXTENSIONS:FREEZE-TYPE file-follower priority-queue context collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object rule ruleset killable-item message string-message))
+(declaim (EXTENSIONS:FREEZE-TYPE file-follower Multi-Follower priority-queue context collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object rule ruleset killable-item message string-message))
 
 ;; we need the sb-posix package under SBCL in order to open FIFOs non-blocking
 #+sbcl
@@ -58,14 +57,17 @@
 (in-package :LoGS)
 
 ;; this is a constant so we can optimize out the checks for production runs
-;(defconstant *debug* () "should debugging information be displayed?")
 (defconstant +debug+ () "should debugging information be displayed?")
 
-(defvar *use-internal-real-time* t "should LoGS use the intenal-real-time?")
+(defparameter *use-internal-real-time* t 
+  "should LoGS use the intenal-real-time?")
+
+
 
 (defvar *now* (get-internal-real-time)
   "the current time.  Currently an integer like (get-internal-real-time).
   This may change, do not rely on this.")
+;(declaim (type INTEGER *now*))
 
 ;; this cruft is to make file loading more portable
 (defparameter *LoGS-base-directory*
@@ -87,12 +89,7 @@
                    :version ()
                    :defaults *LoGS-base-directory*))))
 
-;(defun load-LoGS-file (filename)
-;  (load filename))
-
-
 ;;;; XXX CLEAN THIS SECTION UP XXX!
-
 ;; load fundamental data structures
 (load-LoGS-file "data_structures/doubly-linked-list")
 (load-LoGS-file "data_structures/priority-queue")
@@ -116,7 +113,6 @@
 (load-LoGS-file "ruleset")
 (load-LoGS-file "actions")
 
-;(load-LoGS-file "Jims")
 (load-LoGS-file "Parlance")
 
 ;; XXX This is where the loser stars go XXX
@@ -235,7 +231,6 @@ Main currently does:
         do
         (return)
 
-        ;; don't burn the whole CPU when there is nothing to do
         when (and *run-forever* (not *message*))
         do
         (sleep *LoGS-sleep-time*)

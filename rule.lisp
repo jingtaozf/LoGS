@@ -20,25 +20,31 @@
 (defclass rule (killable-item named-object timeout-object)
   ((match :initarg :match
           :accessor match
-          :initform ())
+          :initform ()
+          :type (or null function))
    (no-match :initarg :no-match
              :accessor no-match
-             :initform ())
+             :initform ()
+             :type (or null function))
    (delete-rule :initarg :delete-rule
            :accessor delete-rule
-           :initform ())
+           :initform ()
+           :type (or null function))
    (no-delete-rule :initarg :no-delete-rule
               :accessor no-delete-rule
-              :initform ())
+              :initform ()
+              :type (or null function))
    (continuep :initarg :continuep
               :initform ()
-             :accessor continuep)
+              :accessor continuep)
    (actions :initarg :actions
             :accessor actions
-            :initform ())
+            :initform ()
+            :type list)
    (environment :initarg :environment
                 :accessor environment
-                :initform ()))
+                :initform ()
+                :type list))
   (:documentation "Rules associate messages with actions."))
 
 (defgeneric rule-exceeded-limit-p (rule time)
@@ -122,8 +128,6 @@
        
        (multiple-value-bind (matchp environment)
            (rule-matches-p rule message)
-         ;(when +debug+ 
-         ;  (format t "matchp: ~A environment: ~A~%" matchp environment))
 
          (when matchp
              (with-slots (delete-rule no-delete-rule actions) 
@@ -140,9 +144,6 @@
                       t)
                   (setf (dead-p rule) t)
                   (dll-delete *ruleset* rule)))
-               
-               ;; (when +debug+
-;;                  (format t "about to return ~A and ~A~%" matchp environment))
                
                (values matchp environment)))))))
 

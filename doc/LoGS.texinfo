@@ -347,14 +347,22 @@ by actions (associated with rules or other contexts).  In this way, we
 can leverage the short--circuit functionality available in LoGS rules
 to gain greater efficiency.  This is similar to how SEC handles its contexts.
 
+Contexts that may already exist should now be created with the
+ensure-context macro.  This macro will return the context if it
+already exists, and create the context if it does not exist.
+ensure-context takes the same arguments as @code{(make-instance
+'context ...)} would.
+
 @node LoGS Efficiency, How Messages are processed, LoGS Contexts, LoGS Overview
 @section LoGS Efficiency
 
 It is very difficult to talk about the efficiency of LoGS as it really
 depends upon the number and type of rules and contexts that a given message is
 checked against.  Currently, with no rules or contexts, LoGS can
-examine over 500 messages per second on my laptop (1.8GHz Pentium
-IV).  
+examine over 95,000 messages per second on my laptop (1.8GHz Pentium
+IV).  With one ruleset (with about 40 rules with several rules and
+contexts created at runtime), I can process approximately 70,000
+messages per second.
 
 Often, efficiency can be improved by ordering the ruleset so that the
 most common matches are tested before less common ones.  See the

@@ -16,20 +16,24 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ;; a priority queue to hold things that can time out
-(defvar *timeout-object-timeout-queue*
-  (make-instance 'priority-queue 
-                 :comparison-function 
-                 (lambda (x y)
-                   (let ((t-x (timeout x))
-                         (t-y (timeout y)))
-                     (declare (fixnum t-x t-y))
-                     (> t-x t-y))))
-  "A priority queue to hold things that can time out.")
-
 (defclass timeout-object ()
   ((timeout :initarg :timeout
             :accessor timeout
-            :initform ())))
+            :initform ()
+            :type (or null fixnum))))
+
+(defmethod sort-timeouts ((x timeout-object) (y timeout-object))
+  (let ((t-x (timeout x))
+        (t-y (timeout y)))
+    (declare (fixnum t-x))
+    (declare (fixnum t-y))
+    (> t-x t-y)))
+
+(defvar *timeout-object-timeout-queue*
+  (make-instance 'priority-queue 
+                 :comparison-function 
+                 #'sort-timeouts)
+  "A priority queue to hold things that can time out.")
 
 
 (defmethod initialize-instance :after ((timeout-object timeout-object)
@@ -46,6 +50,7 @@
     (enqueue *timeout-object-timeout-queue* timeout-object)))
 
 (defmethod exceeded-timeout-p ((timeout-object timeout-object) time)
+  (declare (fixnum time))
   (with-slots (timeout) timeout-object
     (when timeout 
       (> time timeout))))

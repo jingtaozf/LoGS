@@ -81,16 +81,10 @@ both matches and continuep is nil."))
     (when
         +debug+
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
+
     (loop with *current-rule* = head
        and found = ()  
 
-;;; there are no (more) rules in this ruleset
-       when (not *current-rule*)
-       do
-       (when +debug+
-         (format t "no more rules~%"))
-       (return found)
-         
        ;; there's a rule to check
        when *current-rule*
        do 
@@ -111,7 +105,14 @@ both matches and continuep is nil."))
                 (unless (continuep data)
                   (return t))))))
        (let ((rlink (rlink *current-rule*)))
-         (setq *current-rule* rlink)))))
+         (setq *current-rule* rlink))
+
+       ;; there are no (more) rules in this ruleset
+       when (not *current-rule*)
+       do
+       (when +debug+
+         (format t "no more rules~%"))
+       (return found))))
 
 (defmethod rule-head ((rule rule))
   (dll-insert
@@ -143,12 +144,6 @@ both matches and continuep is nil."))
    (tail *ruleset*)
    rule
    :direction :after))
-
-;; stealing from SEC
-(defun Single (match actions)
-    (make-instance 'rule
-                   :match match
-                   :actions actions))
 
 (defmethod dll-delete :after ((ruleset ruleset)
                               (item doubly-linked-list-item))
