@@ -841,6 +841,23 @@
         (check-limits *timeout-object-timeout-queue*)
         (assert-non-nil fooble)))))
 
+(deftest "relative timed-out context runs actions"
+    :test-fn
+  (lambda ()
+    (let* ((fooble ())
+           (context (ensure-context
+                     :timeout (+ *now* (* INTERNAL-TIME-UNITS-PER-SECOND 100))
+                     :relative-timeout 1
+                     :actions
+                     (list
+                      (lambda (context)
+                        (declare (ignore context))
+                        (setf fooble t))))))
+      (declare (ignore context)) ; we use it, just not here
+      (let ((*now* (+ *now* (* INTERNAL-TIME-UNITS-PER-SECOND 1) 1)))
+        (check-limits *timeout-object-timeout-queue*)
+        (assert-non-nil fooble)))))
+
 (deftest "deleted context is removed from *contexts* list"
     :test-fn
   (lambda ()

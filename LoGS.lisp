@@ -21,7 +21,7 @@
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
-(declaim (EXTENSIONS:FREEZE-TYPE file-follower Multi-Follower priority-queue context collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object rule ruleset killable-item message string-message))
+(declaim (EXTENSIONS:FREEZE-TYPE file-follower Multi-Follower priority-queue context collection limited-collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object relative-timeout-object rule ruleset killable-item message string-message))
 
 ;; we need the sb-posix package under SBCL in order to open FIFOs non-blocking
 #+sbcl
@@ -160,6 +160,7 @@
   (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
+;; command line options
 #+cmu
 (load-LoGS-file "command-line_CMUCL")
 
@@ -188,26 +189,29 @@ Main currently does:
 2. Check to see if any rules need to be removed.
 3. Check to see if any contexts need to be removed."
   (loop as *message* = (get-logline *messages*)
-        ;; exit if there is no message and we're not running forever
-        when (and (not *run-forever*) (not *message*))
-        do
-        (return)
-        ;; if we are running forever and there is no message sleep 
-        when (and *run-forever* (not *message*))
-        do
-        (sleep *LoGS-sleep-time*)
-        
-        ;; update the internal time
-        when *use-internal-real-time*
-        do
-        (setq *now* (get-internal-real-time))
-        
-        ;; check the message against the ruleset if it exists
-        ;; and check the timeout objects
-        when t
-        do
-        (when (and *message* (head *root-ruleset*))
-          (check-rules *message* *root-ruleset*))
-        
-        (when (head *timeout-object-timeout-queue*)
-          (check-limits *timeout-object-timeout-queue*))))
+     ;; exit if there is no message and we're not running forever
+     when (and (not *run-forever*) (not *message*))
+     do
+       (return)
+     ;; if we are running forever and there is no message sleep 
+     when (and *run-forever* (not *message*))
+     do
+       (sleep *LoGS-sleep-time*)
+       
+     ;; update the internal time
+     when *use-internal-real-time*
+     do
+       (setq *now* (get-internal-real-time))
+       
+     ;; check the message against the ruleset if it exists
+     ;; and check the timeout objects
+     when t
+     do
+       (when (and *message* (head *root-ruleset*))
+         (check-rules *message* *root-ruleset*))
+       
+       (when (head *timeout-object-timeout-queue*)
+         (check-limits *timeout-object-timeout-queue*))
+       
+       (when (head *relative-timeout-object-timeout-queue*)
+         (check-limits *relative-timeout-object-timeout-queue*))))
