@@ -20,6 +20,8 @@
 ;; all of the nifty functionality should be in the underlying data source.  
 ;; eg. a file-follower handles the inode rotation stuff.
 
+(in-package :LoGS)
+
 (defclass Multi-Follower (collection)
   ((current-follower :initform 0 :accessor current-follower)))
 

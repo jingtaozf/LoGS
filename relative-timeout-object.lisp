@@ -15,14 +15,16 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+(in-package :LoGS)
+
 (defclass relative-timeout-object ()
   ((relative-timeout :initarg :relative-timeout
                      :accessor relative-timeout
                      :initform ()
-                     :type (or null fixnum))
+                     :type (or null number))
    (next-timeout :accessor next-timeout
                  :initform ()
-                 :type (or null fixnum))))
+                 :type (or null number))))
 
 (defmethod update-relative-timeout ((relative-timeout-object relative-timeout-object))
   (with-slots (relative-timeout) relative-timeout-object

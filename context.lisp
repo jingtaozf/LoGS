@@ -15,6 +15,8 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+(in-package :LoGS)
+
 (defvar *contexts-hash* (make-hash-table :test #'equal)
   "a hash to hold all of their contexts so that we can find them by name.")
 

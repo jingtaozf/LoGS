@@ -15,11 +15,13 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+(in-package :LoGS)
+
 (defclass timeout-object ()
   ((timeout :initarg :timeout
             :accessor timeout
             :initform ()
-            :type (or null fixnum))))
+            :type (or null number))))
 
 (defmethod sort-timeouts ((x timeout-object) (y timeout-object))
   (let ((t-x (timeout x))

@@ -1489,8 +1489,6 @@
 (deftest "test pair rule type"
     :test-fn #'test-pair-finding-match2)
 
-
-
 ;; 5 inserts:
 ;;
 ;; insert empty list

@@ -19,6 +19,8 @@
 ;;; that data structure's stuff goes here, move macros, methods
 ;;; for ruleset creation elsewhere.
 
+(in-package :LoGS)
+
 (defclass ruleset (rule doubly-linked-list)
   ((elements :initform (make-hash-table :test #'equal) :accessor elements
              :documentation "a hash table to hold all of the rules in this ruleset"))
@@ -81,7 +83,7 @@ both matches and continuep is nil."))
     (when
         +debug+
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
-
+    
     (let 
         ((didmatch
           
@@ -129,7 +131,7 @@ both matches and continuep is nil."))
    :direction :before))
 
 (defmethod rule-before ((rule rule))
-  (unless *current-rule*
+   (unless *current-rule*
     (error "no current rule"))
   (dll-insert
    *ruleset*

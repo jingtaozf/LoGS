@@ -137,7 +137,7 @@
                      action 
                      found-matches
                      message))
-           
+
            (in-given-environment
             found-matches
             action

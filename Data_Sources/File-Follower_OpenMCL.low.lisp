@@ -17,6 +17,8 @@
 
 ;; This file contains low-level OpenMCL specific code
 
+(in-package :LoGS)
+
 (defun fifo-p (filename)
   (< 0 
      (logand 4096 
