@@ -49,7 +49,7 @@
     (pipe "/usr/bin/mail" ,recipient)))
 
 (defmacro file-write (filename)
-  `(lambda (message matches sub-matches)
+  `(lambda (message)
     (with-open-file 
         (file ,filename 
          :direction :output 
