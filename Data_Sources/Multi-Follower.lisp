@@ -37,7 +37,7 @@
 
          when ;; if we've already tried them all, return NIL
            (equal starting-follower
-                  (mod (1+ (current-follower Mf))
+                  (mod (current-follower Mf)
                        (ecount Mf)))
          do
            (return NIL)
