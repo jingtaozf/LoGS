@@ -42,4 +42,4 @@
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
   (nth-value 2 
-             (SB-UNIX:UNIX-STAT filename)))
+             (unix-stat filename)))

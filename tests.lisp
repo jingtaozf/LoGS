@@ -21,6 +21,18 @@
 (in-package :LoGS)
 (use-package :ORG.ANCAR.CLUNIT)
 
+;; UGH!
+#+allegro
+(set-dispatch-macro-character #\# #\$
+                              (lambda(s c n)
+                                (let ((thing (read s nil (values) t))) ())))
+
+#+allegro
+(set-dispatch-macro-character #\# #\_
+                              (lambda(s c n)
+                                (let ((thing (read s nil (values) t))) ())))
+
+
 (defvar *do-error* t)
 
 (defun assert-equal (a b &key test)
