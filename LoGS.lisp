@@ -66,7 +66,7 @@
 (defconstant +debug+ () "should debugging information be displayed?")
 
 (defparameter *use-internal-real-time* t 
-  "should LoGS use the intenal-real-time?")
+  "should LoGS use the internal-real-time?")
 
 (defvar *now* (get-internal-real-time)
   "the current time.  Currently an integer like (get-internal-real-time).
