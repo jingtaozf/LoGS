@@ -614,7 +614,10 @@
 
       (let ((line (get-line ff)))
         ;; kill of the temp file
+        #+cmu
         (unix:unix-unlink testfile)
+        #+sbcl
+        (sb-posix:unlink testfile)
         (assert-non-nil line)))))
 
 (deftest "file follower returns nil with no input"
@@ -646,7 +649,10 @@
         (not (format output-stream "here is another~%")))
 
       (let ((line (get-line ff)))
+        #+cmu
         (unix:unix-unlink testfile)
+        #+sbcl
+        (sb-posix:unlink testfile)
         (assert-non-nil line)))))
 
 (deftest "file-follower inode rollover works"
@@ -668,7 +674,10 @@
                                        :if-does-not-exist :create)
           (format output-stream "here is another~%"))
         (let ((line (get-line ff)))
+          #+cmu
           (unix:unix-unlink testfile)
+          #+sbcl
+          (sb-posix:unlink testfile)
           (assert-non-nil line)
            )))))
 
@@ -696,7 +705,10 @@
                     (or q (return ()))
                   finally
                     (return t))))
+          #+cmu
           (unix:unix-unlink testfile)
+          #+sbcl
+          (sb-posix:unlink testfile)
           (assert-non-nil result))))))
 
 (deftest "get-rule returns the rule"

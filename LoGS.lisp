@@ -16,9 +16,9 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
 ;(declaim (optimize (speed 3)))
-;(declaim (optimize (speed 0) (debug 3) (safety 2)))
+(declaim (optimize (speed 0) (debug 3) (safety 2)))
 
 
 ;; freeze the LoGS classes if we're on cmucl 19
@@ -35,10 +35,10 @@
 (LISP::%SET-BYTES-CONSED-BETWEEN-GCS 131424256)
 
 #+sbcl
-(setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 131424256)
+(setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 65712128)
 
 
-; turn off gc messages
+; Turn off gc messages
 #+cmu
 (setq ext:*gc-verbose* ())
 
@@ -54,6 +54,12 @@
         :cl-user)
 #+sbcl
 (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
+#+sbcl
+(:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly)
+;#+sbcl
+;(:import-from :sb-posix #:o-nonblock)
+#+sbcl
+(:import-from :sb-sys #:make-fd-stream)
 #+cmu
 (:import-from :extensions #:quit #:RUN-PROGRAM)
 #+cmu

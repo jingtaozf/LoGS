@@ -22,7 +22,7 @@
 (import '(unix:unix-stat unix:unix-open unix:o_rdonly unix:o_nonblock system:make-fd-stream))
 
 #+sbcl
-(import '(sb-unix:unix-stat sb-unix:unix-open sb-unix:o_rdonly SB-POSIX:O-NONBLOCK sb-sys:make-fd-stream))
+(shadowing-import '(sb-posix:o-nonblock))
 
 (defun fifo-p (filename)
   (if
@@ -55,7 +55,11 @@
              (let ((fifofd 
                     (unix-open
                      (filename ff)
-                     (logior o_rdonly o_nonblock)
+                     (logior o_rdonly 
+                             #+cmu
+                             o_nonblock
+                             #+sbcl
+                             o-nonblock)
                      #o444)
                      ))
                (setf (Filestream ff) (make-fd-stream fifofd :input t)))
