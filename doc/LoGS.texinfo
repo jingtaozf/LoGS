@@ -1,0 +1,1625 @@
+\input texinfo   @c -*-texinfo-*-
+@setfilename LoGS.info
+@settitle LoGS 0.0.0a
+@set AUTHOR James E. Prewett
+@set EDITION 0.0.0a
+@set UPDATED March 8, 2004
+@set COPYRIGHT Copyright @copyright{} 2003--2004 James E. Prewett
+
+
+@copying
+This manual is for LoGS, version 0.0.1RC5.
+
+Copyright @copyright{} 2003--2004 James E. Prewett.
+
+
+@smallexample
+@group
+  Copyright (C)  2003--2004 James E. Prewett
+  Permission is granted to copy, distribute and/or modify this document
+  under the terms of the GNU Free Documentation License, Version 1.2
+  or any later version published by the Free Software Foundation;
+  with no Invariant Sections, no Front-Cover Texts, and no Back-Cover
+  Texts.  A copy of the license is included in the section entitled ``GNU
+  Free Documentation License''.
+@end group
+@end smallexample
+
+@end copying
+
+@c % Start of Description
+@ifinfo
+This is Edition @value{EDITION}
+of the @cite{@value{TITLE}}
+last updated on @value{UPDATED}.
+@value{COPYRIGHT}
+@end ifinfo
+@c %Dnd of Description
+
+
+@titlepage
+@title LoGS
+@author @value{AUTHOR}
+
+@c  The following two commands
+@c  start the copyright page.
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+
+@end titlepage
+
+@c So the toc is printed at the start.
+@contents
+
+@ifnottex
+@node Top, LoGS Overview, (dir), (dir)
+@top LoGS
+
+@insertcopying
+@end ifnottex
+
+@menu
+* LoGS Overview::               
+* LoGS Rules::                  
+* LoGS Rulesets::               
+* LoGS Contexts::               
+* Concept Index::               
+* Function Index::              
+* Variable Index::              
+@end menu
+
+@node LoGS Overview, LoGS Rules, Top, Top
+@chapter LoGS Overview
+
+@cindex LoGS Overview 
+@cindex Overview, LoGS
+
+LoGS is a programmable log analysis engine.  LoGS aims to be
+easily extend-able, even while it is running.  LoGS also aims to be
+very flexible in terms of how interesting log messages are
+identified and what is done in response to finding one of these
+messages.
+
+LoGS is written in common LISP@footnote{LoGS is currently only known
+to work with CMUCL.  It is our intention to port LoGS to a variety of
+LISP implementations.  LoGS will load (but fails some tests) under
+SBCL, OpenMCL, Lispworks and probably others.} and utilizes the Common
+LISP Object System (CLOS) and the Meta--Object Protocol (MOP).  Common
+LISP was chosen for its flexibility, for having an excellent (and
+fast!) regular expression engine@footnote{CL-PPCRE}, and because
+nesting data structures with CLOS is relatively simple@footnote{One of
+LoGS primary goals is to be able to easily write rules that modify
+themselves and/or modify the ruleset.  Rules that modify the ruleset
+create new rules; these new rules should also be able to create new
+rules (no matter how deeply nested within the originally specified
+rule) and the specification of this should not be overly complex.}. 
+
+Common LISP is the programming language used by LoGS to represent its
+rules and other important structures.  This is simular to how SEC uses
+Perl, except that all of LoGS is exposed to the user for potential use
+or modification; the LoGS mainline (or any other component) can be
+rewritten at run-time by the user.
+
+This manual assumes that you are familiar with programming in LISP
+using CLOS as well as with Perl compatable regular expressions.  Most
+of the LISP presented in this manual is very simple, so you need not
+be a LISP expert to read this manual or use LoGS; however,
+understanding how to create and manipulate CLOS objects in LISP will
+be very useful.  While LoGS strives not to push you into a particular
+mechanism to discover the ``interesting'' log messages, regular
+expressions are probably the most common way of doing so in other log
+analysis applications.  LoGS currently uses the CL-PPCRE package to
+match regular expressions@footnote{There is no reason not to use other
+regular expression packages; however, regular expressions that work
+with CL-PPCRE will be presented in this manual.}. 
+
+@cindex LoGS programming language
+@cindex Common LISP
+
+@menu
+* LoGS Components::             
+* Messages::                    
+* Rules::                       
+* Rulesets::                    
+* Actions::                     
+* LoGS Contexts::               
+@end menu
+
+@node LoGS Components, Messages, LoGS Overview, LoGS Overview
+@section LoGS Components
+
+Logs, as currently written@footnote{LoGS is currently evolving
+very quickly and is extend-able/modifiable by the user}, consists
+of five important components, Messages, Rules, Rulesets, Actions, and
+Contexts.  These components were chosen so as to mimic the
+behavior of the (excellent) Logsurfer program written by
+Wolfgang Ley and Ewe Ellerman. 
+
+An Object--Oriented approach has been taken with LoGS.  Each of the
+five major components are implemented as CLOS classes and may be
+instantiated by calling the standard @code{make-instance} macro.
+
+@cindex instantiation of LoGS objects
+
+@cindex LoGS Components
+@cindex Components, LoGS
+@cindex Logsurfer
+@cindex Wolfgang Ley
+@cindex Ley, Wolfgang
+@cindex Ewe Ellerman
+@cindex Ellerman, Ewe
+
+@node Messages, Rules, LoGS Components, LoGS Overview
+@section Messages
+
+Messages are units of information coming into the LoGS system
+via a data source.  These messages are processed sequentially by
+LoGS.  Currently LoGS has facilities to handle arbitrary ASCII
+data separated by newlines such as a log file written by the
+system log daemon, syslogd via David Worth's @code{File-Follower} class.
+
+@cindex messages
+@cindex data source
+@cindex ASCII
+@cindex syslogd
+
+Messages are encapsulated within objects of the Message class as
+they are read into the LoGS system.  Since, currently,
+development has been focused on syslog files, messages that come
+into the LoGS system are encoded into the String-Message
+sub--class of Messages.  It is intended that other types of
+messages be created and that CLOS can be leveraged to do the
+right thing with the right type of message.
+
+@cindex message object
+@cindex string-message object
+
+The only reason why other message formats are not supported is that
+there are currently no message source objects for other message
+sources.
+
+@cindex alternative message sources
+@cindex message sources, alternative
+
+@node Rules, Rulesets, Messages, LoGS Overview
+@section Rules
+
+Rules are objects that associate Messages with an actions list.  When a
+Rule matches a Message, then the actions associated with that
+rule (which are stored as a list in the Rule's actions slot) are
+called with the Message, the portion of the message that
+caused the match, and any matches found within@footnote{This is useful
+when using regular expressions and potentially elsewhere} referred to
+as matches and sub--matches respectively within the code.
+
+@cindex rules
+@cindex rule object
+@cindex actions slot (Rule object)
+@cindex rule actions slot
+@cindex regular expressions
+@cindex matches
+@cindex sub--matches
+
+A Rule object consists of these slots: match, no-match,
+delete-rule, no-delete-rule, timeout, continuep, and actions.
+All of these slots have default values.  This allows for rule
+specifications to be rather short for very simple rules.
+However, it is generally useful to at least specify a function
+for the match slot (otherwise the rule can never match a message,
+see below).
+
+@cindex Rule slots
+@cindex match slot (Rule object)
+@cindex no-match slot (Rule object)
+@cindex delete-rule slot (Rule object)
+@cindex no-delete-rule slot (Rule object)
+@cindex timeout slot (Rule object)
+@cindex continuep slot (Rule object)
+@cindex actions slot (Rule object)
+
+In order to determine if a Message is matched by the Rule, the
+function stored in the ``match'' slot of the Rule must return
+non-nil and the function stored in the ``no-match'' slot must
+return nil when called with the message as their argument.
+
+Rules can delete themselves when they match a Message, and the
+function stored in the delete-rule slot of the Rule returns
+non-nil and the function stored in the no-delete-rule returns nil
+when called with the matching message.  Rules can also be removed
+by timing out (if the current time is greater than the value
+stored in the timeout slot), if the timeout slot is nil, then the
+rule cannot timeout@footnote{Rules can modify themselves at
+run--time, so they may modify their timeout.}.
+
+@cindex rules, deleting
+@cindex deleting rules
+@cindex timing out (Rules)
+@cindex timeout (Rules)
+@cindex rule timeout
+
+
+When a Ruleset is being processed, the default behavior is to
+check each Rule in the ruleset sequentially until a Rule that
+matches the Message is found.  If the continuep slot of the Rule
+is non-nil, then subsequent rules in the ruleset are checked
+until a matching rule with a nil continuep slot or the end of the
+Ruleset is found.  
+
+@cindex ruleset
+@cindex ruleset processing
+
+In LoGS, Rules are dynamic in that they can be created by Actions
+at run--time in response to certain Messages.  They can be 
+deleted because they have timed out, they have matched a message
+that causes them to be deleted, or they can be deleted by an
+Action that is triggered by a Rule or a Context.
+
+@cindex dynamic rules
+@cindex rules, dynamic
+@cindex action
+@cindex rule
+@cindex context
+
+@node Rulesets, Actions, Rules, LoGS Overview
+@section Rulesets
+
+Rulesets are ordered groups of rules.  Rulesets are themselves a special
+type of rule that contains other rules and may themselves be
+inserted into Rulesets (Rulesets may be nested).  
+
+@cindex rulesets
+@cindex rule
+@cindex nested rulesets
+@cindex rulesets, nested
+
+Rules contained within a ruleset are tested sequentially to see
+if they match a given message.  If the rule does match and its
+continuep slot is nil, then no further rules in the Ruleset are
+tested with that particular message.
+
+@cindex continuep slot (Rule object)
+@cindex continue
+@cindex short-circuit ruleset evaluation
+
+@node Actions, LoGS Contexts, Rulesets, LoGS Overview
+@section Actions
+
+Actions are functions or methods that take 3 arguments, the
+Message that is triggering the action, the portion of the message
+that triggered the match, and any sub--matches that occurred
+(think regular expressions).  Actions may be created at run--time
+as a result of running another action in any of the standard
+Common LISP ways.
+
+@cindex action 
+@cindex message
+
+Actions can be associated with Rules, Rulesets (as they are a
+special type of Rule), and Contexts.  Actions associated in this
+way will be run when a rule matches a message, a ruleset matches
+a message, or when a context exceeds one of its limits.
+
+@cindex ruleset
+@cindex context
+@cindex action
+@cindex message
+@cindex context limits
+@cindex context actions
+
+@node LoGS Contexts,  , Actions, LoGS Overview
+@section LoGS Contexts
+
+Contexts are objects that store messages for later use.  Contexts can
+be used for any number of messages (a context with zero messages can
+indeed be meaningful!).  
+
+Simular ly to rules, Contexts associate messages with actions.
+The primary differences between a rule and a context are that contexts
+associate actions with groups of messages whereas rules associate
+actions with a single message and that contexts do not act directly on
+single messages.  Contexts are generally used to store related
+messages, for example, a context could be used to gather all of the
+messages from a given ssh session. 
+
+LoGS 0.0.0 had a bogus notion of contexts borrowed from Logsurfer.
+This notion uses contexts as purely passive objects.  This poses a
+serious efficiency problem (as pointed out by John P. Rouillard in a
+private conversation; Thanks John!)!
+
+In versions 0.0.0a and greater, messages can only be added to contexts
+by actions (associated with rules or other contexts).  In this way, we
+can leverage the short--circuit functionality available in LoGS rules
+to gain greater efficiency.  This is also how SEC handles its contexts.
+
+@node LoGS Efficiency
+@section LoGS Efficiency
+
+It is very difficult to talk about the efficiency of LoGS as it really
+depends upon the number and type of rules and contexts that a given message is
+checked against.  Currently, with no rules or contexts, LoGS can
+examine over 500 messages per second on my laptop (1.8Ghz Pentium
+IV).  
+
+Often, efficiency can be improved by ordering the ruleset so that the
+most common matches are tested before less common ones.  See the
+section on nested rulesets for how they can be used to improve the
+efficiency of a ruleset.  Also see the section on rules for how they
+can be more efficient than those that only match regular expressions.
+
+@cindex context 
+
+@node How Messages are processed
+@section How Messages are processed
+
+The current LoGS mainline takes the following steps for an incoming
+message. First, the message is processed.  This consists of testing the message
+against the ruleset and then checking the message against the
+contexts.  Next the ruleset itself is checked to see if any of the
+rules have exceeded one of their limits and need to be destroyed.
+Finally, the contexts are checked to see if any of them have exceeded
+one of their limits and need to be destroyed.
+
+
+
+
+
+@node LoGS Rules, LoGS Rulesets, LoGS Overview, Top
+@chapter LoGS Rules    
+
+Rules are one type of glue that LoGS uses to associate messages
+with actions.  They contain enough information to be able to
+identify messages that they match and to be able to do something
+useful with these messages.
+
+@cindex rule
+@cindex message
+@cindex action
+
+@menu
+* Using Rules to implement Artificial Ignorance::  
+* Rule Nesting::                
+@end menu
+
+@node Rule components
+@section Rule components
+
+Rule objects consist of: A match function, a no-match function, a
+delete-rule function, an no-delete-rule function, a timeout, a
+continuep value and an actions list.  These components are
+intentionally simular to rules within the Logsurfer log analysis
+engine.
+
+The match function is a function that takes a message as its argument
+and returns non-nil if the rule does match the message and nil if it
+does not.  The no-match function is simular to the match function,
+except that it specifies exceptions to the match function.  If the
+match function returns non-nil, then the no-match function is tested;
+if, then, the no-match function returns non-nil, then it is determined
+that the rule does not match the message.
+
+The delete-rule function is a function that takes a message as its
+argument.  Once it has been determined that the rule matches a
+message, the delete-rule function is called to determine if the rule
+needs to be deleted (after running its actions).  Similarly to the
+no-match function, the no-delete-rule function specifies exceptions to
+the delete-rule function.
+
+The timeout is a value in seconds for when the rule should be
+deleted.  This value is the time in seconds such as that returned by
+get-universal-time. 
+
+The continuep value specifies that, even if this rule matches a
+message that that message should also be checked against subsequent
+rules in the ruleset.  If this value is nil, then further processing
+of the ruleset will not take place.
+
+The actions list is a list of actions (which are functions, see the
+section on actions for more details) to run if the rule matches the
+message.  Actions in the actions list will be run in the order that
+they appear in that list.  There is no short-circuiting.
+
+@node Using Rules to implement Artificial Ignorance, Rule Nesting, LoGS Rules, LoGS Rules
+@section Using Rules to implement Artificial Ignorance
+
+One common problem with log analysis is the sheer volume of
+messages that are continuously being added to log files coupled
+with the fact that most of these messages indicate correct
+operation of the system's components.  It is often useful to use
+a technique known as ``Artificial Ignorance'' to weed out the
+system messages that are not useful to us in diagnosing a
+problem.
+
+@cindex volume of data, reducing
+
+On one of my machines, I get many messages of the form: 
+@samp{Apr 21 00:00:59 l121 CROND[25355]: (root) CMD (run-parts /etc/cron.hourly)}
+These messages indicate that one of the compute nodes of this
+cluster ran its hourly cron jobs (which is good, but it is also
+what I expect to be happening).
+
+@smalllisp
+(make-instance 'rule
+               :match 
+               (lambda (message)
+                  (cl-ppcre::scan 
+ ``CROND\\[\\d+\\]: \\(root\\) CMD \\(run-parts /etc/cron\\.hourly\\)'' 
+                    (message message))))
+@end smalllisp
+
+@cindex match (Rule Slot)
+
+This rule matches the hourly cron messages and has no actions (it
+does nothing when it matches these messages).  Rules of this form
+allow us to easily filter out messages that are not interesting
+to us.
+
+@cindex filtering
+@cindex Rule for filtering
+
+LoGS also has a sort of short--hand notation for rules of this
+form to simplify their specification.  The '!' operator can be
+used to specify a rule of this form.  The last rule could have
+been specified like this:
+
+@code{! ``CROND\\[\\d+\\]: \\(root\\) CMD \\(run-parts /etc/cron\\.hourly\\)''}
+
+@findex !
+
+The last example illustrates how LoGS is becoming easier to use.  Most
+log analysis tasks are simple and repetitive (eg. weeding out all of
+those messages that indicate your machine has the hardware you expect
+when it boots; my laptop spits out 93 of these messages every time it
+boots!) and these simple tasks should be simple to perform!
+
+@menu
+* How a rule matches a message.::  
+@end menu
+
+@node How a rule matches a message.,  , Using Rules to implement Artificial Ignorance, Using Rules to implement Artificial Ignorance
+@subsection How a rule matches a message.
+
+@cindex Message matching
+@cindex Rule matching
+@cindex Artificial Ignorance
+
+@c Marcus J. Ranum mjr@nfr.net
+@c Tue, 23 Sep 1997 23:06:06 +0000
+@c artificial ignorance: how-to guide
+
+Marcus J. Ranum explains in a posting he made to the firewall-wizards
+mailing list how to use filters to weed out the uninteresting data
+from a sea of log messages.  While I disagree that simple filtering is
+enough, filters used in the way he describes are good for finding
+messages that are unknown.  I believe that automated analysis as a
+supplement to this sort of filtering can go a long way in assisting a
+system administrator. 
+
+@cindex Ranum, Marcus J.
+@cindex Marcus J. Ranum
+@cindex firewall-wizards
+
+Rules match messages when the function stored in their match slot
+returns non-nil and the function stored in their no-match slot
+returns nil.  These functions can be any common LISP function (or,
+more properly, any function callable from your LISP; Imagine LoGS
+running tcl or Perl code!) that takes a single argument of a
+message object and returns non-nil when they match the message
+and nil when the do not.
+
+It is common to use regular expressions to specify the messages
+that match the rule.  This is how messages are matched in most
+other log analysis applications such as Logsurfer, SEC, Swatch,
+etc.  It has been pointed out (XXX reference here XXX) that this
+may not always be the optimal way to match messages.  
+
+A simple case in which using regular expressions is both
+counter--intuitive and inefficient is a catch--all sort of rule.
+I put these types of rules at the end of my ruleset so that they
+match anything that isn't matched by another rule.
+
+@cindex counter--intuitive use of regular expressions
+@cindex regular expressions, counter--intuitive use of
+
+Here is an example of writing a catch-all rule that uses a
+regular expression to determine which messages it matches:
+
+@cindex catch-all rule
+@cindex catch-all rule using regular expressions
+
+@smalllisp
+(make-instance 'rule
+               :match
+               (lambda (message)
+                 (cl-ppcre::scan 
+                   ``.*''
+                   (message message)))
+
+               :actions
+               (list          
+                 (lambda (message matches sub-matches)
+                         (format t ``Missed Message: ~A~%''
+                         (message message)))))
+@end smalllisp
+
+Here is another way to write that same rule:
+@cindex catch-all rule without regular expressions
+
+@smalllisp
+(make-instance 'rule
+               :match
+               (lambda (message) t)
+               :actions
+               (list 
+                 (lambda (message matches sub-matches)
+                   (format t ``Missed Message: ~A~%''
+                   (message message)))))
+@end smalllisp
+
+The latter way to write the catch--all rule is more intuitive in
+that the match function returns non-nil in response to every
+message, rather than ensuring that it matches the catch-all
+regular expression, ``.*''.  This also allows this strategy to be
+somewhat more efficient.
+
+LoGS attempts to allow one working to discover the hidden goodies
+in a logfile to specify how to identify one rather than trying to
+impose bogus restrictions on how log files can be analyzed.  One
+interesting idea I have is to create certain rules that do not
+match any messages on Tuesdays between 9:00am and 1:00pm as that
+is when I have scheduled systems maintenance on one of my
+machines.  That way I can do all sorts of things the nodes of my
+cluster will complain about without being swamped with alarms.
+
+It may be useful in some circumstances to match messages by their
+length.  Often longer messages than usual indicate something going
+wrong; this is a great way to identify an attacker attempting to
+exploit a buffer overflow! XXX reference tbird on this XXX
+
+Here is the rule that I use to identify ssh-related messages that
+are too long:
+@smalllisp
+
+;; 158 chars is the longest valid ssh message I've seen
+(setf *insane-ssh-message-length* (+ 158 1)) 
+
+;; a rule to match messages longer than that
+(enqueue 
+ *ssh-messages*
+ (make-instance 
+  'rule
+  :continuep t
+  :match (lambda (message)
+           (>= (length message) 
+               *insane-ssh-message-length*))
+  :actions
+  (list
+   (lambda (message matches sub-matches)
+     (format t "SSH Warning: Long message(~A chars): ~A~%"
+             (length (message message))    
+             (message message))))))
+
+@end smalllisp
+
+
+@node Rule Nesting, Dynamic Rules, Using Rules to implement Artificial Ignorance, LoGS Rules
+@section Rule Nesting
+
+In LoGS, rules may create other rules.  LoGS allows the user to easily
+specify rules that create rules ... that create rules to an
+arbitrary depth!  This is also to allow the user to specify how
+rules are to be matched rather than assume that only N levels of
+rule nesting are adequate!
+
+LoGS rules can create other rules in response to the messages
+that they are given.  This allows LoGS to respond to certain
+types of messages by looking for other types of messages.  Rules
+are created at run--time when LoGS response to a given message
+needs to change for whatever reason.  
+
+Here is an example of a rule that creates another rule so that it
+will only be triggered every 12 hours (43200 seconds):
+ 
+@smalllisp
+(make-instance 'rule
+               :match
+               (lambda (message) t)
+               :actions
+               (list
+                (lambda (message matches sub-matches)
+                         (format t ``matched a message: ~A~%''
+                         (message message)))
+                (lambda (message matches sub-matches)
+                        (rule-before
+                         (make-instance 'rule
+                                        :match 
+                                        (lambda (message) t)
+                                        :timeout 
+                                        (+
+                                        (get-universal-time) 
+                                        43200))))))
+@end smalllisp
+
+The above rule also introduces another important concept about
+rules in LoGS; they associate 0 or more actions with a given
+message.  In this way, a given rule can cause multiple changes
+within the LoGS system without having to write larger functions
+to perform each individual task.
+
+The above rule also points out how simple it is to have rules create
+other rules.  There is virtually no difference between specifying a
+simple rule that does not create other rules and specifying a rule
+that is created by another rule.  This rule uses the function
+@code{rule-before} to insert the newly created rule into the ruleset
+immediately before the rule that created it.
+
+@findex rule-before
+
+This rule gives a framework for limiting the frequency with which a
+rule (or set of rules) can be triggered by utilizing dynamic
+rulesets.  I use this sort of functionality to notify me of problems
+that are not severe enough to demand my immediate attention, but are
+worth taking a look at.
+
+@cindex limiting frequency of matches with dynamic rules
+@cindex dynamic rulesets
+
+@node Dynamic Rules, Better than Ignorance, Rule Nesting, LoGS Rules
+@section Dynamic Rules
+
+We have already touched on how rules in the LoGS system are dynamic:
+they can be created or deleted at run--time.  Rules are dynamic in
+LoGS because that is how I examine log files by hand; one message
+causes me to start looking for one or more messages or, conversely,
+one message causes me to start ignoring one or more messages.  A rule
+may only need to be active until a given message is seen, in fact,
+this is the case when capturing a session; once the session has ended,
+there is no need for the rule responsible for doing the capturing to
+remain active.
+
+Lets take a closer look at how LoGS rules may be created and deleted.
+A rule may be created within the LoGS system by either being created
+as a part of the initial ruleset or by running an action that ends up
+inserting a rule into a ruleset.  Rules may be deleted by running an
+action that causes them to be removed from one or more rulesets, or by
+exceeding the timeout for the rule.
+
+@cindex timeout
+@cindex rule timeout
+@cindex dynamic rule creation
+@cindex dynamic rule deletion
+
+There are currently four primary ways to insert a new rule into a
+ruleset.  A rule can be inserted before the current rule by using the
+@code{rule-before} function.  A rule may be inserted after the current
+rule by using the @code{rule-after} function.  A rule may be inserted
+at the top of the ruleset (so that it will be the first rule processed
+when checking the next message) by using the @code{rule-top} function.
+Finally, a rule may be inserted at the bottom of the ruleset (so that
+it will be the last rule processed when checking the current message)
+by using the @code{rule-bottom} function.  You can also roll your own
+rule insertion function; in order to do so, you should be aware that
+the rule currently being processed is stored in the
+@code{*current-rule*} parameter and that the ruleset currently being processed
+is stored in the @code{*ruleset*} parameter.
+
+@vindex *current-rule*
+@vindex *ruleset*
+@findex rule-before
+@findex rule-after
+@findex rule-top
+@findex rule-bottom
+
+@node Better than Ignorance, Extending LoGS to facilitate rule creation, Dynamic Rules, LoGS Rules
+@section Better than Ignorance
+
+Artificial Ignorance is bliss, but can we do better with LoGS?  I
+believe we can!  Since rulesets are dynamic and rules themselves can
+be dynamic (rules may modify themselves!), we can ignore exactly the
+things we expect to be seeing!  Going back to the example of my
+laptop's boot sequence, here is an example of the messages it produces
+when it boots:
+
+@verbatim
+Dec 10 19:40:44 spacebrain /kernel: real memory  = 267780096 (261504K bytes)
+Dec 10 19:40:44 spacebrain /kernel: avail memory = 255221760 (249240K bytes)
+Dec 10 19:40:44 spacebrain /kernel: Preloaded elf kernel "kernel" at 0xc0535000.
+Dec 10 19:40:44 spacebrain /kernel: Warning: Pentium 4 CPU: PSE disabled
+Dec 10 19:40:44 spacebrain /kernel: Pentium Pro MTRR support enabled
+Dec 10 19:40:44 spacebrain /kernel: md0: Malloc disk
+Dec 10 19:40:44 spacebrain /kernel: Using $PIR table, 14 entries at 0xc00fdeb0
+Dec 10 19:40:44 spacebrain /kernel: apm0: <APM BIOS> on motherboard
+Dec 10 19:40:44 spacebrain /kernel: apm0: found APM BIOS v1.2, connected at v1.
+@end verbatim
+
+Lets say that we want to look for this entire sequence of events and
+print a notification when the sequence starts and ends.
+
+@smalllisp
+(sequence-rule
+  (list
+   "/kernel: real memory  = 267780096 \\(261504K bytes\\)"
+   "/kernel: avail memory = 255221760 \\(249240K bytes\\)"
+   "/kernel: Preloaded elf kernel \"kernel\" at 0xc0535000."
+   "/kernel: Warning: Pentium 4 CPU: PSE disabled"
+   "/kernel: Pentium Pro MTRR support enabled"
+   "/kernel: md0: Malloc disk"
+   "/kernel: Using \\$PIR table, 14 entries at 0xc00fdeb0"
+   "/kernel: apm0: <APM BIOS> on motherboard"
+   "/kernel: apm0: found APM BIOS v1.2, connected at v1.")
+  (lambda (message matches sub-matches) 
+          (format t "machine is beginning to boot~%"))
+  (lambda (message matches sub-matches)())
+  (lambda (message matches sub-matches)
+          (format t "machine has finished booting~%")))
+@end smalllisp
+
+@findex sequence-rule
+
+When we notice messages that are not a part of the sequence, then we
+usually have detected an error.  Possibly the kernel is not detecting
+a piece of hardware or there was a failure with one of the memory modules.
+Now, if we want to notice a match to the rule that is out of order or
+is after a message we expected to see and didn't, we can do something
+like this: 
+ 
+@smalllisp
+(sequence-rule-look-for-missing
+ (list
+   "/kernel: real memory  = 267780096 \\(261504K bytes\\)"
+   "/kernel: avail memory = 255221760 \\(249240K bytes\\)"
+   "/kernel: Preloaded elf kernel \"kernel\" at 0xc0535000."
+   "/kernel: Warning: Pentium 4 CPU: PSE disabled"
+   "/kernel: Pentium Pro MTRR support enabled"
+   "/kernel: md0: Malloc disk"
+   "/kernel: Using \\$PIR table, 14 entries at 0xc00fdeb0"
+   "/kernel: apm0: <APM BIOS> on motherboard"
+   "/kernel: apm0: found APM BIOS v1.2, connected at v1.")
+  (lambda (message matches sub-matches) 
+          (format t "machine is beginning to boot~%"))
+  (lambda (message matches sub-matches)
+          (format t "intermediate boot message~%"))
+  (lambda (message matches sub-matches)
+          (format t "machine has finished booting~%"))
+  (lambda (message matches sub-matches) 
+   (format t "boot message found in order other than expected! ~A ~%"
+             (message message))))
+@end smalllisp
+
+@findex sequence-rule-look-for-missing
+
+Sequence-rules are really just LISP macros that write the correct rules to
+follow a sequence of events.  They greatly simplify the specification
+of a complex ruleset and I believe will eventually allow LoGS to be
+simple to use and still very powerful.  The last example expands into
+74 lines of LISP code which creates a rule that, when triggered
+creates two rules, one looking for the next message in the sequence
+and the other looking for messages that are not in the sequence (via a
+generated regular expression).
+
+By taking the approach that we can accurately describe ahead of time a
+large portion of our machines behavior, we can detect the absence of
+normal behavior rather than just the presence of abnormal behavior!  
+
+@node Rules can maintain state
+@section Rules can maintain state
+
+Maintaining state within a LoGS rule is very simple as common LISP
+supplies facilities for doing so easily.  By closing a rule in an
+environment, we can easily store state.  Here is a simple example to
+illustrate this:
+
+@smalllisp
+(let ((matchcount 0))
+  (make-instance 'rule    
+                 :match (lambda (message) ; always match and increment matchcount
+                                (incf matchcount))
+                 :action
+                 (lambda (message matches sub-matches)
+                         (format t 
+                           ``This rule has matched ~A times.~%''
+                           matchcount))))
+@end smalllisp
+
+@node Extending LoGS to facilitate rule creation,  , Better than Ignorance, LoGS Rules
+@section Extending LoGS to facilitate rule creation
+
+Sequence-rules are an example of how to extend LoGS to facilitate rule
+creation.  Here is the LISP macro used to create the rule:
+
+@smalllisp
+
+(defmacro sequence-rule 
+ (list first-action intermediate-action final-action)
+  (let ((lst (gensym))
+        (seq (gensym))
+        (orig-seq list))
+    `(let ((,lst ,list))
+      (make-instance 'rule
+       :match 
+       (lambda (message)
+         (and
+          (cl-ppcre::scan-to-strings 
+           (format () "~A ~A" *host-regex* (car ,lst)) 
+           (message message))
+          ))
+       :actions 
+       (list
+        (lambda (message matches sub-matches)
+          (rule-before
+           (let 
+               ((,seq 
+                 (mapcar 
+                  (lambda (x) 
+                    (format () "~A ~A" (aref sub-matches 0) x)) 
+                  (cdr ,lst))))
+             (make-instance 
+              'rule
+              :match
+              (lambda (message)
+                (let ((current-match (car ,seq)))
+                  (and (cl-ppcre::scan 
+                        current-match 
+                        (message message))
+                       (or (setf ,seq (cdr ,seq))
+                           (kill-current-rule)))))
+              :actions (list
+                        (lambda (message matches sub-matches)
+                          (progn 
+                            (if ,seq
+                                (,intermediate-action 
+                                   message matches sub-matches)
+                                (,final-action 
+                                   message matches sub-matches))
+                            t)))))))
+        ,first-action)))))
+@end smalllisp
+
+The sequence-rule macro allows end--users to easily create rules that
+match a sequence of messages without having to understand the
+mechanisms underneath.  Another example I have given of extending LoGS
+to facilitate rule creation is the ! reader macro.  This reader macro
+causes LoGS to insert a new rule into the ruleset that ignores any
+messages that match the regular expression given as !'s argument.
+Here is how ! is defined in LoGS:
+
+@smalllisp
+(defun bang-reader (stream char)
+    (declare (ignore char))
+    (let ((match (read stream t nil t)))
+      (enqueue 
+        *ruleset* 
+        (make-instance 
+          'rule 
+           :match 
+             (lambda (message) 
+               (cl-ppcre::scan 
+                 match 
+                 (message message)))
+           :actions 
+           (list #'ignore-action)))))
+
+(set-macro-character #\! #'bang-reader)
+@end smalllisp
+
+Expressing complex ideas can be simplified in LoGS because it is
+extendible in this way.  Users can mix these extensions with
+lower--level constructs to create simple, yet powerful, rulesets.
+
+@node LoGS Rulesets, LoGS Contexts, LoGS Rules, Top
+@chapter LoGS Rulesets
+
+LoGS rulesets are special types of rules.  They are rules that contain
+other rules in some sort of ordered manner.  Currently rulesets are
+implemented as a subclass of both the rule class and the
+doubly-linked-list class and possess the properties of both classes.
+
+Rulesets, as they are themselves rules, can be inserted into a
+ruleset.  This feature can be used for both ruleset organization and
+to improve efficiency (is it worth checking to see if a message is
+about how much memory the kernel has on boot if the message isn't from
+the kernel?  How about checking that message to see if it is the
+message about which processor the kernel thinks it has?  How about
+which IRQ the kernel is using for the Ethernet interface? ... 
+
+The current ruleset can always be referenced within the LoGS system
+with the *ruleset* variable.  This allows any action (or, shudder,
+even match/no-match function) to modify the current ruleset at will.
+If the rule currently being processed is a part of a ruleset that is
+nested within an outer ruleset, only the inner-most ruleset can be
+accessed (easily).
+
+@menu
+* How LoGS was extended to have nestable rulesets::  
+@end menu
+
+@node How LoGS was extended to have nestable rulesets
+@section How LoGS was extended to have nestable rulesets
+
+LoGS Rulesets are another example of how LoGS was extended.
+Originally, Rulesets were stored as doubly-linked-lists, but ruleset
+nesting proved to be needed.  So, rulesets were created by combining
+doubly-linked-lists and rules into a new class that became the default
+way to store rules.
+
+Rulesets were very easy to create.  The ruleset class had to be
+defined to inherit from the doubly-linked-list class as well as the
+rule class.
+
+@smalllisp
+(defclass ruleset (rule doubly-linked-list)
+  ()
+  (:documentation "A class to store rules."))
+
+@end smalllisp
+
+Then, because a ruleset behaves differently when it matches a message,
+the check-rule function had to be specialized for a ruleset.  This new
+function causes rules contained within this ruleset to be checked
+against the current message.  Here is its definition:
+
+@smalllisp
+;; check rule for when the rule itself is a ruleset!
+(defmethod check-rule ((rule ruleset) (message message))
+  (let ((*ruleset* rule))
+    (check-rules message rule)))
+@end smalllisp
+
+That was all that was required to extend LoGS to have nestable
+rulesets!
+
+
+
+@node LoGS Contexts, Concept Index, LoGS Rulesets, Top
+@chapter LoGS Contexts
+
+
+LoGS contexts are structures for storing log data for reporting on
+later.  They associate groups of messages with actions.  They may be
+used to store the entire contents of an ftp session or may be used to
+generate specialized reports.  Contexts match messages similarly to
+how rules match messages; a match is determined on the value returned
+by a function stored in the match slot. 
+
+As of LoGS version 0.0.0a, Contexts are no longer responsible for
+gathering their own messages.  Messages are now added to contexts
+directly by rules.  This allows LoGS to be more efficient.
+
+@menu
+* Extending a LoGS Context to do specialized reporting::  
+@end menu
+
+@node Extending a LoGS Context to do specialized reporting,  , LoGS Contexts, LoGS Contexts
+@section Extending a LoGS Context to do specialized reporting
+
+Since contexts are used to gather data for later reporting, they are a
+natural place to begin extending LoGS to do specialized reporting that
+produces a high--level overview of the log data.  In this section, we
+will show how to extend the context class to do this reporting; in
+this way, we can mold LoGS to do the right thing rather than being
+limited by the application.
+
+The report we want to generate will have a list of unique substrings
+of the log file with a count of the number of times those substrings
+were seen.  That way we can get a better idea of what kinds of data
+can be found in our log files and how frequently it can be found.
+
+First, we will define a new type of context, a Tcontext that will
+properly gather and store this data for us.  This type of context will
+contain a set of nodes that contain counts and hash tables pointing to
+the next seen word(s) after this one.  We will call these nodes Tnodes
+and will create a class for them as well.
+
+@smalllisp
+(defclass Tnode ()
+  ((seencount :initform 0 :accessor seencount)
+   (ht    :initform (make-hash-table :test #'equal) :accessor ht)))
+
+(defclass Tcontext (context)
+  ((data :initform (make-instance 'Tnode) :accessor data))
+  (:metaclass one-per-name))
+@end smalllisp
+
+Now, since a Tcontext stores its messages differently than a normal
+context, we will have to modify how items are added to this type of
+context.  To do this, we specialize the add-item method on the
+Tcontext.  The new add-item will throw away the first 16 characters of
+the string (the timestamp in a syslog file) and the PID field
+(including [ and ]) and break the line up into words.  Then, it is
+added as a Tnode to the top--level hash table.  The second word is
+added as a Tnode to the first word's hash table, and so on until the
+end of the string is reach where the count is incremented (so we will
+know where the ends of the strings are later).
+
+@smalllisp 
+(defmethod add-item ((context Tcontext) item &rest rest)
+  (let ((strings (cl-ppcre::split "(\\s+|\\[[0-9]+\\])" 
+                 (subseq (message item) 16)))
+        (tnode (data context)))
+    (loop 
+     when (not strings)
+     do
+     (return)
+     when strings
+     do
+     (or
+      (gethash (car strings) (ht tnode))
+      (setf (gethash (car strings) (ht tnode)) 
+            (make-instance 'Tnode)))
+     (or (cdr strings) 
+         (incf (seencount (gethash (car strings) (ht tnode)))))
+     (setf tnode (gethash (car strings) (ht tnode)))     
+     (setf strings (cdr strings))
+     )))
+@end smalllisp
+
+Now, we will need to be able to display the context so that a human
+can make use of it.  Here is a method for a tnode to do just that:
+
+@smalllisp
+(defmethod tnode-graph ((tnode tnode) &optional indent)
+  (let ((foo ()))
+    (maphash 
+     (lambda (k v)
+       (let ((thing 
+              (format () "~A " 
+                      (if foo 
+                          (concatenate 'string 
+                                       (if indent 
+                                           (make-string 
+                                            (length indent)
+                                            :initial-element #\Space)
+                                           "") 
+                                       k) k))))
+         (format t "~A" thing) ; print word
+         (if (> (seencount v) 0)
+             (format t ":~A~%" (seencount v)))
+         (if foo
+             (tnode-graph 
+                v 
+                (concatenate 'string (or indent "") " "  k))
+             (tnode-graph 
+                v 
+                (concatenate 'string (or indent "")  thing) t))
+         (setf foo t)))
+     (ht tnode))))
+
+(defmethod report ((Tcontext Tcontext))
+  (tnode-graph (data Tcontext)))
+
+@end smalllisp
+
+Now, we can create an instance of this new Tcontext to create this
+special report for us.  Here is some sample output:
+
+@verbatim
+spacebrain newsyslog : logfile turned over due to size>100K :2
+           squid : Squid Parent: child process 195 started :4
+                                                   exited due to signal 6 :4
+                                               197 started :6
+                                                   exited due to signal 6 :6
+                                               199 started :2
+                                                   exited due to signal 6 :2
+                                               201 started :2
+                                                   exited due to signal 6 :2
+                                               205 started :4
+                                                   exited due to signal 6 :4
+                                               216 started :2
+                                               188 started :2
+                                                   exited due to signal 6 :2
+                                               190 started :2
+                                                   exited due to signal 6 :2
+                                               192 started :2
+                                                   exited due to signal 6 :2
+                                               194 started :2
+                                                   exited due to signal 6 :2
+                                               225 started :4
+                                               189 started :4
+                                                   exited due to signal 6 :4
+                                               191 started :4
+                                                   exited due to signal 6 :4
+                                               193 started :4
+                                                   exited due to signal 6 :4
+                                               235 started :2
+                                               196 started :2
+                                                   exited due to signal 6 :2
+                   Exiting due to repeated, frequent failures :8
+           (squid): ipcache_init: DNS name lookup tests failed. :40
+           /kernel: pid 195 (squid), uid 65534: exited on signal 6 :4
+                        197 (squid), uid 65534: exited on signal 6 :6
+                        199 (squid), uid 65534: exited on signal 6 :2
+@end verbatim
+
+
+
+Notice just how little of logs we had to change to completely change
+how our context--based reporting is done.  We had to specify: that the
+data field of this new type of context was a simple object we created,
+the Tnode, how to insert the message into this new type of context,
+and finally how to report on this context (XXX fixme XXX report isn't
+part of LoGS YET XXX).  Since LoGS uses CLOS, all of the methods that
+don't need to be modified do not have to, so Tcontexts will work just
+like other contexts within the LoGS system (except for the ways in
+which we just specified).
+
+
+NOTE:  This has become an active area of interest for me!  I hope to
+expand greatly on this section and do an even better job of finding the
+goodies.
+
+@node Copying This Manual
+@appendix Copying This Manual
+
+@node GNU Free Documentation License
+@appendixsec GNU Free Documentation License
+
+@cindex FDL, GNU Free Documentation License
+@center Version 1.2, November 2002
+
+@display
+Copyright @copyright{} 2000,2001,2002 Free Software Foundation, Inc.
+59 Temple Place, Suite 330, Boston, MA  02111-1307, USA
+
+Everyone is permitted to copy and distribute verbatim copies
+of this license document, but changing it is not allowed.
+@end display
+
+@enumerate 0
+@item
+PREAMBLE
+
+The purpose of this License is to make a manual, textbook, or other
+functional and useful document @dfn{free} in the sense of freedom: to
+assure everyone the effective freedom to copy and redistribute it,
+with or without modifying it, either commercially or noncommercially.
+Secondarily, this License preserves for the author and publisher a way
+to get credit for their work, while not being considered responsible
+for modifications made by others.
+
+This License is a kind of ``copyleft'', which means that derivative
+works of the document must themselves be free in the same sense.  It
+complements the GNU General Public License, which is a copyleft
+license designed for free software.
+
+We have designed this License in order to use it for manuals for free
+software, because free software needs free documentation: a free
+program should come with manuals providing the same freedoms that the
+software does.  But this License is not limited to software manuals;
+it can be used for any textual work, regardless of subject matter or
+whether it is published as a printed book.  We recommend this License
+principally for works whose purpose is instruction or reference.
+
+@item
+APPLICABILITY AND DEFINITIONS
+
+This License applies to any manual or other work, in any medium, that
+contains a notice placed by the copyright holder saying it can be
+distributed under the terms of this License.  Such a notice grants a
+world-wide, royalty-free license, unlimited in duration, to use that
+work under the conditions stated herein.  The ``Document'', below,
+refers to any such manual or work.  Any member of the public is a
+licensee, and is addressed as ``you''.  You accept the license if you
+copy, modify or distribute the work in a way requiring permission
+under copyright law.
+
+A ``Modified Version'' of the Document means any work containing the
+Document or a portion of it, either copied verbatim, or with
+modifications and/or translated into another language.
+
+A ``Secondary Section'' is a named appendix or a front-matter section
+of the Document that deals exclusively with the relationship of the
+publishers or authors of the Document to the Document's overall
+subject (or to related matters) and contains nothing that could fall
+directly within that overall subject.  (Thus, if the Document is in
+part a textbook of mathematics, a Secondary Section may not explain
+any mathematics.)  The relationship could be a matter of historical
+connection with the subject or with related matters, or of legal,
+commercial, philosophical, ethical or political position regarding
+them.
+
+The ``Invariant Sections'' are certain Secondary Sections whose titles
+are designated, as being those of Invariant Sections, in the notice
+that says that the Document is released under this License.  If a
+section does not fit the above definition of Secondary then it is not
+allowed to be designated as Invariant.  The Document may contain zero
+Invariant Sections.  If the Document does not identify any Invariant
+Sections then there are none.
+
+The ``Cover Texts'' are certain short passages of text that are listed,
+as Front-Cover Texts or Back-Cover Texts, in the notice that says that
+the Document is released under this License.  A Front-Cover Text may
+be at most 5 words, and a Back-Cover Text may be at most 25 words.
+
+A ``Transparent'' copy of the Document means a machine-readable copy,
+represented in a format whose specification is available to the
+general public, that is suitable for revising the document
+straightforwardly with generic text editors or (for images composed of
+pixels) generic paint programs or (for drawings) some widely available
+drawing editor, and that is suitable for input to text formatters or
+for automatic translation to a variety of formats suitable for input
+to text formatters.  A copy made in an otherwise Transparent file
+format whose markup, or absence of markup, has been arranged to thwart
+or discourage subsequent modification by readers is not Transparent.
+An image format is not Transparent if used for any substantial amount
+of text.  A copy that is not ``Transparent'' is called ``Opaque''.
+
+Examples of suitable formats for Transparent copies include plain
+@sc{ascii} without markup, Texinfo input format, La@TeX{} input
+format, @acronym{SGML} or @acronym{XML} using a publicly available
+@acronym{DTD}, and standard-conforming simple @acronym{HTML},
+PostScript or @acronym{PDF} designed for human modification.  Examples
+of transparent image formats include @acronym{PNG}, @acronym{XCF} and
+@acronym{JPG}.  Opaque formats include proprietary formats that can be
+read and edited only by proprietary word processors, @acronym{SGML} or
+@acronym{XML} for which the @acronym{DTD} and/or processing tools are
+not generally available, and the machine-generated @acronym{HTML},
+PostScript or @acronym{PDF} produced by some word processors for
+output purposes only.
+
+The ``Title Page'' means, for a printed book, the title page itself,
+plus such following pages as are needed to hold, legibly, the material
+this License requires to appear in the title page.  For works in
+formats which do not have any title page as such, ``Title Page'' means
+the text near the most prominent appearance of the work's title,
+preceding the beginning of the body of the text.
+
+A section ``Entitled XYZ'' means a named subunit of the Document whose
+title either is precisely XYZ or contains XYZ in parentheses following
+text that translates XYZ in another language.  (Here XYZ stands for a
+specific section name mentioned below, such as ``Acknowledgements'',
+``Dedications'', ``Endorsements'', or ``History''.)  To ``Preserve the Title''
+of such a section when you modify the Document means that it remains a
+section ``Entitled XYZ'' according to this definition.
+
+The Document may include Warranty Disclaimers next to the notice which
+states that this License applies to the Document.  These Warranty
+Disclaimers are considered to be included by reference in this
+License, but only as regards disclaiming warranties: any other
+implication that these Warranty Disclaimers may have is void and has
+no effect on the meaning of this License.
+
+@item
+VERBATIM COPYING
+
+You may copy and distribute the Document in any medium, either
+commercially or noncommercially, provided that this License, the
+copyright notices, and the license notice saying this License applies
+to the Document are reproduced in all copies, and that you add no other
+conditions whatsoever to those of this License.  You may not use
+technical measures to obstruct or control the reading or further
+copying of the copies you make or distribute.  However, you may accept
+compensation in exchange for copies.  If you distribute a large enough
+number of copies you must also follow the conditions in section 3.
+
+You may also lend copies, under the same conditions stated above, and
+you may publicly display copies.
+
+@item
+COPYING IN QUANTITY
+
+If you publish printed copies (or copies in media that commonly have
+printed covers) of the Document, numbering more than 100, and the
+Document's license notice requires Cover Texts, you must enclose the
+copies in covers that carry, clearly and legibly, all these Cover
+Texts: Front-Cover Texts on the front cover, and Back-Cover Texts on
+the back cover.  Both covers must also clearly and legibly identify
+you as the publisher of these copies.  The front cover must present
+the full title with all words of the title equally prominent and
+visible.  You may add other material on the covers in addition.
+Copying with changes limited to the covers, as long as they preserve
+the title of the Document and satisfy these conditions, can be treated
+as verbatim copying in other respects.
+
+If the required texts for either cover are too voluminous to fit
+legibly, you should put the first ones listed (as many as fit
+reasonably) on the actual cover, and continue the rest onto adjacent
+pages.
+
+If you publish or distribute Opaque copies of the Document numbering
+more than 100, you must either include a machine-readable Transparent
+copy along with each Opaque copy, or state in or with each Opaque copy
+a computer-network location from which the general network-using
+public has access to download using public-standard network protocols
+a complete Transparent copy of the Document, free of added material.
+If you use the latter option, you must take reasonably prudent steps,
+when you begin distribution of Opaque copies in quantity, to ensure
+that this Transparent copy will remain thus accessible at the stated
+location until at least one year after the last time you distribute an
+Opaque copy (directly or through your agents or retailers) of that
+edition to the public.
+
+It is requested, but not required, that you contact the authors of the
+Document well before redistributing any large number of copies, to give
+them a chance to provide you with an updated version of the Document.
+
+@item
+MODIFICATIONS
+
+You may copy and distribute a Modified Version of the Document under
+the conditions of sections 2 and 3 above, provided that you release
+the Modified Version under precisely this License, with the Modified
+Version filling the role of the Document, thus licensing distribution
+and modification of the Modified Version to whoever possesses a copy
+of it.  In addition, you must do these things in the Modified Version:
+
+@enumerate A
+@item
+Use in the Title Page (and on the covers, if any) a title distinct
+from that of the Document, and from those of previous versions
+(which should, if there were any, be listed in the History section
+of the Document).  You may use the same title as a previous version
+if the original publisher of that version gives permission.
+
+@item
+List on the Title Page, as authors, one or more persons or entities
+responsible for authorship of the modifications in the Modified
+Version, together with at least five of the principal authors of the
+Document (all of its principal authors, if it has fewer than five),
+unless they release you from this requirement.
+
+@item
+State on the Title page the name of the publisher of the
+Modified Version, as the publisher.
+
+@item
+Preserve all the copyright notices of the Document.
+
+@item
+Add an appropriate copyright notice for your modifications
+adjacent to the other copyright notices.
+
+@item
+Include, immediately after the copyright notices, a license notice
+giving the public permission to use the Modified Version under the
+terms of this License, in the form shown in the Addendum below.
+
+@item
+Preserve in that license notice the full lists of Invariant Sections
+and required Cover Texts given in the Document's license notice.
+
+@item
+Include an unaltered copy of this License.
+
+@item
+Preserve the section Entitled ``History'', Preserve its Title, and add
+to it an item stating at least the title, year, new authors, and
+publisher of the Modified Version as given on the Title Page.  If
+there is no section Entitled ``History'' in the Document, create one
+stating the title, year, authors, and publisher of the Document as
+given on its Title Page, then add an item describing the Modified
+Version as stated in the previous sentence.
+
+@item
+Preserve the network location, if any, given in the Document for
+public access to a Transparent copy of the Document, and likewise
+the network locations given in the Document for previous versions
+it was based on.  These may be placed in the ``History'' section.
+You may omit a network location for a work that was published at
+least four years before the Document itself, or if the original
+publisher of the version it refers to gives permission.
+
+@item
+For any section Entitled ``Acknowledgements'' or ``Dedications'', Preserve
+the Title of the section, and preserve in the section all the
+substance and tone of each of the contributor acknowledgements and/or
+dedications given therein.
+
+@item
+Preserve all the Invariant Sections of the Document,
+unaltered in their text and in their titles.  Section numbers
+or the equivalent are not considered part of the section titles.
+
+@item
+Delete any section Entitled ``Endorsements''.  Such a section
+may not be included in the Modified Version.
+
+@item
+Do not retitle any existing section to be Entitled ``Endorsements'' or
+to conflict in title with any Invariant Section.
+
+@item
+Preserve any Warranty Disclaimers.
+@end enumerate
+
+If the Modified Version includes new front-matter sections or
+appendices that qualify as Secondary Sections and contain no material
+copied from the Document, you may at your option designate some or all
+of these sections as invariant.  To do this, add their titles to the
+list of Invariant Sections in the Modified Version's license notice.
+These titles must be distinct from any other section titles.
+
+You may add a section Entitled ``Endorsements'', provided it contains
+nothing but endorsements of your Modified Version by various
+parties---for example, statements of peer review or that the text has
+been approved by an organization as the authoritative definition of a
+standard.
+
+You may add a passage of up to five words as a Front-Cover Text, and a
+passage of up to 25 words as a Back-Cover Text, to the end of the list
+of Cover Texts in the Modified Version.  Only one passage of
+Front-Cover Text and one of Back-Cover Text may be added by (or
+through arrangements made by) any one entity.  If the Document already
+includes a cover text for the same cover, previously added by you or
+by arrangement made by the same entity you are acting on behalf of,
+you may not add another; but you may replace the old one, on explicit
+permission from the previous publisher that added the old one.
+
+The author(s) and publisher(s) of the Document do not by this License
+give permission to use their names for publicity for or to assert or
+imply endorsement of any Modified Version.
+
+@item
+COMBINING DOCUMENTS
+
+You may combine the Document with other documents released under this
+License, under the terms defined in section 4 above for modified
+versions, provided that you include in the combination all of the
+Invariant Sections of all of the original documents, unmodified, and
+list them all as Invariant Sections of your combined work in its
+license notice, and that you preserve all their Warranty Disclaimers.
+
+The combined work need only contain one copy of this License, and
+multiple identical Invariant Sections may be replaced with a single
+copy.  If there are multiple Invariant Sections with the same name but
+different contents, make the title of each such section unique by
+adding at the end of it, in parentheses, the name of the original
+author or publisher of that section if known, or else a unique number.
+Make the same adjustment to the section titles in the list of
+Invariant Sections in the license notice of the combined work.
+
+In the combination, you must combine any sections Entitled ``History''
+in the various original documents, forming one section Entitled
+``History''; likewise combine any sections Entitled ``Acknowledgements'',
+and any sections Entitled ``Dedications''.  You must delete all
+sections Entitled ``Endorsements.''
+
+@item
+COLLECTIONS OF DOCUMENTS
+
+You may make a collection consisting of the Document and other documents
+released under this License, and replace the individual copies of this
+License in the various documents with a single copy that is included in
+the collection, provided that you follow the rules of this License for
+verbatim copying of each of the documents in all other respects.
+
+You may extract a single document from such a collection, and distribute
+it individually under this License, provided you insert a copy of this
+License into the extracted document, and follow this License in all
+other respects regarding verbatim copying of that document.
+
+@item
+AGGREGATION WITH INDEPENDENT WORKS
+
+A compilation of the Document or its derivatives with other separate
+and independent documents or works, in or on a volume of a storage or
+distribution medium, is called an ``aggregate'' if the copyright
+resulting from the compilation is not used to limit the legal rights
+of the compilation's users beyond what the individual works permit.
+When the Document is included in an aggregate, this License does not
+apply to the other works in the aggregate which are not themselves
+derivative works of the Document.
+
+If the Cover Text requirement of section 3 is applicable to these
+copies of the Document, then if the Document is less than one half of
+the entire aggregate, the Document's Cover Texts may be placed on
+covers that bracket the Document within the aggregate, or the
+electronic equivalent of covers if the Document is in electronic form.
+Otherwise they must appear on printed covers that bracket the whole
+aggregate.
+
+@item
+TRANSLATION
+
+Translation is considered a kind of modification, so you may
+distribute translations of the Document under the terms of section 4.
+Replacing Invariant Sections with translations requires special
+permission from their copyright holders, but you may include
+translations of some or all Invariant Sections in addition to the
+original versions of these Invariant Sections.  You may include a
+translation of this License, and all the license notices in the
+Document, and any Warranty Disclaimers, provided that you also include
+the original English version of this License and the original versions
+of those notices and disclaimers.  In case of a disagreement between
+the translation and the original version of this License or a notice
+or disclaimer, the original version will prevail.
+
+If a section in the Document is Entitled ``Acknowledgements'',
+``Dedications'', or ``History'', the requirement (section 4) to Preserve
+its Title (section 1) will typically require changing the actual
+title.
+
+@item
+TERMINATION
+
+You may not copy, modify, sublicense, or distribute the Document except
+as expressly provided for under this License.  Any other attempt to
+copy, modify, sublicense or distribute the Document is void, and will
+automatically terminate your rights under this License.  However,
+parties who have received copies, or rights, from you under this
+License will not have their licenses terminated so long as such
+parties remain in full compliance.
+
+@item
+FUTURE REVISIONS OF THIS LICENSE
+
+The Free Software Foundation may publish new, revised versions
+of the GNU Free Documentation License from time to time.  Such new
+versions will be similar in spirit to the present version, but may
+differ in detail to address new problems or concerns.  See
+@uref{http://www.gnu.org/copyleft/}.
+
+Each version of the License is given a distinguishing version number.
+If the Document specifies that a particular numbered version of this
+License ``or any later version'' applies to it, you have the option of
+following the terms and conditions either of that specified version or
+of any later version that has been published (not as a draft) by the
+Free Software Foundation.  If the Document does not specify a version
+number of this License, you may choose any version ever published (not
+as a draft) by the Free Software Foundation.
+@end enumerate
+
+@page
+@appendixsubsec ADDENDUM: How to use this License for your documents
+
+To use this License in a document you have written, include a copy of
+the License in the document and put the following copyright and
+license notices just after the title page:
+
+@smallexample
+@group
+  Copyright (C)  @var{year}  @var{your name}.
+  Permission is granted to copy, distribute and/or modify this document
+  under the terms of the GNU Free Documentation License, Version 1.2
+  or any later version published by the Free Software Foundation;
+  with no Invariant Sections, no Front-Cover Texts, and no Back-Cover
+  Texts.  A copy of the license is included in the section entitled ``GNU
+  Free Documentation License''.
+@end group
+@end smallexample
+
+If you have Invariant Sections, Front-Cover Texts and Back-Cover Texts,
+replace the ``with...Texts.'' line with this:
+
+@smallexample
+@group
+    with the Invariant Sections being @var{list their titles}, with
+    the Front-Cover Texts being @var{list}, and with the Back-Cover Texts
+    being @var{list}.
+@end group
+@end smallexample
+
+If you have Invariant Sections without Cover Texts, or some other
+combination of the three, merge those two alternatives to suit the
+situation.
+
+If your document contains nontrivial examples of program code, we
+recommend releasing these examples in parallel under your choice of
+free software license, such as the GNU General Public License,
+to permit their use in free software.
+
+@c Local Variables:
+@c ispell-local-pdict: "ispell-dict"
+@c End:
+
+
+
+
+@node Concept Index, Function Index, LoGS Contexts, Top
+@unnumbered Concept Index
+
+@printindex cp 
+
+
+
+@node Function Index, Variable Index, Concept Index, Top
+@unnumbered Function Index
+
+@printindex fn
+
+@node Variable Index,  , Function Index, Top
+@unnumbered Variable Index
+
+@printindex vr
+
+
+@bye
