@@ -65,19 +65,9 @@
   (declare (ignore rest))
   (start-file-follower ff))
 
-(defmethod get-logline ((ff file-follower))
-"Wrap the next line of the file associated with the file-follower inside of
-a message."
-  (let ((line (get-line ff)))
-    (when line
-      (if *remember-file*
-          (make-instance 'from-message :message line :from-file (filename ff))
-          (make-instance 'message :message line)))))
-
 (defgeneric get-line (file-follower)
   (:documentation "get the next raw chunk of input from the data source"))
 
-;; Thank you Damien Kick!
 (defmethod get-line ((ff file-follower))
 "Return the next line of this file.  We refuse to read eof.  When we 
 have reached end of the file, we check to see if there is a new inode 
@@ -87,5 +77,15 @@ associated with our filename. if there is, we start following that filename."
       (let ((stat-inode (get-inode-from-filename (filename ff))))
         (and (not (eql (inode ff) stat-inode))
              (read-line (start-file-follower ff) nil)))))
+
+;; Thank you Damien Kick!
+(defmethod get-logline ((ff file-follower))
+"Wrap the next line of the file associated with the file-follower inside of
+a message."
+  (let ((line (get-line ff)))
+    (when line
+      (if *remember-file*
+          (make-instance 'from-message :message line :from-file (filename ff))
+          (make-instance 'message :message line)))))
 
 
