@@ -23,6 +23,9 @@
    (Inode      :accessor Inode :initform ())
    (offset     :accessor offset :initform ())))
 
+(defgeneric start-file-follower (file-follower)
+  (:documentation "get a file-follower all set up"))
+
 (defmethod start-file-follower ((ff file-follower))
   "Associate the file follower with the file it is supposed to be following."
   (and
@@ -66,7 +69,7 @@
   (start-file-follower ff))
 
 (defgeneric get-line (file-follower)
-  (:documentation "get the next raw chunk of input from the data source"))
+   (:documentation "get the next raw chunk of input from the data source"))
 
 (defmethod get-line ((ff file-follower))
 "Return the next line of this file.  We refuse to read eof.  When we 
