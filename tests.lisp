@@ -1625,9 +1625,9 @@
       (enqueue ruleset (make-instance 'rule :match (lambda (message)
                                                      (declare (ignore message))
                                                      NIL)))
-      (setf *now* 456)
+      (setf *now* (+ (next-timeout ruleset) 1))
       (check-rules (make-instance 'message) ruleset)
-      (assert-nil (> (next-timeout ruleset) 456)))))
+      (assert-nil (> (next-timeout ruleset) *now*)))))
 
 (deftest "ruleset that exceeds relative timeout is shown to exceed limits"
     :test-fn
@@ -1635,7 +1635,7 @@
     (let ((*now* 123)
           (ruleset (make-instance 'ruleset :relative-timeout 1)))
       
-      (setf *now* 456)
+      (setf *now* (+ (next-timeout ruleset) 1))
       (assert-non-nil (check-limits ruleset)))))
 
 (deftest "ruleset that exceeds relative timeout is marked as dead"
@@ -1644,7 +1644,7 @@
     (let ((*now* 123)
           (ruleset (make-instance 'ruleset :relative-timeout 1)))
       
-      (setf *now* 456)
+      (setf *now* (+ (next-timeout ruleset) 1))
       (check-limits ruleset)
       (assert-non-nil (dead-p ruleset)))))
     
