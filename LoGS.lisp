@@ -108,11 +108,6 @@
 (load-LoGS-file "limited-collection")
 (load-LoGS-file "context")
 
-;; load message producers
-(load-LoGS-file "Data-Source" :directory '(:relative "Data_Sources"))
-
-(load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
-(load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
 
 
 ;; load low-level file stuff
@@ -124,6 +119,12 @@
 (load-LoGS-file "File-Follower_OpenMCL.low" :directory '(:relative "Data_Sources"))
 #+allegro
 (load-LoGS-file "File-Follower_Allegro.low" :directory '(:relative "Data_Sources"))
+
+;; load message producers
+(load-LoGS-file "Data-Source" :directory '(:relative "Data_Sources"))
+
+(load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
+(load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
 
 (load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
 

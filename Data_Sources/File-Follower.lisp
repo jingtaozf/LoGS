@@ -17,7 +17,7 @@
 
 (in-package :LoGS)
 
-(defclass File-Follower ()
+(defclass File-Follower (Data-Source)
   ((Filename   :accessor Filename :initarg :Filename)
    (FileStream :accessor FileStream :initform ())
    (Inode      :accessor Inode :initform ())
