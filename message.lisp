@@ -17,7 +17,7 @@
 
 ;;; a message class.
 (defclass message () 
-  ((message :initarg :message :accessor message))
+  ((message :initarg :message :accessor message :initform ()))
   (:documentation "A class to hold messages.  You probably want string-message instead."))
 
 ;;; a string message class
