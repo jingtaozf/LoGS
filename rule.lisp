@@ -90,63 +90,6 @@
                 (t
                  ,body-result)))))))
 
-;; (defmethod check-rule ((rule rule) (message message))
-;;   (unless (dead-p rule)
-;;     (multiple-value-bind (matches sub-matches)
-;;         (rule-matches-p rule message)
-;;       (declare (special matches sub-matches))
-;;       (when +debug+ 
-;;         (format t "checking rule: ~A~%" (name rule)))
-;;       (if matches
-;;           (with-slots (delete-rule no-delete-rule actions) 
-;;               rule
-            
-;;             (when actions
-;;               (if (listp matches)
-;;                   (in-given-environment
-;;                    (eval matches)
-;;                    (run-actions rule message matches sub-matches))
-;;                   (run-actions rule message matches sub-matches)))
-            
-;;             (when delete-rule 
-;;               (and
-;;                (funcall delete-rule message)
-;;                (if no-delete-rule
-;;                    (funcall no-delete-rule message)
-;;                    t)
-;;                (setf (dead-p rule) t)
-;;                (dll-delete *ruleset* rule)))
-;;             (values matches sub-matches))))))
-
-;; (defmethod check-rule ((rule rule) (message message))
-;;   (unless (dead-p rule)
-;;     (when +debug+ 
-;;         (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
-      
-;;       (in-given-environment 
-;;        (environment rule)
-       
-;;        (multiple-value-bind (matchp environment)
-;;            (rule-matches-p rule message)
-
-;;          (when matchp
-;;              (with-slots (delete-rule no-delete-rule actions) 
-;;                  rule
-               
-;;                (when actions
-;;                  (run-actions rule message environment))
-               
-;;                (when delete-rule 
-;;                  (and
-;;                   (funcall delete-rule message)
-;;                   (if no-delete-rule
-;;                       (funcall no-delete-rule message)
-;;                       t)
-;;                   (setf (dead-p rule) t)
-;;                   (dll-delete *ruleset* rule)))
-               
-;;                (values matchp environment)))))))
-
 (defmethod check-rule ((rule rule) (message message))
   (unless (dead-p rule)
 

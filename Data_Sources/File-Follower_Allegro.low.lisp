@@ -15,16 +15,24 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(defclass named-object ()
-  ((name  :initarg :name
-          :accessor name
-          :initform (gensym))))
+(defun fifo-p (filename)
+  (< 0 
+     (logand 4096 
+             (excl.osi:stat-mode (excl.osi:stat filename)))))
 
+(defun get-file-length-from-filename (filename)
+  "Given a filename, return the number of bytes currently in the file."
+  (excl.osi::stat-size (excl.osi::stat filename)))
 
-(defmethod initialize-instance :after ((named-object named-object)
-                                       &rest rest)
-  (declare (ignore rest))
-  (progn
-    (unless (name named-object)
-      (setf (name named-object) (gensym)))
-    named-object))
+(defun open-fifo (filename)
+  (let ((fifofd 
+         (unix-open
+          filename
+          (logior EXCL::*O-RDONLY*
+                  EXCL::*O-NONBLOCK*)
+          #o444)))
+    (make-fd-stream fifofd :input t)))
+
+(defun get-inode-from-filename (Filename)
+  "Given a filename, return the inode associated with that filename."
+  (excl.osi:stat-ino (excl.osi:stat filename)))

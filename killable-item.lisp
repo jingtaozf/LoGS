@@ -23,6 +23,7 @@
   (:documentation "an item that can be killed; if it is dead, it should be removed."))
 
 (defmethod (setf dead-p) :after (new-value (killable-item killable-item))
+  (declare (ignore new-value))
   (when
       +debug+
     (format t "killing item: ~A~%" killable-item)))
@@ -31,4 +32,4 @@
   (setf (dead-p killable-item) t))
 
 (defmethod kill (item)
-  ())
+  (setf (dead-p item) t))

@@ -1,4 +1,3 @@
-
 ; Logs extensible (common-lisp based) log/event analysis engine/language
 ; Copyright (C) 2003-2005 James Earl Prewett
 

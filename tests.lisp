@@ -70,14 +70,6 @@
         (push s lst)))
     lst))
 
-(defun match-all (message)
-  (declare (ignore message))
-  t)
-
-(defun match-none (message)
-  (declare (ignore message))
-  ())
-
 ;; dummy test
 (deftest "foo" :test-fn (lambda () t))
 
@@ -618,6 +610,8 @@
         (unix:unix-unlink testfile)
         #+sbcl
         (sb-posix:unlink testfile)
+        #+openmcl
+        (#_unlink (ccl::make-cstring testfile))
         (assert-non-nil line)))))
 
 (deftest "file follower returns nil with no input"
@@ -653,6 +647,8 @@
         (unix:unix-unlink testfile)
         #+sbcl
         (sb-posix:unlink testfile)
+        #+openmcl
+        (#_unlink (ccl::make-cstring testfile))
         (assert-non-nil line)))))
 
 (deftest "file-follower inode rollover works"
@@ -678,8 +674,10 @@
           (unix:unix-unlink testfile)
           #+sbcl
           (sb-posix:unlink testfile)
+          #+openmcl
+          (#_unlink (ccl::make-cstring testfile))
           (assert-non-nil line)
-           )))))
+          )))))
 
 (deftest "file follower makes correct series of messages"
     :test-fn
@@ -709,6 +707,8 @@
           (unix:unix-unlink testfile)
           #+sbcl
           (sb-posix:unlink testfile)
+          #+openmcl
+          (#_unlink (ccl::make-cstring testfile))
           (assert-non-nil result))))))
 
 (deftest "get-rule returns the rule"

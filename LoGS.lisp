@@ -20,6 +20,17 @@
 ;(declaim (optimize (speed 3)))
 (declaim (optimize (speed 0) (debug 3) (safety 2)))
 
+;; The next two dispatch macro characters #$ and $_ are so that Allegro doesn't
+;; puke when it sees code meant for OpenMCL
+#-openmcl
+(set-dispatch-macro-character #\# #\$
+                              (lambda(s c n)
+                                (let ((thing (read s nil (values) t))) ())))
+
+#-openmcl
+(set-dispatch-macro-character #\# #\_
+                              (lambda(s c n)
+                                (let ((thing (read s nil (values) t))) ())))
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
@@ -28,6 +39,9 @@
 ;; we need the sb-posix package under SBCL in order to open FIFOs non-blocking
 #+sbcl
 (require :sb-posix)
+
+#+acl
+(require :osi) ;; for file stat, etc.
 
 ; set this to something *BIG* 
 ;; this is 1/2 of my physical memory; that seems to work well; YMMV
@@ -115,6 +129,17 @@
 (load-LoGS-file "Data-Source" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
+
+;; load low-level file stuff
+#+cmu
+(load-LoGS-file "File-Follower_CMUCL.low" :directory '(:relative "Data_Sources"))
+#+sbcl
+(load-LoGS-file "File-Follower_SBCL.low" :directory '(:relative "Data_Sources"))
+#+openmcl
+(load-LoGS-file "File-Follower_OpenMCL.low" :directory '(:relative "Data_Sources"))
+#+allegro
+(load-LoGS-file "File-Follower_Allegro.low" :directory '(:relative "Data_Sources"))
+
 (load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
 
 ;; load rules

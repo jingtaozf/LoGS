@@ -15,26 +15,6 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#+sbcl
-(require :sb-posix)
-
-#+cmu
-(import '(unix:unix-stat unix:unix-open unix:o_rdonly unix:o_nonblock system:make-fd-stream))
-
-#+sbcl
-(shadowing-import '(sb-posix:o-nonblock))
-
-(defun fifo-p (filename)
-  (if
-   (logand 4096 
-           (nth-value 3 
-                      (unix-stat filename)))
-   t ()))
-
-(defun get-file-length-from-filename (filename)
-  "Given a filename, return the number of bytes currently in the file."
-  (nth-value 8 (unix-stat filename)))
-
 (defclass File-Follower ()
   ((Filename   :accessor Filename :initarg :Filename)
    (FileStream :accessor FileStream :initform ())
@@ -52,37 +32,10 @@
             (setf (Inode ff) ino)
             (if
              (fifo-p (filename ff))
-             (let ((fifofd 
-                    (unix-open
-                     (filename ff)
-                     (logior o_rdonly 
-                             #+cmu
-                             o_nonblock
-                             #+sbcl
-                             o-nonblock)
-                     #o444)
-                     ))
-               (setf (Filestream ff) (make-fd-stream fifofd :input t)))
+             (setf (Filestream ff)
+                   (open-fifo (filename ff)))
              (setf (Filestream ff) 
                    (open (Filename ff) :direction :input))))))))
-
-(defun get-inode-from-filename (Filename)
-  "Given a filename, return the inode associated with that filename."
-  #+allegro
-  (nth-value 1 
-             (excl::filesys-inode filename))
-  #+cmu
-  (nth-value 2
-             (unix:unix-stat filename))
-  #+sbcl
-  (nth-value 2 
-             (SB-UNIX:UNIX-STAT filename))
-  #+openmcl
-  (nth-value 4
-             (CCL::%STAT filename))
-  #+lispworks
-  (system::file-stat-inode (system::get-file-stat filename)))
-
 
 (defgeneric set-file-follower-position (file-follower position)
   (:documentation "set the offset into the file of the file-follower"))

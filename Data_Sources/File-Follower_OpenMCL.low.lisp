@@ -15,16 +15,29 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(defclass named-object ()
-  ((name  :initarg :name
-          :accessor name
-          :initform (gensym))))
+;; This file contains low-level OpenMCL specific code
 
+(defun fifo-p (filename)
+  (< 0 
+     (logand 4096 
+             (nth-value 1 (ccl::%stat filename)))))
 
-(defmethod initialize-instance :after ((named-object named-object)
-                                       &rest rest)
-  (declare (ignore rest))
-  (progn
-    (unless (name named-object)
-      (setf (name named-object) (gensym)))
-    named-object))
+(defun get-file-length-from-filename (filename)
+  "Given a filename, return the number of bytes currently in the file."
+  #+openmcl
+  (nth-value 2 (ccl::%stat filename)))
+
+(defun open-fifo (filename)
+  (let ((fifofd 
+         (fd-open
+          (filename ff)
+          (logior
+           #$O_RDONLY
+           #$O_NONBLOCK)
+          #o444)))
+    (make-fd-stream fifofd :input t)))
+
+(defun get-inode-from-filename (Filename)
+  "Given a filename, return the inode associated with that filename."
+  (nth-value 4
+             (CCL::%STAT filename)))
