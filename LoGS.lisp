@@ -1,5 +1,5 @@
 ; Logs extensible (common-lisp based) log/event analysis engine/language
-; Copyright (C) 2003-2004 James Earl Prewett
+; Copyright (C) 2003-2005 James Earl Prewett
 
 ; This program is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License
@@ -18,7 +18,6 @@
 ;(proclaim '(optimize (speed 3)))
 
 ; proper optimizations?
-;(declaim  (OPTIMIZE (SPEED 3) (size 0) (SAFETY 0) (compile-speed 0)))
 (declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
 ;(declaim (optimize (speed 0) (debug 3) (safety 2)))
 
@@ -27,6 +26,7 @@
 #+CMU19
 (declaim (EXTENSIONS:FREEZE-TYPE file-follower priority-queue context collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object rule ruleset killable-item message string-message))
 
+;; we need the sb-posix package under SBCL in order to open FIFOs non-blocking
 #+sbcl
 (require :sb-posix)
 
@@ -47,6 +47,8 @@
         #+sbcl :sb-mop
 	#+lispworks :hcl
         :cl-user)
+#+sbcl
+(:import-from :SB-EXT #:QUIT)
 #+cmu
 (:import-from :extensions #:quit)
 #+cmu
@@ -203,6 +205,21 @@
     #'(lambda (switch)
         (declare (ignore switch))
         (setq *remember-file* t)))
+
+;; signal processing
+;; someday we should have some!
+;; these are just here till I get to it... 
+#+cmu
+(defun sigint-handler (signal code scp)
+  (declare (ignore signal code scp))
+  (with-interrupts
+    (break "someone hit ctrl-c" t)))
+
+#+cmu
+(defun sighup-handler (signal code scp)
+  (declare (ignore signal code scp))
+  (with-interrupts
+      (break "someone sent us a hup" t)))
 
 (defun main ()
   "Main is the current LoGS mainline.  As of this revision, it tries
