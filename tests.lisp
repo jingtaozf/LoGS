@@ -611,8 +611,11 @@
 
       ;; open the filefollower for input
       (setf ff (make-instance 'file-follower :filename testfile))
-      ;; read the "this is a line line"
-      (assert-non-nil (get-line ff)))))
+
+      (let ((line (get-line ff)))
+        ;; kill of the temp file
+        (unix:unix-unlink testfile)
+        (assert-non-nil line)))))
 
 (deftest "file follower returns nil with no input"
     :test-fn
@@ -641,7 +644,10 @@
                                      :if-exists :append
                                      :if-does-not-exist :create)
         (not (format output-stream "here is another~%")))
-      (assert-non-nil (get-line ff)))))
+
+      (let ((line (get-line ff)))
+        (unix:unix-unlink testfile)
+        (assert-non-nil line)))))
 
 (deftest "file-follower inode rollover works"
     :test-fn
@@ -661,8 +667,10 @@
                                        :if-exists :rename-and-delete
                                        :if-does-not-exist :create)
           (format output-stream "here is another~%"))
-        (assert-non-nil
-         (get-line ff))))))
+        (let ((line (get-line ff)))
+          (unix:unix-unlink testfile)
+          (assert-non-nil line)
+           )))))
 
 (deftest "file follower makes correct series of messages"
     :test-fn
@@ -680,13 +688,16 @@
                  (declare (ignore x))
                  (get-logline ff)) 
                file-lines)))
-        (loop as q in 
-              (mapcar (lambda (x y) (equal X (message Y)))
-                      file-lines messages)
-              do
-              (or q (return ()))
-              finally
-              (return t))))))
+        (let ((result
+               (loop as q in 
+                    (mapcar (lambda (x y) (equal X (message Y)))
+                            file-lines messages)
+                  do
+                    (or q (return ()))
+                  finally
+                    (return t))))
+          (unix:unix-unlink testfile)
+          (assert-non-nil result))))))
 
 (deftest "get-rule returns the rule"
     :test-fn
