@@ -29,8 +29,18 @@
    ;; get the inode of the file we are reading
    (let ((ino (get-inode-from-filename (filename ff))))
      (and ino
-          (setf (Inode ff) ino)
-          (setf (Filestream ff) (open (Filename ff) :direction :input))))))
+          (progn
+            (setf (Inode ff) ino)
+            (if
+             (logand 4096 (nth-value 3 (unix:unix-stat (Filename ff))))
+             (progn
+               (format t "setting up for fifo!~%")
+               (let ((fifofd (unix:unix-open
+                              (filename ff)
+                              (logior unix:o_rdonly unix:o_nonblock)
+                              #o444)))
+                 (setf (Filestream ff) (system:make-fd-stream fifofd :input t))))
+             (setf (Filestream ff) (open (Filename ff) :direction :input))))))))
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."

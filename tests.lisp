@@ -596,12 +596,23 @@
                (gethash r3 (list-entries ruleset)))))))))
 
 
+;;; XXX FIXME XXX
 (deftest "new file-follower gets a line"
     :test-fn
   (lambda ()
-    (let ((ff (make-instance 'file-follower :filename "messages")))
-      (assert-non-nil (get-line ff)))))
+    (let* ((testfile "/tmp/testfile")
+           (ff ()))
+      ;; open the file the first time. overwrite it if it exists.
+      (with-open-file (output-stream testfile :direction :output 
+                                     :if-exists :overwrite
+                                     :if-does-not-exist :create)
+        ;; put a line into it.
+        (format output-stream "this is a line~%"))
 
+      ;; open the filefollower for input
+      (setf ff (make-instance 'file-follower :filename testfile))
+      ;; read the "this is a line line"
+      (assert-non-nil (get-line ff)))))
 
 (deftest "file follower returns nil with no input"
     :test-fn

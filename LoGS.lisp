@@ -158,6 +158,29 @@
                                (set-file-follower-position
                                 *messages*
                                 position)))))
+
+
+(ext:defswitch 
+    "-files" 
+    #'(lambda (switch)
+        (progn
+          (setf *messages*
+                (make-instance 'multi-follower))
+          (mapcar
+           (lambda (filename)
+             (let* ((split  (cl-ppcre::split ":" filename))
+                    (name (car split))
+                    (position-str (cadr split))
+                    (position (when position-str 
+                                (read-from-string position-str)))
+                    (follower (make-instance 
+                               'file-follower
+                               :filename name)))
+               (when position
+                 (set-file-follower-position follower position))
+               (add-item *messages* follower)))
+           (ext:cmd-switch-words switch)))))
+          
 #+cmu
 (ext:defswitch "-ruleset" 
     #'(lambda (switch)
