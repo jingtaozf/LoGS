@@ -122,8 +122,8 @@
        
        (multiple-value-bind (matchp environment)
            (rule-matches-p rule message)
-         (when *debug* 
-           (format t "matchp: ~A environment: ~A~%" matchp environment))
+         ;(when *debug* 
+         ;  (format t "matchp: ~A environment: ~A~%" matchp environment))
 
          (when matchp
              (with-slots (delete-rule no-delete-rule actions) 
@@ -141,8 +141,8 @@
                   (setf (dead-p rule) t)
                   (dll-delete *ruleset* rule)))
                
-               (when *debug*
-                 (format t "about to return ~A and ~A~%" matchp environment))
+               ;; (when *debug*
+;;                  (format t "about to return ~A and ~A~%" matchp environment))
                
                (values matchp environment)))))))
 

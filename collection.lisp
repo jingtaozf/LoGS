@@ -49,6 +49,6 @@ if it needs to."
              (data collection) 
              (setf (Emax collection)
                    (expt 2 
-                         (setf (curr-pow collection) (+ 1 curr-pow)))))))
+                         (incf (curr-pow collection)))))))
     (setf (aref (data collection) Ecount) item)
-    (setf (Ecount collection) (+ 1 Ecount))))
+    (incf (Ecount collection))))

@@ -52,7 +52,7 @@
 
 (in-package :LoGS)
 
-(defvar *debug* () "should debugging information be displayed?")
+(defconstant *debug* () "should debugging information be displayed?")
 (defvar *use-internal-real-time* t "should LoGS use the intenal-real-time?")
 
 (defvar *now* (get-internal-real-time)
@@ -101,6 +101,7 @@
 (load-LoGS-file "Data_Sources/Data-Source")
 (load-LoGS-file "Data_Sources/List-Follower")
 (load-LoGS-file "Data_Sources/File-Follower")
+(load-LoGS-file "Data_Sources/Multi-Follower")
 
 ;; load rules
 (load-LoGS-file "rule")
@@ -145,95 +146,41 @@ both matches and continuep is nil."))
 
 (defmethod check-rules ((message message) (ruleset doubly-linked-list))
   (let ((head (head ruleset))
-        (seen (make-hash-table :test #'equal))
         (*ruleset* ruleset))
     (when
         *debug*
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
     (loop with *current-rule* = head
-          and found = ()
+       and found = ()  
 
-          ;;; there are no (more) rules in this ruleset
-          when (not *current-rule*)
-          do
-          (when *debug*
-            (format t "no more rules~%"))
-          (return found)
-
-          ;; we've already checked everything
-          when (and *current-rule* (gethash *current-rule* seen))
-          do
-          (progn
-            (when *debug* (format t "returning found: ~A~%" found))
-            (return found))
-
-          ;; there's a rule to check
-          when *current-rule*
-          do 
-          (setf (gethash *current-rule* seen) t)
-          (let ((data (data *current-rule*)))
-            (if (dead-p data)
-                (dll-delete ruleset *current-rule*)
-                (progn
-                  (when *debug* (format t "checking rule~%"))
-                  (and 
-                   (multiple-value-bind
-                         (matchp bind-list)
-                       (check-rule data message)
-                     (when *debug*
-                       (format t "match is: ~A~%" matchp))
-                     (setq found matchp))
-                   
-                   (unless (continuep data)
-                     (return t))))))
-          (let ((rlink (rlink *current-rule*)))
-            (setq *current-rule* rlink)))))
-
-(defmethod check-rules ((message message) (ruleset doubly-linked-list))
-  (let ((head (head ruleset))
-        ;(seen (make-hash-table :test #'equal))
-        (*ruleset* ruleset))
-    (when
-        *debug*
-      (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
-    (loop with *current-rule* = head
-          and found = ()
-
-          ;;; there are no (more) rules in this ruleset
-          when (not *current-rule*)
-          do
-          (when *debug*
-            (format t "no more rules~%"))
-          (return found)
-
-          ;; we've already checked everything
-;;         when (and *current-rule* (gethash *current-rule* seen))
-;;           do
-;;           (progn
-;;             (when *debug* (format t "returning found: ~A~%" found))
-;;             (return found))
-
-          ;; there's a rule to check
+;;; there are no (more) rules in this ruleset
+       when (not *current-rule*)
+       do
+       (when *debug*
+         (format t "no more rules~%"))
+       (return found)
+         
+       ;; there's a rule to check
        when *current-rule*
        do 
-         ;(setf (gethash *current-rule* seen) t)
-         (let ((data (data *current-rule*)))
-           (if (dead-p data)
-               (dll-delete ruleset *current-rule*)
-               (progn
-                 (when *debug* (format t "checking rule~%"))
-                 (and 
-                  (multiple-value-bind
-                        (matchp bind-list)
-                      (check-rule data message)
-                    (when *debug*
-                      (format t "match is: ~A~%" matchp))
-                    (setq found matchp))
+       (let ((data (data *current-rule*)))
+         (if (dead-p data)
+             (dll-delete ruleset *current-rule*)
+             (progn
+               (when *debug* (format t "checking rule~%"))
+               (and 
+                (multiple-value-bind
+                      (matchp bind-list)
+                    (check-rule data message)
+                  (declare (ignore bind-list))
+                  (when *debug*
+                    (format t "match is: ~A~%" matchp))
+                  (setq found matchp))
                   
-                  (unless (continuep data)
-                    (return t))))))
-         (let ((rlink (rlink *current-rule*)))
-           (setq *current-rule* rlink)))))
+                (unless (continuep data)
+                  (return t))))))
+       (let ((rlink (rlink *current-rule*)))
+         (setq *current-rule* rlink)))))
 
 (defgeneric check-limits (thing)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
