@@ -28,26 +28,6 @@
     (run-program ,program (quote ,args) :wait () :output t)
     ))
 
-(defmacro pipe (program &rest args)
-  (let ((stream (gensym))
-        (args (mapcar (lambda (x) (eval x)) args)))
-    
-    `(lambda (message matches sub-matches)
-      (let ((,stream (make-string-input-stream (message message))))
-        #+cmu
-        (extensions:run-program ,program (quote ,args) :wait t :input ,stream :output t)
-        #+sbcl
-        (extensions:run-program ,program (quote ,args) :wait t :input ,stream :output t)
-        #+openmcl
-        (run-program ,program (quote ,args) :wait t :input ,stream :output t)
-        ))))
-
-; send mail to the given recipient with the given subject
-(defmacro mail (recipient &optional subject)
-  `(if ,subject
-    (pipe "/usr/bin/mail" "-s" ,subject ,recipient)
-    (pipe "/usr/bin/mail" ,recipient)))
-
 (defmacro file-write (filename)
   `(lambda (message)
     (with-open-file 
@@ -56,3 +36,31 @@
          :if-exists :append 
          :if-does-not-exist :create)
       (format file "~A~%" (message message)))))
+
+(defmethod pipe ((message message) (program string) &rest args)
+  (extensions:run-program 
+   program args 
+   :wait t 
+   :input (make-string-input-stream (message message))))
+
+(defmethod pipe ((context context) (program string) &rest args)
+  (let ((output-stream (make-string-output-stream)))
+
+    (format output-stream "Context: ~A~%" (name context))
+    (write-context context output-stream)
+
+    (extensions:run-program
+     program args
+     :wait t
+     :input (make-string-input-stream (get-output-stream-string output-stream)))))
+
+(defmethod mail ((context context) (recipient string) &optional subject)
+  (if subject
+      (pipe context "/bin/mail" "-s" subject recipient)
+      (pipe context "/bin/mail" recipient)))
+
+
+(defmethod mail ((message message) (recipient string) &optional subject)
+  (if subject
+      (pipe message "/usr/bin/mail" "-s" subject recipient)
+      (pipe message "/usr/bin/mail" recipient)))

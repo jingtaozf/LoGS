@@ -208,3 +208,12 @@
    ; context is full
    (when (max-lines context)
      (> (Ecount context) (max-lines context)))))
+
+(defmethod write-context ((context context) (stream stream))
+  (loop for i from 0 below (ecount context) 
+        do
+        (format stream "~A~%" 
+                (message 
+                 (aref
+                  (data context)
+                  i)))))
