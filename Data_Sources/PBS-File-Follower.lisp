@@ -27,12 +27,19 @@
   (multiple-value-bind (matches sub-matches)
       (cl-ppcre::scan-to-strings "(....)(..)(..)" filename)
     (when matches
-      (let ((newtime (+ (* 24 60 60)
+      (let* ((year (read-from-string (aref sub-matches 2)))
+             (month (read-from-string (aref sub-matches 1)))
+             (date (read-from-string (aref sub-matches 0)))
+             ;; we assume tomorrow's date is the date that happens to be
+             ;; at 24 hours after noon of the previous day
+             ;; (that way leap seconds don't kill us)  Thanks #lisp!
+             (newtime (+ (* 24 60 60)
                         (encode-universal-time
-                         0 0 0
-                         (read-from-string (aref sub-matches 2))
-                         (read-from-string (aref sub-matches 1))
-                         (read-from-string (aref sub-matches 0))))))
+                         0 0 12
+                         year
+                         month
+                         date
+                         ))))
         (multiple-value-bind (x xx xxx date month year)
             (decode-universal-time newtime)
           (declare (ignore x xx xxx))
