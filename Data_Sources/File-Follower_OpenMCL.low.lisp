@@ -41,5 +41,7 @@
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
-  (nth-value 4
-             (CCL::%STAT filename)))
+  (when
+      (probe-file filename)
+    (nth-value 4
+               (CCL::%STAT filename))))

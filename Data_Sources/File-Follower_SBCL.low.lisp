@@ -44,4 +44,5 @@
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
-  (SB-POSIX:STAT-INO (sb-posix:stat filename)))
+  (when (probe-file filename)
+    (SB-POSIX:STAT-INO (sb-posix:stat filename))))

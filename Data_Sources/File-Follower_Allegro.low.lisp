@@ -37,4 +37,5 @@
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
-  (excl.osi:stat-ino (excl.osi:stat filename)))
+  (when (probe-file filename)
+    (excl.osi:stat-ino (excl.osi:stat filename))))

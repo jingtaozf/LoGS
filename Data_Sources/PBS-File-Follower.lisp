@@ -22,6 +22,7 @@
   (:documentation "A file-follower that tails PBS log files and understands how to look for the next file in the sequence"))
 
 (defun increment-filename (filename)
+  "Given a filename such as 20050325, return the next day's filename, 20050326."
   (multiple-value-bind (matches sub-matches)
       (cl-ppcre::scan-to-strings "(....)(..)(..)" filename)
     (when matches
@@ -44,7 +45,11 @@
         (multiple-value-bind (x xx xxx date month year)
             (decode-universal-time newtime)
           (declare (ignore x xx xxx))
-          (format () "~D~2,'0D~2,'0D" year month date))))))
+          (let ((ret (format () "~D~2,'0D~2,'0D" year month date)))
+            (when +debug+
+              (format t "incrementing filename: ~A to filename: ~A~%"
+                      filename ret))
+            ret))))))
 
 (defmethod get-line ((ff pbs-file-follower))
 "Return the next line of this file.  We refuse to read eof.  When we 
@@ -52,11 +57,15 @@ have reached end of the file, we check to see if there is a new inode
 associated with our filename. if there is, we start following that filename."
   (progn
     (when (not (filestream ff))
+      (when +debug+
+        (format t "starting file follower~%"))
       (start-file-follower ff))
     (if (peek-char nil (filestream ff) ())
         (read-line (filestream ff) nil)
         (let* ((next-filename (increment-filename (filename ff)))
                (next-inode (get-inode-from-filename next-filename)))
           (when next-inode
+            (when +debug+
+              (format t "opening next filename: ~A~%" next-filename))
             (setf (filename ff) next-filename)
             (read-line (start-file-follower ff) ()))))))
