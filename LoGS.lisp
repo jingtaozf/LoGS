@@ -16,8 +16,8 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-;(declaim (optimize (speed 0) (debug 3) (safety 3)))
+;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+(declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19

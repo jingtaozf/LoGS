@@ -57,8 +57,22 @@
    :input (make-string-input-stream (message message)))
   #+allegro
     (excl.osi:command-output (format () "~A ~{ ~A~}" program args)
-                             :input (message message))
-)
+                             :input (message message)))
+
+(defmethod pipe ((string string) (program string) &rest args)
+  #+cmu
+  (extensions:run-program 
+   program args 
+   :wait t 
+   :input (make-string-input-stream string))
+  #+sbcl
+  (run-program 
+   program args 
+   :wait t 
+   :input (make-string-input-stream string))
+  #+allegro
+    (excl.osi:command-output (format () "~A ~{ ~A~}" program args)
+                             :input string))
 
 (defmethod pipe ((context context) (program string) &rest args)
   (let ((output-stream (make-string-output-stream)))
@@ -86,6 +100,10 @@
       (pipe context *mail-program* "-s" subject recipient)
       (pipe context *mail-program* recipient)))
 
+(defmethod mail ((string string) (recipient string) &optional subject)
+  (if subject
+      (pipe string *mail-program* "-s" subject recipient)
+      (pipe string *mail-program* recipient)))
 
 (defmethod mail ((message message) (recipient string) &optional subject)
   (if subject
