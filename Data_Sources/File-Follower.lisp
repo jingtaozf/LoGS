@@ -18,29 +18,22 @@
 #+sbcl
 (require :sb-posix)
 
-(format t "foo!~%")
+#+cmu
+(import '(unix:unix-stat unix:unix-open unix:o_rdonly unix:o_nonblock system:make-fd-stream))
 
-(defparameter *remember-file* ())
+#+sbcl
+(import '(sb-unix:unix-stat sb-unix:unix-open sb-unix:o_rdonly SB-POSIX:O-NONBLOCK sb-sys:make-fd-stream))
 
 (defun fifo-p (filename)
   (if
    (logand 4096 
            (nth-value 3 
-                      #+cmu
-                      (unix:unix-stat filename)
-                      #+sbcl
-                      (sb-unix:unix-stat filename)
-                      ))
+                      (unix-stat filename)))
    t ()))
 
 (defun get-file-length-from-filename (filename)
   "Given a filename, return the number of bytes currently in the file."
-  #+cmu
-  (nth-value 8 (unix:unix-stat filename))
-
-  #+sbcl
-  (nth-value 8 (sb-unix:unix-stat filename))
-  )
+  (nth-value 8 (unix-stat filename)))
 
 (defclass File-Follower ()
   ((Filename   :accessor Filename :initarg :Filename)
@@ -60,22 +53,12 @@
             (if
              (fifo-p (filename ff))
              (let ((fifofd 
-                    #+cmu
-                     (unix:unix-open
-                      (filename ff)
-                      (logior unix:o_rdonly unix:o_nonblock)
-                      #o444)
-                     #+sbcl
-                     (sb-unix:unix-open
-                      (filename ff)
-                      (logior sb-unix:o_rdonly SB-POSIX:O-NONBLOCK)
-                      #o444)
+                    (unix-open
+                     (filename ff)
+                     (logior o_rdonly o_nonblock)
+                     #o444)
                      ))
-               (setf (Filestream ff)
-                     #+cmu
-                     (system:make-fd-stream fifofd :input t)
-                     #+sbcl
-                     (sb-sys:make-fd-stream fifofd :input t)))
+               (setf (Filestream ff) (make-fd-stream fifofd :input t)))
              (setf (Filestream ff) 
                    (open (Filename ff) :direction :input))))))))
 

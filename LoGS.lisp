@@ -84,6 +84,9 @@
 (defparameter *LoGS-sleep-time* .03
   "How long to sleep when there is no input")
 
+(defparameter *remember-file* ()
+  "Should we remember with file a message comes from?")
+
 (defun load-LoGS-file (filename)
   "load the named file"
   (load 
