@@ -1,14 +1,14 @@
 \input texinfo   @c -*-texinfo-*-
 @setfilename LoGS.info
-@settitle LoGS 0.0.1RC9
+@settitle LoGS 0.0.1
 @set AUTHOR James E. Prewett
-@set EDITION 0.0.1RC9
-@set UPDATED January 22, 2005
+@set EDITION 0.0.1
+@set UPDATED February 8, 2005
 @set COPYRIGHT Copyright @copyright{} 2003--2005 James E. Prewett
 
 
 @copying
-This manual is for LoGS, version 0.0.1RC9.
+This manual is for LoGS, version 0.0.1.
 
 Copyright @copyright{} 2003--2005 James E. Prewett.
 
@@ -1308,6 +1308,21 @@ Named objects are objects that have names associated with them.  If a
 name is not provided when a named-object is created, a unique name is
 generated.  This is currently done by calling @code{(gensym)}.  Named
 objects may have  any name except for @code{NIL}.
+
+@node Other Objects
+@section Other Objects
+
+@node Killable-item
+@subsection Killable-item
+
+Many of the objects in LoGS inherit from the killable-item class.
+This class maintains a slot, @code{deadp} which indicates if the
+object has been marked as dead and should be removed.  The Rule class
+is an example of one of these objects.  Rules that are marked as dead
+are removed from the ruleset as soon as they are encountered.  This
+allows for lazy removal of rules from rulesets and for rules to be
+entered into arbitrary rulesets without us having to keep track of
+which rulesets a particular rule is a part of.
 
 @node Copying This Manual, Concept Index, LoGS Internals, Top
 @appendix Copying This Manual
