@@ -35,6 +35,14 @@
 
 (defvar *do-error* t)
 
+(defun remove-file (filename)
+         #+cmu
+          (unix:unix-unlink filename)
+          #+sbcl
+          (sb-posix:unlink filename)
+          #+openmcl
+          (#_unlink (ccl::make-cstring filename)))
+
 (defun assert-equal (a b &key test)
        (not 
         (unless 
@@ -714,9 +722,17 @@
         (format output-stream "this is a line from day3"))
 
       (enqueue *root-ruleset*
-               (make-instance 'rule :match (lambda (x) t)
-                              :actions (list (lambda (x) (incf counter)))))
+               (make-instance 'rule 
+                              :match (lambda (x) 
+                                       (declare (ignore x))
+                                       t)
+                              :actions (list (lambda (x) 
+                                               (declare (ignore x))
+                                               (incf counter)))))
       (main)
+      (remove-file day1)
+      (remove-file day2)
+      (remove-file day3)
       (assert-equal 3 counter))))
 
       
