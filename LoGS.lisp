@@ -71,7 +71,7 @@
 (defvar *now* (get-internal-real-time)
   "the current time.  Currently an integer like (get-internal-real-time).
   This may change, do not rely on this.")
-;(declaim (type INTEGER *now*))
+(declaim (type INTEGER *now*))
 
 ;; this cruft is to make file loading more portable
 (defparameter *LoGS-base-directory*

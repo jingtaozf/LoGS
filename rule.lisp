@@ -118,34 +118,34 @@
 ;;                (dll-delete *ruleset* rule)))
 ;;             (values matches sub-matches))))))
 
-(defmethod check-rule ((rule rule) (message message))
-  (unless (dead-p rule)
-    (when +debug+ 
-        (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
+;; (defmethod check-rule ((rule rule) (message message))
+;;   (unless (dead-p rule)
+;;     (when +debug+ 
+;;         (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
       
-      (in-given-environment 
-       (environment rule)
+;;       (in-given-environment 
+;;        (environment rule)
        
-       (multiple-value-bind (matchp environment)
-           (rule-matches-p rule message)
+;;        (multiple-value-bind (matchp environment)
+;;            (rule-matches-p rule message)
 
-         (when matchp
-             (with-slots (delete-rule no-delete-rule actions) 
-                 rule
+;;          (when matchp
+;;              (with-slots (delete-rule no-delete-rule actions) 
+;;                  rule
                
-               (when actions
-                 (run-actions rule message environment))
+;;                (when actions
+;;                  (run-actions rule message environment))
                
-               (when delete-rule 
-                 (and
-                  (funcall delete-rule message)
-                  (if no-delete-rule
-                      (funcall no-delete-rule message)
-                      t)
-                  (setf (dead-p rule) t)
-                  (dll-delete *ruleset* rule)))
+;;                (when delete-rule 
+;;                  (and
+;;                   (funcall delete-rule message)
+;;                   (if no-delete-rule
+;;                       (funcall no-delete-rule message)
+;;                       t)
+;;                   (setf (dead-p rule) t)
+;;                   (dll-delete *ruleset* rule)))
                
-               (values matchp environment)))))))
+;;                (values matchp environment)))))))
 
 (defmethod check-rule ((rule rule) (message message))
   (unless (dead-p rule)
@@ -181,7 +181,7 @@
 (defgeneric run-actions (rule message matches)
   (:documentation "run a rule's actions."))
 
-(defmethod run-actions ((rule rule) (message message) matchesQ)
+(defmethod run-actions ((rule rule) (message message) found-matches)
   (let ((actions (actions rule)))
     (when actions
       (mapcar 
@@ -192,11 +192,11 @@
            (when +debug+
              (format t "running action ~A in env ~A with args: ~A~%"
                      action 
-                     matchesQ
+                     found-matches
                      message))
            
            (in-given-environment
-            matchesQ
+            found-matches
             action
             message)
 
@@ -209,5 +209,5 @@
        (setf (dead-p rule) t)))
 
 (defmethod (setf dead-p) :after (new-value (rule rule))
-  (when +debug+
+  (when (and +debug+ (eq new-value t))
     (format t "killing rule: ~A name: ~A~%" rule (name rule))))

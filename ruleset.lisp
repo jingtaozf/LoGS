@@ -83,7 +83,7 @@ both matches and continuep is nil."))
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
 
     (loop with *current-rule* = head
-       and found = ()  
+       and found = ()
 
        ;; there's a rule to check
        when *current-rule*
@@ -104,9 +104,8 @@ both matches and continuep is nil."))
                   
                 (unless (continuep data)
                   (return t))))))
-       (let ((rlink (rlink *current-rule*)))
-         (setq *current-rule* rlink))
-
+       (setq *current-rule* (rlink *current-rule*))
+        
        ;; there are no (more) rules in this ruleset
        when (not *current-rule*)
        do
