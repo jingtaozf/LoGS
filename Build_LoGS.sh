@@ -19,7 +19,7 @@
 
 
 CL_PPCRE="cl-ppcre-1.2.3/load.lisp"
-LOGS="LoGS.lisp"
+LOGS="LoGS"
 LOGS_CORE="LoGS.core"
 
-lisp -eval "(progn (load (compile-file \"$CL_PPCRE\")) (load \"$LOGS\") (load \"$LOGS\")(in-package :LoGS) (load \"sysloghelp\") (cl-user::save-lisp \"$LOGS_CORE\"))"
+lisp -eval "(progn (load (compile-file \"$CL_PPCRE\"))  (load (compile-file \"$LOGS\"))(load (compile-file \"$LOGS\"))(in-package :LoGS) (load \"sysloghelp\") (cl-user::save-lisp \"$LOGS_CORE\"))"

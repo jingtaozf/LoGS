@@ -33,7 +33,7 @@
 ; set this to something *BIG* 
 ;; this is 1/2 of my physical memory; that seems to work well; YMMV
 #+cmu
-(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 131424256)
+(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 65712128)
 
 #+sbcl
 (setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 65712128)
