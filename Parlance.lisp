@@ -172,22 +172,21 @@
                  ;:timeout timeout
                  :actions
                  (append
-                  (with-sub-matches-as-dollar-things
-                      (list
-                       ;; make a rule to ignore match1 until match2 is seen
-                       (lambda (message)
-                         (rule-before
-                          (suppress-until match1 match2)))
-                       ;; make a rule to trigger actions2 when match2 is seen
-                       (lambda (message)
-                         (rule-before
-                          (make-instance 'rule
-                                         :name match2-rule-name
-                                         :match match2
-                                         :timeout timeout
-                                         :delete-rule (lambda (message) t)
-                                         :actions actions2))))
-                    actions1)))))
+                  (list
+                   ;; make a rule to ignore match1 until match2 is seen
+                   (lambda (message)
+                     (rule-before
+                      (suppress-until match1 match2)))
+                   ;; make a rule to trigger actions2 when match2 is seen
+                   (lambda (message)
+                     (rule-before
+                      (make-instance 'rule
+                                     :name match2-rule-name
+                                     :match match2
+                                     :timeout timeout
+                                     :delete-rule (lambda (message) t)
+                                     :actions actions2))))
+                  actions1))))
 
 ;; XXX don't like this!
 (defun long-message (long actions-list &key name environment continuep)

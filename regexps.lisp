@@ -71,8 +71,4 @@
 
 
 
-;; get-inode-from-filename is used because i'm lazy!
-;; bad! XXX 
-(and (get-inode-from-filename "regexps-local.lsp")
-     (not (format t "loading local regexps~%"))
-     (load "regexps-local.lsp"))
+     (load "regexps-local.lisp")

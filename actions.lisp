@@ -17,6 +17,9 @@
 
 (in-package :LoGS)
 
+(defvar *mail-program* "/usr/bin/mail")
+
+
 ;; this is very simple, better implementations will come... seems to work for now!
 
 (defmacro exec (program &rest args)
@@ -28,6 +31,8 @@
     (run-program ,program (quote ,args) :wait () :output t)
     #+openmcl
     (run-program ,program (quote ,args) :wait () :output t)
+    #+allegro
+    (excl:run-shell-command (format () "~A ~{ ~A~}" ,program ,args))
     ))
 
 (defmacro file-write (filename)
@@ -49,7 +54,11 @@
   (run-program 
    program args 
    :wait t 
-   :input (make-string-input-stream (message message))))
+   :input (make-string-input-stream (message message)))
+  #+allegro
+    (excl.osi:command-output (format () "~A ~{ ~A~}" program args)
+                             :input (message message))
+)
 
 (defmethod pipe ((context context) (program string) &rest args)
   (let ((output-stream (make-string-output-stream)))
@@ -66,15 +75,19 @@
     (run-program
      program args
      :wait t
-     :input (make-string-input-stream (get-output-stream-string output-stream)))))
+     :input (make-string-input-stream (get-output-stream-string output-stream)))
+    #+allegro
+    (excl.osi:command-output (format () "~A ~{ ~A~}" program args)
+                             :input (get-output-stream-string output-stream))
+    ))
 
 (defmethod mail ((context context) (recipient string) &optional subject)
   (if subject
-      (pipe context "/bin/mail" "-s" subject recipient)
-      (pipe context "/bin/mail" recipient)))
+      (pipe context *mail-program* "-s" subject recipient)
+      (pipe context *mail-program* recipient)))
 
 
 (defmethod mail ((message message) (recipient string) &optional subject)
   (if subject
-      (pipe message "/usr/bin/mail" "-s" subject recipient)
-      (pipe message "/usr/bin/mail" recipient)))
+      (pipe message *mail-program* "-s" subject recipient)
+      (pipe message *mail-program* recipient)))

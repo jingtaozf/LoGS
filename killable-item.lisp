@@ -30,6 +30,9 @@
       +debug+
     (format t "killing item: ~A~%" killable-item)))
 
+(defmethod (setf dead-p) (new-value (killable-item list)) 
+  ()) 
+
 (defmethod kill ((killable-item killable-item))
   (setf (dead-p killable-item) t))
 
