@@ -67,6 +67,7 @@
 
 ;; this is a constant so we can optimize out the checks for production runs
 (defconstant +debug+ () "should debugging information be displayed?")
+(declaim (type (or t nil) +debug+))
 
 (defparameter *use-internal-real-time* t 
   "should LoGS use the internal-real-time?")
@@ -84,6 +85,7 @@
 
 (defparameter *remember-file* ()
   "Should we remember with file a message comes from?")
+(declaim (type (or t nil) *remember-file*))
 
 (defun load-LoGS-file (filename &key directory)
   "load the named file"
@@ -140,10 +142,13 @@
 ;; XXX This is where the loser stars go XXX
 (defvar *messages* ()
   "The current message source.")
-(defvar *ruleset* (make-instance 'ruleset)
-  "The current ruleset.  It may be nested within another ruleset")
+(declaim (type (or nil Data-Source) *messages*))
 (defvar *root-ruleset* (make-instance 'ruleset :name 'root-ruleset)
   "The top-most ruleset; kinda like / in the filesystem")
+(declaim (type (or nil Ruleset) *root-ruleset*))
+(defvar *ruleset* *root-ruleset*
+  "The current ruleset.  It may be nested within another ruleset")
+(declaim (type (or nil Ruleset) *ruleset*))
 (defvar *message* ()
   "The message currently being considered.")
 (defvar *matches* ()

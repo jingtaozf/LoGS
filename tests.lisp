@@ -457,7 +457,7 @@
           (context (ensure-context)))
       (and
        (equal (Ecount context) 0)
-       (add-item context message)
+       (add-to-context context message)
        (equal (Ecount context) 1)))))
 
 (deftest "removing a rule from the ruleset removes it from elements"
@@ -1720,5 +1720,33 @@
       (setf *now* (+ (next-timeout ruleset) 1))
       (check-limits ruleset)
       (assert-non-nil (dead-p ruleset)))))
+
+
+(deftest "context that should live after timeout isnt destroyed"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 123)
+          (context (make-instance 'context
+                                  :name 'foop
+                                  :timeout 124
+                                  :lives-after-timeout t)))
+      (setf *now* 125)
+      (check-limits context)
+      (let ((retval (assert-non-nil (get-context (name context)))))
+        (expire-context context)
+        retval))))
+
+(deftest "context that shouldnt live after timeout is destroyed"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 123)
+          (context (make-instance 'context
+                                  :name 'foop
+                                  :timeout 124
+                                  :lives-after-timeout ())))
+      (setf *now* 125)
+      (check-limits context)
+      (assert-nil (get-context (name context))))))
+                                  
     
 (run-all-tests)

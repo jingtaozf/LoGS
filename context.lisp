@@ -46,7 +46,10 @@
    (max-lines :initarg :max-lines
               :initform ()
               :accessor max-lines
-              :documentation "An artificial limit on the number of lines this context can hold"))
+              :documentation "An artificial limit on the number of lines this context can hold")
+   (lives-after-timeout :initarg :lives-after-timeout
+                        :initform ()
+                        :accessor lives-after-timeout))
   (:documentation "A data structure that stores messages."))
 
 ;; when createing an instance of a context,
@@ -184,7 +187,7 @@
 
  (defmethod check-limits :around ((context context))
    (let ((ret (call-next-method)))
-     (when ret
+     (when (and ret (not (lives-after-timeout context)))
        (expire-context context)
        (dll-delete *contexts* context)
      ret)))
