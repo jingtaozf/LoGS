@@ -19,8 +19,8 @@
 
 ; proper optimizations?
 ;(declaim  (OPTIMIZE (SPEED 3) (size 0) (SAFETY 0) (compile-speed 0)))
-;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-(declaim (optimize (speed 0) (debug 3) (safety 2)))
+(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+;(declaim (optimize (speed 0) (debug 3) (safety 2)))
 
 
 ;; freeze the LoGS classes if we're on cmucl 19
@@ -192,6 +192,12 @@
     #'(lambda (switch)
         (declare (ignore switch))
         (setq *run-forever* t)))
+
+#+cmu
+(ext:defswitch "-remember-file"
+    #'(lambda (switch)
+        (declare (ignore switch))
+        (setq *remember-file* t)))
 
 (defun main ()
   "Main is the current LoGS mainline.  As of this revision, it tries

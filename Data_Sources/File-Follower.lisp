@@ -15,6 +15,7 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+(defparameter *remember-file* ())
 
 (defclass File-Follower ()
   ((Filename   :accessor Filename :initarg :Filename)
@@ -33,14 +34,14 @@
             (setf (Inode ff) ino)
             (if
              (logand 4096 (nth-value 3 (unix:unix-stat (Filename ff))))
-             (progn
-               (format t "setting up for fifo!~%")
-               (let ((fifofd (unix:unix-open
-                              (filename ff)
-                              (logior unix:o_rdonly unix:o_nonblock)
-                              #o444)))
-                 (setf (Filestream ff) (system:make-fd-stream fifofd :input t))))
-             (setf (Filestream ff) (open (Filename ff) :direction :input))))))))
+             (let ((fifofd (unix:unix-open
+                            (filename ff)
+                            (logior unix:o_rdonly unix:o_nonblock)
+                            #o444)))
+               (setf (Filestream ff) 
+                     (system:make-fd-stream fifofd :input t)))
+             (setf (Filestream ff) 
+                   (open (Filename ff) :direction :input))))))))
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
@@ -96,7 +97,9 @@
 a message."
   (let ((line (get-line ff)))
     (when line
-         (make-instance 'message :message line))))
+      (if *remember-file*
+          (make-instance 'from-message :message line :from-file (filename ff))
+          (make-instance 'message :message line)))))
 
 (defgeneric get-line (file-follower)
   (:documentation "get the next raw chunk of input from the data source"))

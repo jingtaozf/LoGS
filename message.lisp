@@ -24,3 +24,8 @@
 
 (defclass string-message (message) ()
   (:documentation "A class that holds string messages."))
+
+(defclass from-message (message)
+  ((from-file :initarg :from-file :accessor from-file))
+  (:documentation "a Message class that knows which log file it is from"))
+
