@@ -793,16 +793,31 @@
   (lambda ()
     (let* ((fooble ())
            (context (ensure-context
-                                   :max-lines 1
-                                   :actions
-                                   (list
-                                    (lambda (context)
-                                      (declare (ignore context))
-                                      (setf fooble t))))))
+                     :max-lines 1
+                     :actions
+                     (list
+                      (lambda (context)
+                        (declare (ignore context))
+                        (setf fooble t))))))
       (add-to-context (name context) (make-instance 'message))
       ;; context should exceed limit here and run actions
       (add-to-context (name context) (make-instance 'message))
       (assert-non-nil fooble))))
+
+(deftest "timed-out context runs actions"
+    :test-fn
+  (lambda ()
+    (let* ((fooble ())
+           (context (ensure-context
+                     :timeout 1
+                     :actions
+                     (list
+                      (lambda (context)
+                        (declare (ignore context))
+                        (setf fooble t))))))
+      (let ((*now* 2))
+        (check-limits *timeout-object-timeout-queue*)
+        (assert-non-nil fooble)))))
 
 (deftest "deleted context is removed from *contexts* list"
     :test-fn
