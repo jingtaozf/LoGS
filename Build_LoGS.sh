@@ -18,7 +18,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
-CL_PPCRE="cl-ppcre-1.1.0/load.lisp"
+CL_PPCRE="cl-ppcre-1.2.1/load.lisp"
 LOGS="LoGS.lisp"
 LOGS_CORE="LoGS.core"
 
