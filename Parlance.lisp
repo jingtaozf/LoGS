@@ -98,31 +98,25 @@
              (rule-before
               (suppress match-func time)))))
 
+;; do something at a particular time
+(defun timed-event (actions-list time &key name)
+  "cause something to happen at a particular time"
+  (make-instance 'context
+                 :name name
+                 :actions actions-list
+                 :timeout time))
 
-;; (defun pair (match1 actions1 match2 actions2 &key name name1 name2)
-;;   "like SEC pair rule."
-;;   (make-instance 'rule
-;;                  :name name
-;;                  :match match1
-;;                  :actions
-;;                  (append
-;;                   (list
-;;                    ;; make a rule to ignore match1 until match2 is seen
-;;                    (lambda (message)
-;;                      (rule-before
-;;                       (suppress-until match1 match2 :name name1)))
-;;                    ;; make a rule to trigger actions2 when match2 is seen
-;;                    (lambda (message)
-;;                      (rule-before
-;;                       (make-instance 'rule
-;;                                      :name name2
-;;                                      :match match2
-;;                                      :delete-rule (lambda (message) t)
-;;                                      :actions actions2))))
-;;                   actions1)))
-
+;; do something every time seconds
+(defun periodic-event (actions-list time &key name)
+  "cause something to happen periodically"
+  (make-instance 'context
+                 :name name
+                 :actions actions-list
+                 :relative-timeout time
+                 :lives-after-timeout t))
 
 (defun pair (match1 actions1 match2 actions2 &key continuep environment)
+  "like SEC pair rule"
   (make-instance 
    'rule
    :match match1

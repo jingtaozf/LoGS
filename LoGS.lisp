@@ -21,7 +21,7 @@
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
-(declaim (EXTENSIONS:FREEZE-TYPE file-follower Multi-Follower priority-queue context collection limited-collection doubly-linked-list doubly-linked-list-item priority-queue-item timeout-object relative-timeout-object rule ruleset killable-item message string-message))
+(declaim (EXTENSIONS:FREEZE-TYPE NAMED-OBJECT FROM-MESSAGE RULESET TIMEOUT-OBJECT RULE DOUBLY-LINKED-LIST PRIORITY-QUEUE RELATIVE-TIMEOUT-OBJECT MESSAGE MULTI-FOLLOWER PRIORITY-QUEUE-ITEM COLLECTION PBS-FILE-FOLLOWER CONTEXT LIST-FOLLOWER STRING-MESSAGE KILLABLE-ITEM FILE-FOLLOWER DATA-SOURCE DOUBLY-LINKED-LIST-ITEM LIMITED-COLLECTION))
 
 ;; we need the sb-posix package under SBCL in order to open FIFOs non-blocking
 #+sbcl
@@ -50,7 +50,9 @@
 	#+cmu :pcl
         #+sbcl :sb-mop
 	#+lispworks :hcl
-        :cl-user)
+        :cl-user
+        :cl-cli ;; my command-line processing code
+        :cl-ppcre)
   #+sbcl
   (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
   #+sbcl
@@ -89,12 +91,14 @@
 
 (defun load-LoGS-file (filename &key directory)
   "load the named file"
-  (load 
-   (compile-file
-    (make-pathname :name filename
-                   :type "lisp"
-                   :version ()
-                   :directory directory))))
+  (progn
+    (format t "loading ~A~%" filename)
+    (load 
+     (compile-file
+      (make-pathname :name filename
+                     :type "lisp"
+                     :version ()
+                     :directory directory)))))
 
 ;;;; XXX CLEAN THIS SECTION UP XXX!
 ;; load fundamental data structures
@@ -139,6 +143,14 @@
 
 (load-LoGS-file "Parlance")
 
+
+;; command line options
+;; migrating to new system
+;#+cmu
+;(load-LoGS-file "command-line_CMUCL")
+(load-LoGS-file "LoGS-command-line")
+
+
 ;; XXX This is where the loser stars go XXX
 (defvar *messages* ()
   "The current message source.")
@@ -170,9 +182,6 @@
   (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
-;; command line options
-#+cmu
-(load-LoGS-file "command-line_CMUCL")
 
 ;; signal processing
 ;; someday we should have some!
@@ -189,6 +198,7 @@
   (with-interrupts
       (break "someone sent us a hup" t)))
 
+
 (defun main ()
   "Main is the current LoGS mainline.  As of this revision, it tries
 to mimic Logsurfer's behaviour (modulo context handling).  Main iterates over 
@@ -198,30 +208,39 @@ Main currently does:
 1. Processes an incoming line if there is one.
 2. Check to see if any rules need to be removed.
 3. Check to see if any contexts need to be removed."
-  (loop as *message* = (get-logline *messages*)
-     ;; exit if there is no message and we're not running forever
-     when (and (not *run-forever*) (not *message*))
-     do
-       (return)
+
+  (progn
+    ;; process any command line options
+    (when +debug+
+      (format t "processing options~%"))
+    
+    (let ((args (get-application-args)))
+      (PROCESS-OPTIONS *opts* args))
+    
+    (loop as *message* = (get-logline *messages*)
+          ;; exit if there is no message and we're not running forever
+          when (and (not *run-forever*) (not *message*))
+          do
+          (return)
      ;; if we are running forever and there is no message sleep 
-     when (and *run-forever* (not *message*))
-     do
-       (sleep *LoGS-sleep-time*)
-       
-     ;; update the internal time
-     when *use-internal-real-time*
-     do
-       (setq *now* (get-internal-real-time))
-       
-     ;; check the message against the ruleset if it exists
-     ;; and check the timeout objects
-     when t
-     do
-       (when (and *message* (head *root-ruleset*))
-         (check-rules *message* *root-ruleset*))
-       
-       (when (head *timeout-object-timeout-queue*)
-         (check-limits *timeout-object-timeout-queue*))
-       
-       (when (head *relative-timeout-object-timeout-queue*)
-         (check-limits *relative-timeout-object-timeout-queue*))))
+          when (and *run-forever* (not *message*))
+          do
+          (sleep *LoGS-sleep-time*)
+          
+          ;; update the internal time
+          when *use-internal-real-time*
+          do
+          (setq *now* (get-internal-real-time))
+          
+          ;; check the message against the ruleset if it exists
+          ;; and check the timeout objects
+          when t
+          do
+          (when (and *message* (head *root-ruleset*))
+            (check-rules *message* *root-ruleset*))
+          
+          (when (head *timeout-object-timeout-queue*)
+            (check-limits *timeout-object-timeout-queue*))
+          
+          (when (head *relative-timeout-object-timeout-queue*)
+            (check-limits *relative-timeout-object-timeout-queue*)))))

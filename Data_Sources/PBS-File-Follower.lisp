@@ -21,35 +21,45 @@
   ()
   (:documentation "A file-follower that tails PBS log files and understands how to look for the next file in the sequence"))
 
-(defun increment-filename (filename)
+(defun remove-last (list)
+  (when (> (length list) 1)
+    (cons (car list)
+          (remove-last (cdr list)))))
+
+(defun increment-filename (fname)
   "Given a filename such as 20050325, return the next day's filename, 20050326."
-  (multiple-value-bind (matches sub-matches)
-      (cl-ppcre::scan-to-strings "(....)(..)(..)" filename)
-    (when matches
-      (let* ((year (read-from-string (aref sub-matches 0)))
-             (month (read-from-string (aref sub-matches 1)))
-             (date (read-from-string (aref sub-matches 2)))
-             ;; we assume tomorrow's date is the date that happens to be
-             ;; at 24 hours after one second before midnight of the previous 
-             ;; day 
-             ;; 
-             ;; we have a bug whenever there is a leap day (or more); I'm not
-             ;; worried.
-             (newtime (+ (* 24 60 60)
-                        (encode-universal-time
-                         59 59 23
-                         date
-                         month
-                         year
-                         ))))
-        (multiple-value-bind (x xx xxx date month year)
-            (decode-universal-time newtime)
-          (declare (ignore x xx xxx))
-          (let ((ret (format () "~D~2,'0D~2,'0D" year month date)))
-            (when +debug+
-              (format t "incrementing filename: ~A to filename: ~A~%"
-                      filename ret))
-            ret))))))
+  ;; only increment the filename part of the pathname
+  (let* ((pathparts (cl-ppcre::split "/" fname))
+         (filename (car (last pathparts))))
+    (format
+     () "~{~A/~}~A" (remove-last pathparts)
+     (multiple-value-bind (matches sub-matches)
+         (cl-ppcre::scan-to-strings "(....)(..)(..)" filename)
+       (when matches
+         (let* ((year (read-from-string (aref sub-matches 0)))
+                (month (read-from-string (aref sub-matches 1)))
+                (date (read-from-string (aref sub-matches 2)))
+                ;; we assume tomorrow's date is the date that happens to be
+                ;; at 24 hours after one second before midnight of the previous 
+                ;; day 
+                ;; 
+                ;; we have a bug whenever there is a leap day (or more); I'm not
+                ;; worried.
+                (newtime (+ (* 24 60 60)
+                            (encode-universal-time
+                             59 59 23
+                             date
+                             month
+                            year
+                            ))))
+           (multiple-value-bind (x xx xxx date month year)
+               (decode-universal-time newtime)
+             (declare (ignore x xx xxx))
+             (let ((ret (format () "~D~2,'0D~2,'0D" year month date)))
+               (when +debug+
+                 (format t "incrementing filename: ~A to filename: ~A~%"
+                         filename ret))
+               ret))))))))
 
 (defmethod get-line ((ff pbs-file-follower))
 "Return the next line of this file.  We refuse to read eof.  When we 

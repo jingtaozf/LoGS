@@ -47,6 +47,12 @@
               :initform ()
               :accessor max-lines
               :documentation "An artificial limit on the number of lines this context can hold")
+
+   (min-lines :initarg :min-lines
+              :initform ()
+              :accessor min-lines
+              :documentation "The minumum number of lines in the context for it to run its actions.")
+
    (lives-after-timeout :initarg :lives-after-timeout
                         :initform ()
                         :accessor lives-after-timeout))
@@ -150,9 +156,13 @@
   (:documentation "cause a context to run its actions, then be deleted"))
 
 (defmethod expire-context ((context context))
-  (progn
-    (run-context-actions context)
-
+  (let ((min-lines (min-lines context)))
+    
+    (when (or 
+           (not min-lines)
+           (> (ecount context) min-lines))
+      (run-context-actions context))
+           
     (if
      (lives-after-timeout context)
      (update-relative-timeout context)

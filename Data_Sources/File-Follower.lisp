@@ -90,5 +90,3 @@ a message."
       (if *remember-file*
           (make-instance 'from-message :message line :from-file (filename ff))
           (make-instance 'message :message line)))))
-
-

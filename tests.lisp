@@ -899,9 +899,8 @@
                       (lambda (context)
                         (declare (ignore context))
                         (setf fooble t))))))
-      (declare (ignore context)) ; we use it, just not here
-      (let ((*now* (+ *now* (* INTERNAL-TIME-UNITS-PER-SECOND 1) 1)))
-        (check-limits *timeout-object-timeout-queue*)
+      (let ((*now* (+ (next-timeout context) 1)))
+        (check-limits *RELATIVE-TIMEOUT-OBJECT-TIMEOUT-QUEUE*)
         (assert-non-nil fooble)))))
 
 (deftest "deleted context is removed from *contexts* list"
@@ -1747,6 +1746,79 @@
       (setf *now* 125)
       (check-limits context)
       (assert-nil (get-context (name context))))))
-                                  
-    
+
+(deftest "min-lines context test"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 123)
+           (testvar t)
+           (context (make-instance 'context
+                                   :timeout 124
+                                   :min-lines 5
+                                   :actions
+                                   (list
+                                    (lambda (context)
+                                      (declare (ignore context))
+                                      (setf testvar ()))))))
+      (add-to-context context (make-instance 'message :message "test"))
+      (check-limits context)
+      (assert-non-nil testvar))))
+
+(deftest "min-lines exceeded context test"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 123)
+           (testvar ())
+           (context (make-instance 'context
+                                   :timeout 124
+                                   :min-lines 5
+                                   :actions
+                                   (list
+                                    (lambda (context)
+                                      (declare (ignore context))
+                                      (setf testvar t))))))
+      (loop as x from 0 to 6 do 
+            (add-to-context context 
+                            (make-instance 'message 
+                                           :message
+                                           (format () "test message ~A~%" x))))
+      (setf *now* 125)
+      (check-limits context)
+      (assert-non-nil testvar))))
+
+
+;; some option tests
+
+(deftest "--no-internal-time option test"
+    :test-fn
+  (lambda ()
+    (progn
+      (setq LoGS::*use-internal-real-time* t) ;; make sure its in true state
+      (process-options *opts* '("--no-internal-time"))
+      (assert-nil LoGS::*use-internal-real-time*))))
+
+(deftest "--file option test"
+    :test-fn
+  (lambda ()
+    (progn
+      (process-options *opts* '("--file" "foo.txt"))
+      (typep *messages* 'file-follower))))
+
+(deftest "--file option with position test"
+    :test-fn
+  (lambda ()
+    (let* ((testfile "testfile2")
+           (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
+      (with-open-file (output-stream testfile :direction :output 
+                                     :if-exists :SUPERSEDE
+                                     :if-does-not-exist :create)
+        (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
+
+      (process-options *opts* '("--file" "testfile2" "42"))
+      (and 
+       (typep *messages* 'file-follower)
+       (let ((ret (assert-equal 42 (file-position (filestream *messages*)))))
+         (remove-file testfile)
+         ret)))))
+       
 (run-all-tests)

@@ -20,6 +20,7 @@
 
 CL_PPCRE="cl-ppcre-1.2.5/load.lisp"
 LOGS="LoGS.lisp"
+CL_CLI="cl-cli/cl-cli.lisp"
 LOGS_CORE="LoGS.dxl"
 
-alisp -e "(progn (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$LOGS\")) (load (compile-file \"$LOGS\")) (in-package :LoGS) (load \"sysloghelp\") (dumplisp :name \"$LOGS_CORE\") (exit))"
+alisp -e "(progn (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\")) (load (compile-file \"$LOGS\")) (load (compile-file \"$LOGS\")) (in-package :LoGS) (load \"sysloghelp\") (dumplisp :name \"$LOGS_CORE\") (exit))"
