@@ -30,12 +30,18 @@
 (require :sb-posix)
 
 ; set this to something *BIG* 
+;; this is 1/2 of my physical memory; that seems to work well; YMMV
 #+cmu
-(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 114500000)
+(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 131424256)
+
+#+sbcl
+(setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 131424256)
+
 
 ; turn off gc messages
 #+cmu
 (setq ext:*gc-verbose* ())
+
 
 
 ;; define the LoGS package
@@ -47,9 +53,9 @@
 	#+lispworks :hcl
         :cl-user)
 #+sbcl
-(:import-from :SB-EXT #:QUIT)
+(:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
 #+cmu
-(:import-from :extensions #:quit)
+(:import-from :extensions #:quit #:RUN-PROGRAM)
 #+cmu
   (:shadowing-import-from :pcl #:standard-class #:built-in-class
                           #:find-class #:class-name #:class-of))
@@ -61,8 +67,6 @@
 
 (defparameter *use-internal-real-time* t 
   "should LoGS use the intenal-real-time?")
-
-
 
 (defvar *now* (get-internal-real-time)
   "the current time.  Currently an integer like (get-internal-real-time).
