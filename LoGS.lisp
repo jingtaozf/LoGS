@@ -144,7 +144,8 @@ both matches and continuep is nil."))
 
 (defmethod check-rules ((message message) (ruleset doubly-linked-list))
   (let ((head (head ruleset))
-        (seen (make-hash-table :test #'equal)))
+        (seen (make-hash-table :test #'equal))
+        (*ruleset* ruleset))
     (when
         *debug*
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))

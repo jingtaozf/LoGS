@@ -142,7 +142,7 @@
                                      :actions actions2))))
                   actions1))))
 
-
+;; XXX don't like this!
 (defun long-message (long actions-list &key name)
   "create a rule that matches messages longer than long.  trigger the functions in the actions list as a result."
   (Single
@@ -237,6 +237,11 @@
   "match every message"
   (declare (ignore message)) 
   t)
+
+(defun match-none (message)
+  "do not match any message (useful for debugging)"
+  (declare (ignore message))
+  ())
 
 (defun match-regexp (regexp)
   "create a function that will match the given regular expression"
