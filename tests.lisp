@@ -691,6 +691,36 @@
           (assert-non-nil line)
           )))))
 
+(deftest "PBS File-follower file rollover works"
+    :test-fn
+  (lambda ()
+    (let* ((day1 "20050227")
+           (day2 "20050228")
+           (day3 "20050301")
+           (counter 0)
+           (*messages* (make-instance 'pbs-file-follower :filename day1))
+          (*root-ruleset* (make-instance 'ruleset)))
+      (with-open-file (output-stream day1 :direction :output 
+                                     :if-exists :overwrite
+                                     :if-does-not-exist :create)
+        (format output-stream "this is a line from day1"))
+      (with-open-file (output-stream day2 :direction :output 
+                                     :if-exists :overwrite
+                                     :if-does-not-exist :create)
+        (format output-stream "this is a line from day2"))
+      (with-open-file (output-stream day3 :direction :output 
+                                     :if-exists :overwrite
+                                     :if-does-not-exist :create)
+        (format output-stream "this is a line from day3"))
+
+      (enqueue *root-ruleset*
+               (make-instance 'rule :match (lambda (x) t)
+                              :actions (list (lambda (x) (incf counter)))))
+      (main)
+      (assert-equal 3 counter))))
+
+      
+
 (deftest "file follower makes correct series of messages"
     :test-fn
   (lambda ()
