@@ -19,8 +19,9 @@
 (defclass Data-Source () ())
 
 (defgeneric get-logline (data-source)
-  (:documentation "get the next message from the data source"))
+  (:documentation
+   "Get-logline returns the next message from the data source or 
+nil if there is no such next message."))
 
-(defgeneric get-line (data-source)
-  (:documentation "get the next raw chunk of input from the data source"))
+
 

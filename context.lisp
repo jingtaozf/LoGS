@@ -174,6 +174,29 @@
           (setf (gethash name *contexts-hash*)
                 c))))
 
+(defgeneric run-context-actions (context)
+  (:documentation
+   "Run the actions associated with a context."))
+
+(defmethod run-context-actions ((context context))
+  "Run the actions associated with a context."
+  (progn
+    (when *debug*
+      (format t "running context actions~%"))
+    (when (actions context)
+      (mapcar 
+       (lambda (x) 
+         (declare (function x))
+         (funcall x context))
+       (actions context)))))
+
+(defmethod check-limits ((context context))
+  (let ((ret (context-exceeded-limit-p context *now*)))
+    (when ret
+      (run-context-actions context)
+      (dll-delete *contexts* context))
+    ret))
+
 (defgeneric context-exceeded-limit-p (context time)
   (:documentation "check to see if a context has exceeded one of its limits"))
 

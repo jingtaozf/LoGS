@@ -203,6 +203,10 @@
              (format t "ran action~%"))))
        actions))))
 
+(defmethod check-limits ((rule rule))
+  (and (rule-exceeded-limit-p rule *now*)
+       (setf (dead-p rule) t)))
+
 (defmethod (setf dead-p) :after (new-value (rule rule))
   (when *debug*
     (format t "killing rule: ~A name: ~A~%" rule (name rule))))

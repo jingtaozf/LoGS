@@ -88,6 +88,9 @@ a message."
     (when line
          (make-instance 'message :message line))))
 
+(defgeneric get-line (file-follower)
+  (:documentation "get the next raw chunk of input from the data source"))
+
 ;; Thank you Damien Kick!
 (defmethod get-line ((ff file-follower))
 "Return the next line of this file.  We refuse to read eof.  When we 

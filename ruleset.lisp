@@ -69,6 +69,50 @@
             (let ((*ruleset* ruleset))
               (check-rules message *ruleset*)))))))
 
+(defgeneric check-rules (message ruleset)
+  (:documentation
+   "Check-rules checks the given message against 
+the given ruleset until it finds a rule that 
+both matches and continuep is nil."))
+
+(defmethod check-rules ((message message) (ruleset ruleset))
+  (let ((head (head ruleset))
+        (*ruleset* ruleset))
+    (when
+        *debug*
+      (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
+    (loop with *current-rule* = head
+       and found = ()  
+
+;;; there are no (more) rules in this ruleset
+       when (not *current-rule*)
+       do
+       (when *debug*
+         (format t "no more rules~%"))
+       (return found)
+         
+       ;; there's a rule to check
+       when *current-rule*
+       do 
+       (let ((data (data *current-rule*)))
+         (if (dead-p data)
+             (dll-delete ruleset *current-rule*)
+             (progn
+               (when *debug* (format t "checking rule~%"))
+               (and 
+                (multiple-value-bind
+                      (matchp bind-list)
+                    (check-rule data message)
+                  (declare (ignore bind-list))
+                  (when *debug*
+                    (format t "match is: ~A~%" matchp))
+                  (setq found matchp))
+                  
+                (unless (continuep data)
+                  (return t))))))
+       (let ((rlink (rlink *current-rule*)))
+         (setq *current-rule* rlink)))))
+
 (defmethod rule-head ((rule rule))
   (dll-insert
    *ruleset*

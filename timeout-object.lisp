@@ -50,4 +50,5 @@
     (when timeout 
       (> time timeout))))
 
-  
+(defmethod check-limits ((timeout-object timeout-object))
+  (exceeded-timeout-p timeout-object *now*))

@@ -52,7 +52,9 @@
 
 (in-package :LoGS)
 
+;; this is a constant so we can optimize out the checks for production runs
 (defconstant *debug* () "should debugging information be displayed?")
+
 (defvar *use-internal-real-time* t "should LoGS use the intenal-real-time?")
 
 (defvar *now* (get-internal-real-time)
@@ -133,103 +135,10 @@
 (defvar *die-die-die* ()
   "a list of functions to call when LoGS is done running (before exiting).")
 
-(defgeneric get-logline (message-source)
-  (:documentation
-   "Get-logline returns the next message from the message source or 
-nil if there is no such next message."))
-
-(defgeneric check-rules (message ruleset)
-  (:documentation
-   "Check-rules checks the given message against 
-the given ruleset until it finds a rule that 
-both matches and continuep is nil."))
-
-(defmethod check-rules ((message message) (ruleset doubly-linked-list))
-  (let ((head (head ruleset))
-        (*ruleset* ruleset))
-    (when
-        *debug*
-      (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
-    (loop with *current-rule* = head
-       and found = ()  
-
-;;; there are no (more) rules in this ruleset
-       when (not *current-rule*)
-       do
-       (when *debug*
-         (format t "no more rules~%"))
-       (return found)
-         
-       ;; there's a rule to check
-       when *current-rule*
-       do 
-       (let ((data (data *current-rule*)))
-         (if (dead-p data)
-             (dll-delete ruleset *current-rule*)
-             (progn
-               (when *debug* (format t "checking rule~%"))
-               (and 
-                (multiple-value-bind
-                      (matchp bind-list)
-                    (check-rule data message)
-                  (declare (ignore bind-list))
-                  (when *debug*
-                    (format t "match is: ~A~%" matchp))
-                  (setq found matchp))
-                  
-                (unless (continuep data)
-                  (return t))))))
-       (let ((rlink (rlink *current-rule*)))
-         (setq *current-rule* rlink)))))
+;; none of this belongs here!
 
 (defgeneric check-limits (thing)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
-
-(defmethod check-limits ((rule rule))
-  (and (rule-exceeded-limit-p rule *now*)
-       (setf (dead-p rule) t)))
-
-(defmethod check-limits ((context context))
-  (let ((ret (context-exceeded-limit-p context *now*)))
-    (when ret
-      (run-context-actions context)
-      (dll-delete *contexts* context))
-    ret))
-
-;; is this good?
-(defmethod check-limits ((timeout-object timeout-object))
-  (exceeded-timeout-p timeout-object *now*))
-
-(defmethod check-limits ((pq priority-queue))
-  (loop as dlli = (head pq)
-        when *debug*
-        do (format t "checking pq: ~A dlli: ~A~%" pq dlli)
-        when (not dlli)
-        do
-        (return)
-        when (not (check-limits (data dlli)))
-        do 
-        (return)
-        when t
-        do
-        (dll-delete pq dlli)
-        (setf dlli (rlink dlli))))
-
-(defgeneric run-context-actions (context)
-  (:documentation
-   "Run the actions associated with a context."))
-
-(defmethod run-context-actions ((context context))
-  "Run the actions associated with a context."
-  (progn
-    (when *debug*
-      (format t "running context actions~%"))
-    (when (actions context)
-      (mapcar 
-       (lambda (x) 
-         (declare (function x))
-         (funcall x context))
-       (actions context)))))
 
 #+cmu
 (ext:defswitch "-no-internal-time" #'(lambda (switch) 
@@ -275,7 +184,7 @@ Main currently does:
         do
         (return)
 
-        ;; don't burn the whole CPU when theres nothing to do
+        ;; don't burn the whole CPU when there is nothing to do
         when (and *run-forever* (not *message*))
         do
         (sleep *LoGS-sleep-time*)

@@ -1,15 +1,14 @@
 \input texinfo   @c -*-texinfo-*-
 @setfilename LoGS.info
-@settitle LoGS 0.0.0a
+@settitle LoGS 0.0.1RC9
 @set AUTHOR James E. Prewett
-@set EDITION 0.0.0a
-@c @set UPDATED March 8, 2004
-@set UPDATED September 15, 2004
+@set EDITION 0.0.1RC9
+@set UPDATED October 19, 2004
 @set COPYRIGHT Copyright @copyright{} 2003--2004 James E. Prewett
 
 
 @copying
-This manual is for LoGS, version 0.0.1RC5.
+This manual is for LoGS, version 0.0.1RC9.
 
 Copyright @copyright{} 2003--2004 James E. Prewett.
 
@@ -65,6 +64,7 @@ last updated on @value{UPDATED}.
 * LoGS Rules::                  
 * LoGS Rulesets::               
 * LoGS Contexts::               
+* Copying This Manual::         
 * Concept Index::               
 * Function Index::              
 * Variable Index::              
@@ -126,6 +126,8 @@ manual.}.
 * Rulesets::                    
 * Actions::                     
 * LoGS Contexts::               
+* LoGS Efficiency::             
+* How Messages are processed::  
 @end menu
 
 @node LoGS Components, Messages, LoGS Overview, LoGS Overview
@@ -211,7 +213,7 @@ as matches and sub--matches respectively within the code.
 @cindex sub--matches
 
 A Rule object consists of these slots: match, no-match,
-delete-rule, no-delete-rule, timeout, continuep, and actions.
+delete-rule, no-delete-rule, timeout, continuep, actions, and environment.
 All of these slots have default values.  This allows for rule
 specifications to be rather short for very simple rules.
 However, it is generally useful to at least specify a function
@@ -226,6 +228,7 @@ see below).
 @cindex timeout slot (Rule object)
 @cindex continuep slot (Rule object)
 @cindex actions slot (Rule object)
+@cindex environment slot (Rule object)
 
 In order to determine if a Message is matched by the Rule, the
 function stored in the ``match'' slot of the Rule must return
@@ -318,7 +321,7 @@ context exceeds one of its limits.
 @cindex context limits
 @cindex context actions
 
-@node LoGS Contexts,  , Actions, LoGS Overview
+@node LoGS Contexts, LoGS Efficiency, Actions, LoGS Overview
 @section LoGS Contexts
 
 Contexts are objects that store messages for later use.  Contexts can
@@ -342,7 +345,7 @@ by actions (associated with rules or other contexts).  In this way, we
 can leverage the short--circuit functionality available in LoGS rules
 to gain greater efficiency.  This is similar to how SEC handles its contexts.
 
-@node LoGS Efficiency
+@node LoGS Efficiency, How Messages are processed, LoGS Contexts, LoGS Overview
 @section LoGS Efficiency
 
 It is very difficult to talk about the efficiency of LoGS as it really
@@ -359,7 +362,7 @@ can be more efficient than those that only match regular expressions.
 
 @cindex context 
 
-@node How Messages are processed
+@node How Messages are processed,  , LoGS Efficiency, LoGS Overview
 @section How Messages are processed
 
 The current LoGS mainline takes the following steps for an incoming
@@ -383,11 +386,16 @@ with these messages, and to destroy themselves if needed.
 @cindex action
 
 @menu
+* Rule components::             
 * Using Rules to implement Artificial Ignorance::  
 * Rule Nesting::                
+* Dynamic Rules::               
+* Better than Ignorance::       
+* Rules can maintain state::    
+* Extending LoGS to facilitate rule creation::  
 @end menu
 
-@node Rule components
+@node Rule components, Using Rules to implement Artificial Ignorance, LoGS Rules, LoGS Rules
 @section Rule components
 
 Rule objects consist of: A match function, a no-match function, a
@@ -397,12 +405,30 @@ intentionally similar to rules within the Logsurfer log analysis
 engine.
 
 The match function is a function that takes a message as its argument
-and returns non-nil if the rule does match the message and nil if it
-does not.  The no-match function is similar to the match function,
-except that it specifies exceptions to the match function.  If the
-match function returns non-nil, then the no-match function is tested;
-if, then, the no-match function returns non-nil, then it is determined
-that the rule does not match the message.
+and returns non-nil (and an optional environment) if the rule does
+match the message and nil if it does not.  The no-match function is
+similar to the match function, except that it specifies exceptions to
+the match function.  If the match function returns non-nil, then the
+no-match function is tested; if, then, the no-match function returns
+non-nil, then it is determined that the rule does not match the
+message. 
+
+The environment returned by the match function allows for state to be
+saved between the match function and any action functions.  An
+environment is a list of lists of variable name and value pairs, for
+example: 
+
+@code{
+ ((foo 42) 
+   (bar 23)
+   (baz ``the cat ran''))}
+A function in the rule's actions list could then use these variables
+(foo, bar, and baz) like this:
+@verb{+
+(lambda (message)
+        (format t ``foo: ~A bar: ~A baz: ~A~%'' foo bar baz))
++}
+and @verb{+``foo: 42 bar: 23 baz: the cat ran''+} should be printed.
 
 The delete-rule function is a function that takes a message as its
 argument.  Once it has been determined that the rule matches a
@@ -425,7 +451,7 @@ section on actions for more details) to run if the rule matches the
 message.  Actions in the actions list will be run in the order that
 they appear in that list.  There is no short-circuiting.
 
-@node Using Rules to implement Artificial Ignorance, Rule Nesting, LoGS Rules, LoGS Rules
+@node Using Rules to implement Artificial Ignorance, Rule Nesting, Rule components, LoGS Rules
 @section Using Rules to implement Artificial Ignorance
 
 One common problem with log analysis is the sheer volume of
@@ -543,7 +569,7 @@ regular expression to determine which messages it matches:
 
                :actions
                (list          
-                 (lambda (message matches sub-matches)
+                 (lambda (message)
                          (format t ``Missed Message: ~A~%''
                          (message message)))))
 @end smalllisp
@@ -557,7 +583,7 @@ Here is another way to write that same rule:
                (lambda (message) t)
                :actions
                (list 
-                 (lambda (message matches sub-matches)
+                 (lambda (message)
                    (format t ``Missed Message: ~A~%''
                    (message message)))))
 @end smalllisp
@@ -600,11 +626,41 @@ are too long:
                *insane-ssh-message-length*))
   :actions
   (list
-   (lambda (message matches sub-matches)
+   (lambda (message)
      (format t "SSH Warning: Long message(~A chars): ~A~%"
              (length (message message))    
              (message message))))))
 
+@end smalllisp
+
+It might be better to write the last example as below so that we only
+compute the length of the message once.  We use the environment
+created by the match function in the action function.
+
+@smalllisp
+
+;; 158 chars is the longest valid ssh message I've seen
+(setf *insane-ssh-message-length* (+ 158 1)) 
+
+;; a rule to match messages longer than that
+(enqueue 
+ *ssh-messages*
+ (make-instance 
+  'rule
+  :continuep t
+  :match (lambda (message)
+           (let ((length (length message)))
+              (when (>= length *insane-ssh-message-length*)
+                 (values
+                   T
+                   `((length ,length))))))
+  :actions
+  (list
+   (lambda (message)
+     (format t "SSH Warning: Long message(~A chars): ~A~%"
+             length ;; a variable bound in the dynamic environment
+                    ;; set by the match function
+             (message message))))))
 @end smalllisp
 
 
@@ -632,10 +688,10 @@ will only be triggered every 12 hours (43200 seconds):
                (lambda (message) t)
                :actions
                (list
-                (lambda (message matches sub-matches)
+                (lambda (message)
                          (format t ``matched a message: ~A~%''
                          (message message)))
-                (lambda (message matches sub-matches)
+                (lambda (message)
                         (rule-before
                          (make-instance 'rule
                                         :match 
@@ -700,10 +756,10 @@ ruleset.  A rule can be inserted before the current rule by using the
 @code{rule-before} function.  A rule may be inserted after the current
 rule by using the @code{rule-after} function.  A rule may be inserted
 at the top of the ruleset (so that it will be the first rule processed
-when checking the next message) by using the @code{rule-top} function.
+when checking the next message) by using the @code{rule-head} function.
 Finally, a rule may be inserted at the bottom of the ruleset (so that
 it will be the last rule processed when checking the current message)
-by using the @code{rule-bottom} function.  You can also roll your own
+by using the @code{rule-tail} function.  You can also roll your own
 rule insertion function; in order to do so, you should be aware that
 the rule currently being processed is stored in the
 @code{*current-rule*} parameter and that the ruleset currently being processed
@@ -713,10 +769,10 @@ is stored in the @code{*ruleset*} parameter.
 @vindex *ruleset*
 @findex rule-before
 @findex rule-after
-@findex rule-top
-@findex rule-bottom
+@findex rule-head
+@findex rule-tail
 
-@node Better than Ignorance, Extending LoGS to facilitate rule creation, Dynamic Rules, LoGS Rules
+@node Better than Ignorance, Rules can maintain state, Dynamic Rules, LoGS Rules
 @section Better than Ignorance
 
 Artificial Ignorance is bliss, but can we do better with LoGS?  I
@@ -753,10 +809,10 @@ print a notification when the sequence starts and ends.
    "/kernel: Using \\$PIR table, 14 entries at 0xc00fdeb0"
    "/kernel: apm0: <APM BIOS> on motherboard"
    "/kernel: apm0: found APM BIOS v1.2, connected at v1.")
-  (lambda (message matches sub-matches) 
+  (lambda (message) 
           (format t "machine is beginning to boot~%"))
-  (lambda (message matches sub-matches)())
-  (lambda (message matches sub-matches)
+  (lambda (message)())
+  (lambda (message)
           (format t "machine has finished booting~%")))
 @end smalllisp
 
@@ -781,13 +837,13 @@ like this:
    "/kernel: Using \\$PIR table, 14 entries at 0xc00fdeb0"
    "/kernel: apm0: <APM BIOS> on motherboard"
    "/kernel: apm0: found APM BIOS v1.2, connected at v1.")
-  (lambda (message matches sub-matches) 
+  (lambda (message) 
           (format t "machine is beginning to boot~%"))
-  (lambda (message matches sub-matches)
+  (lambda (message)
           (format t "intermediate boot message~%"))
-  (lambda (message matches sub-matches)
+  (lambda (message)
           (format t "machine has finished booting~%"))
-  (lambda (message matches sub-matches) 
+  (lambda (message) 
    (format t "boot message found in order other than expected! ~A ~%"
              (message message))))
 @end smalllisp
@@ -807,7 +863,7 @@ By taking the approach that we can accurately describe ahead of time a
 large portion of our machines behavior, we can detect the absence of
 normal behavior rather than just the presence of abnormal behavior!  
 
-@node Rules can maintain state
+@node Rules can maintain state, Extending LoGS to facilitate rule creation, Better than Ignorance, LoGS Rules
 @section Rules can maintain state
 
 Maintaining state within a LoGS rule is very simple as common LISP
@@ -821,19 +877,32 @@ illustrate this:
                  :match (lambda (message) ; always match and increment matchcount
                                 (incf matchcount))
                  :action
-                 (lambda (message matches sub-matches)
+                 (lambda (message)
                          (format t 
                            ``This rule has matched ~A times.~%''
                            matchcount))))
 @end smalllisp
 
-@node Extending LoGS to facilitate rule creation,  , Better than Ignorance, LoGS Rules
+Rules can also maintain state by storing an environment in the rule's
+environment slot, or can maintain state between the match function
+and the action functions by returning an environment along with the
+truth value indicating a match.
+
+@cindex{environtment}
+@cindex{environment slot (Rule)}
+@cindex{Rule's environment slot}
+@cindex{state, maintaining}
+@cindex{maintaining state}
+
+@node Extending LoGS to facilitate rule creation,  , Rules can maintain state, LoGS Rules
 @section Extending LoGS to facilitate rule creation
 
 Sequence-rules are an example of how to extend LoGS to facilitate rule
 creation.  Here is the LISP macro used to create the rule:
 
 @smalllisp
+
+;;; XXX This example is TOTALLY BROKEN!!! XXX
 
 (defmacro sequence-rule 
  (list first-action intermediate-action final-action)
@@ -844,14 +913,18 @@ creation.  Here is the LISP macro used to create the rule:
       (make-instance 'rule
        :match 
        (lambda (message)
-         (and
+         (multiple-value-bind (matches sub-matches)
           (cl-ppcre::scan-to-strings 
            (format () "~A ~A" *host-regex* (car ,lst)) 
            (message message))
+           (when matches
+                 (values 
+                    T
+                    `((sub-matches ,sub-matches))))
           ))
        :actions 
        (list
-        (lambda (message matches sub-matches)
+        (lambda (message)
           (rule-before
            (let 
                ((,seq 
@@ -870,7 +943,7 @@ creation.  Here is the LISP macro used to create the rule:
                        (or (setf ,seq (cdr ,seq))
                            (kill-current-rule)))))
               :actions (list
-                        (lambda (message matches sub-matches)
+                        (lambda (message)
                           (progn 
                             (if ,seq
                                 (,intermediate-action 
@@ -936,10 +1009,38 @@ nested within an outer ruleset, only the inner-most ruleset can be
 accessed (easily).
 
 @menu
+* Adding Rules to Rulesets::    
 * How LoGS was extended to have nest-able rulesets::  
 @end menu
 
-@node How LoGS was extended to have nest-able rulesets
+@node Adding Rules to Rulesets, How LoGS was extended to have nest-able rulesets, LoGS Rulesets, LoGS Rulesets
+@section Adding Rules to Rulesets
+
+There are several ways to add rules to a ruleset.
+Rules may be added to the end of a particular ruleset using the @code{enqueue}
+function.
+They may also be added to the current ruleset (stored in the
+@code{*ruleset*} variable) using the @code{rule-head},
+@code{rule-tail}, @code{rule-before}, and @code{rule-after} functions
+to add the rule to the head of the ruleset, the tail of the ruleset,
+before the current rule, or after the current rule respectively.
+
+@findex{enqueue}
+@findex{rule-head}
+@findex{rule-tail}
+@findex{rule-before}
+@findex{rule-after}
+
+@cindex{*ruleset*}
+@cindex{Rulesets, inserting rules into}
+@cindex{inserting rules into rulesets}
+
+
+@menu
+* How LoGS was extended to have nest-able rulesets::  
+@end menu
+
+@node How LoGS was extended to have nest-able rulesets,  , Adding Rules to Rulesets, LoGS Rulesets
 @section How LoGS was extended to have nest-able rulesets
 
 LoGS Rulesets are another example of how LoGS was extended.
@@ -974,9 +1075,7 @@ against the current message.  Here is its definition:
 That was all that was required to extend LoGS to have nest-able
 rulesets!
 
-
-
-@node LoGS Contexts, Concept Index, LoGS Rulesets, Top
+@node LoGS Contexts, Copying This Manual, LoGS Rulesets, Top
 @chapter LoGS Contexts
 
 
@@ -1153,10 +1252,14 @@ NOTE:  This has become an active area of interest for me!  I hope to
 expand greatly on this section and do an even better job of finding the
 goodies.
 
-@node Copying This Manual
+@node Copying This Manual, Concept Index, LoGS Contexts, Top
 @appendix Copying This Manual
 
-@node GNU Free Documentation License
+@menu
+* GNU Free Documentation License::  
+@end menu
+
+@node GNU Free Documentation License,  , Copying This Manual, Copying This Manual
 @appendixsec GNU Free Documentation License
 
 @cindex FDL, GNU Free Documentation License
@@ -1610,7 +1713,7 @@ to permit their use in free software.
 
 
 
-@node Concept Index, Function Index, LoGS Contexts, Top
+@node Concept Index, Function Index, Copying This Manual, Top
 @unnumbered Concept Index
 
 @printindex cp 
