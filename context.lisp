@@ -28,10 +28,23 @@
 (defvar *contexts-hash* (make-hash-table :test #'equal)
   "a hash to hold all of their contexts so that we can find them by name.")
 
+(defun reset-contexts-hash () (setf *contexts-hash* (make-hash-table :test #'equal)))
+
 (defvar *contexts-alias-hash* (make-hash-table :test #'equal))
+
+(defun reset-contexts-alias-hash () (setf *contexts-alias-hash* (make-hash-table :test #'equal)))
 
 (defvar *contexts* (make-instance 'doubly-linked-list)
   "The current set of contexts.")
+
+(defun reset-contexts () (setf *contexts* (make-instance 'doubly-linked-list)))
+
+(defun clear-contexts ()
+  "remove all contexts"
+  (progn
+    (reset-contexts-hash)
+    (reset-contexts-alias-hash)
+    (reset-contexts)))
 
 (defclass context (collection timeout-object killable-item)
   ((actions :initarg :actions

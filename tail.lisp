@@ -18,7 +18,7 @@
 ;(in-package "LISP")
 ;(export '(probe-file file-stat  FILE-STAT-INO))
 
-(defclass File-Follower ()
+(defclass File-Follower (Data-Source)
   (
    (Filename   :accessor Filename :initarg :Filename)
    (FileStream :accessor FileStream :initform ())

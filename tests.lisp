@@ -1125,4 +1125,54 @@
       (delete-context 'c1)
       (assert-equal c1 (get-context 'c1)))))
 
+(defun test-filter ()
+    (let ((*messages* 
+           (make-instance 
+            'list-follower
+            :message-list
+            (list 
+             "the"
+             "cat"
+             "ran")))
+          (seen-the ())
+          (seen-ran ())
+          (seen-cat ())
+          (*root-ruleset* 
+           (make-instance 'ruleset))
+          (rule
+           (filter
+            (lambda (message)
+              (equal (message message) "cat")))))
+      (enqueue *root-ruleset* rule)
+      (enqueue *root-ruleset*
+               (Single
+                (lambda (message)
+                  (equal (message message) "the"))
+                (list
+                 (lambda (message matches sub-matches)
+                   (declare (ignore message matches sub-matches))
+                   (setf seen-the t)))))
+      (enqueue *root-ruleset*
+               (Single
+                (lambda (message)
+                  (equal (message message) "ran"))
+                (list
+                 (lambda (message matches sub-matches)
+                   (declare (ignore message matches sub-matches))
+                   (setf seen-ran t)))))
+      (enqueue *root-ruleset*
+               (Single
+                (lambda (message)
+                  (equal (message message) "cat"))
+                (list
+                 (lambda (message matches sub-matches)
+                   (declare (ignore message matches sub-matches))
+                   (setf seen-cat t)))))
+      (enqueue *root-ruleset* *default-rule*)
+      (main)
+      (and seen-the (not seen-cat) seen-ran)))
+
+(deftest "filter function works"
+    :test-fn #'test-filter)
+
 (run-all-tests)

@@ -97,6 +97,8 @@
 (load-LoGS-file "context")
 
 ;; load message producers
+(load-LoGS-file "Data_Sources/Data-Source")
+(load-LoGS-file "Data_Sources/List-Follower")
 (load-LoGS-file "Data_Sources/File-Follower")
 
 ;; load rules
@@ -104,7 +106,8 @@
 (load-LoGS-file "ruleset")
 (load-LoGS-file "actions")
 
-(load-LoGS-file "Jims")
+;(load-LoGS-file "Jims")
+(load-LoGS-file "Parlance")
 
 ;; XXX This is where the loser stars go XXX
 (defvar *messages* ()
@@ -146,6 +149,9 @@ both matches and continuep is nil."))
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
     (loop with *current-rule* = head
           and found = ()
+          when (not (head ruleset))
+          do
+          (return ())
           when (not *current-rule*)
           do
           (return found)

@@ -21,3 +21,11 @@
           :accessor name
           :initform (gensym))))
 
+
+(defmethod initialize-instance :after ((named-object named-object)
+                                       &rest rest)
+  (declare (ignore rest))
+  (progn
+    (unless (name named-object)
+      (setf (name named-object) (gensym)))
+    named-object))

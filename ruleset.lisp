@@ -39,7 +39,10 @@
 
 ;; find a rule in the ruleset by its name
 (defmethod get-rule ((ruleset ruleset) (name t))
-  (gethash name (elements ruleset)))
+  (let ((rule (gethash name (elements ruleset))))
+    (if *debug*
+        (or rule (format t "can't find rule named: ~A in ruleset: ~A~%" name ruleset))
+        rule)))
 
 ;; check rule for when the rule itself is a ruleset!
 (defmethod check-rule ((ruleset ruleset) (message message))

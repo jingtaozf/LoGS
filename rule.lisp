@@ -65,26 +65,27 @@
            (values matches sub-matches)))))
 
 (defmethod check-rule ((rule rule) (message message))
-  (multiple-value-bind (matches sub-matches)
-      (rule-matches-p rule message)
-    (when *debug* 
-      (format t "checking rule: ~A~%" (name rule)))
-    (if matches
-        (with-slots (delete-rule no-delete-rule actions) 
-            rule
-          
-          (when delete-rule 
-            (and
-             (funcall delete-rule message)
-             (if no-delete-rule
-                 (funcall no-delete-rule message)
-                 t)
-             (setf (dead-p rule) t)
-             (dll-delete *ruleset* rule)))
-          
-          (when actions
-            (run-actions rule message matches sub-matches))
-          (values matches sub-matches)))))
+  (unless (dead-p rule)
+    (multiple-value-bind (matches sub-matches)
+        (rule-matches-p rule message)
+      (when *debug* 
+        (format t "checking rule: ~A~%" (name rule)))
+      (if matches
+          (with-slots (delete-rule no-delete-rule actions) 
+              rule
+            
+            (when actions
+              (run-actions rule message matches sub-matches))
+            
+            (when delete-rule 
+              (and
+               (funcall delete-rule message)
+               (if no-delete-rule
+                   (funcall no-delete-rule message)
+                   t)
+               (setf (dead-p rule) t)
+               (dll-delete *ruleset* rule)))
+            (values matches sub-matches))))))
 
 (defgeneric run-actions (rule message matches sub-matches)
   (:documentation "run a rule's actions."))
@@ -103,3 +104,7 @@
 ;;   (progn
 ;;     (dll-delete *rule-timeout-queue* rule)
 ;;     (enqueue *rule-timeout-queue* rule)))
+
+(defmethod (setf dead-p) :after (new-value (rule rule))
+  (when *debug*
+    (format t "killing rule: ~A name: ~A~%" rule (name rule))))
