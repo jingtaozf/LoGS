@@ -497,7 +497,7 @@
     :test-fn
   (lambda ()
     (let* ((ruleset (make-instance 'ruleset))
-           (xyzzy 0)
+           (xyzzy 0) ; a variable whose value we change in the action
            (rule (make-instance 'rule :match #'match-none))
            (rule2 (make-instance 'rule 
                                  :match #'match-all
@@ -1308,9 +1308,7 @@
                          (list
                           (lambda (message)
                             (declare (ignore message))
-                            (progn
-                              (format t "xyzzy!")
-                              (incf match-count)))))))
+                            (incf match-count))))))
     
     (enqueue *root-ruleset* suppress-until-rule)
     (enqueue *root-ruleset* catch-all-rule)
