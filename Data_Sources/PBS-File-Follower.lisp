@@ -21,24 +21,25 @@
   ()
   (:documentation "A file-follower that tails PBS log files and understands how to look for the next file in the sequence"))
 
-;; i /think/ this works
-;; is there ever a time when tomorrow is more than 24 hours away?
 (defun increment-filename (filename)
   (multiple-value-bind (matches sub-matches)
       (cl-ppcre::scan-to-strings "(....)(..)(..)" filename)
     (when matches
-      (let* ((year (read-from-string (aref sub-matches 2)))
+      (let* ((year (read-from-string (aref sub-matches 0)))
              (month (read-from-string (aref sub-matches 1)))
-             (date (read-from-string (aref sub-matches 0)))
+             (date (read-from-string (aref sub-matches 2)))
              ;; we assume tomorrow's date is the date that happens to be
-             ;; at 24 hours after noon of the previous day
-             ;; (that way leap seconds don't kill us)  Thanks #lisp!
+             ;; at 24 hours after one second before midnight of the previous 
+             ;; day 
+             ;; 
+             ;; we have a bug whenever there is a leap day (or more); I'm not
+             ;; worried.
              (newtime (+ (* 24 60 60)
                         (encode-universal-time
-                         0 0 12
-                         year
-                         month
+                         59 59 23
                          date
+                         month
+                         year
                          ))))
         (multiple-value-bind (x xx xxx date month year)
             (decode-universal-time newtime)
