@@ -343,21 +343,21 @@
 (deftest "contexts have names"
     :test-fn
   (lambda ()
-    (let ((c (make-instance 'context)))
+    (let ((c (ensure-context)))
       (assert-non-nil (name c)))))
 
 (deftest "contexts are added to context hash"
     :test-fn
   (lambda ()
-    (let* ((c (make-instance 'context))
+    (let* ((c (ensure-context))
            (c2 (get-context (name c))))
       (assert-equal c c2 :test #'equal))))
       
 (deftest "only one context with a given name"
     :test-fn
   (lambda ()
-    (let* ((c1 (make-instance 'context))
-           (c2 (make-instance 'context :name (name c1))))
+    (let* ((c1 (ensure-context))
+           (c2 (ensure-context :name (name c1))))
       (eq c1 c2))))
 
 (Deftest "default style rule matches message"
@@ -442,7 +442,7 @@
     :test-fn
   (lambda ()
     (let ((message (make-instance 'message))
-          (context (make-instance 'context)))
+          (context (ensure-context)))
       (and
        (equal (Ecount context) 0)
        (add-item context message)
@@ -530,7 +530,7 @@
     :test-fn
   (lambda ()
     (let ((message (make-instance 'message))
-          (context (make-instance 'context)))
+          (context (ensure-context)))
       (add-item context message)
       (eq message (aref (data context) 0)))))
 
@@ -700,21 +700,21 @@
 (deftest "contexts that have expired are shown to exceed limit"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context :name 'test-context :timeout 47))
+    (let ((context (ensure-context :name 'test-context :timeout 47))
           (now 48))
       (context-exceeded-limit-p context now))))
 
 (deftest "contexts that don't have timeouts don't exceed limits"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context))
+    (let ((context (ensure-context))
           (now 48))
       (assert-nil (context-exceeded-limit-p context now)))))
 
 (deftest "contexts that have expired are removed from hash with remove-context-if-stale"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context :timeout 47))
+    (let ((context (ensure-context :timeout 47))
           (now 48))
       (remove-context-if-stale context now)
       (assert-nil (get-context (name context))))))
@@ -722,7 +722,7 @@
 (deftest "contexts that haven't expired are not removed from hash"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context :timeout 49))
+    (let ((context (ensure-context :timeout 49))
           (now 48))
       (remove-context-if-stale context now)
       (assert-non-nil (get-context (name context))))))
@@ -730,7 +730,7 @@
 (deftest "get-context returns proper context"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context)))
+    (let ((context (ensure-context)))
       (assert-equal 
        context
        (get-context (name context))))))
@@ -738,13 +738,13 @@
 (deftest "context is added to *contexts* list when created"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context)))
+    (let ((context (ensure-context)))
       (assert-non-nil (gethash context (list-entries *contexts*))))))
 
 (deftest "context is removed from *contexts* list when deleted"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context :timeout 47)))
+    (let ((context (ensure-context :timeout 47)))
       (and
        (gethash context (list-entries *contexts*)))
        (remove-context-if-stale context 1)
@@ -753,14 +753,14 @@
 (deftest "old context exceeds limits"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context :timeout 47))
+    (let ((context (ensure-context :timeout 47))
           (now 48))
       (context-exceeded-limit-p context now))))
 
 (deftest "full context exceeds limits"
     :test-fn
   (lambda ()
-    (let ((context (make-instance 'context :name 'context :max-lines 1)))
+    (let ((context (ensure-context :name 'context :max-lines 1)))
       (add-to-context 'context (make-instance 'message :message "this is a line"))
       (add-to-context 'context (make-instance 'message :message "this is a line"))
       (assert-non-nil (context-exceeded-limit-p context 42)))))
@@ -769,7 +769,7 @@
     :test-fn
   (lambda ()
     (let* ((fooble ())
-           (context (make-instance 'context
+           (context (ensure-context
                                    :max-lines 1
                                    :actions
                                    (list
@@ -790,7 +790,7 @@
                           (lambda (x y)
                             (> (timeout  x)
                                (timeout  y))))))
-      (let ((context (make-instance 'context :timeout 0))
+      (let ((context (ensure-context :timeout 0))
             (*now* 1))
         (declare (ignore context))
         (assert-non-nil (head *timeout-object-timeout-queue*))
@@ -808,7 +808,7 @@
                             (> (timeout x)
                                (timeout y))))))
       (let* ((*now* 42)
-             (context (make-instance 'context :timeout (- *now* 1))))
+             (context (ensure-context :timeout (- *now* 1))))
         (declare (ignore context))
         (assert-non-nil (head *contexts*))
         (assert-non-nil (head *timeout-object-timeout-queue*))
@@ -827,7 +827,7 @@
                                (timeout y))))))
       (let* ((*fooble* ())
              (*now* 2)
-             (context (make-instance 'context :timeout 1
+             (context (ensure-context :timeout 1
                                      :actions
                                      (list
                                       (lambda (context)
@@ -904,7 +904,7 @@
                           (lambda (x y)
                             (> (timeout x)
                                (timeout y))))))
-      (let ((context (make-instance 'context :timeout 1)))
+      (let ((context (ensure-context :timeout 1)))
         (declare (ignore context))
         (assert-non-nil (head *timeout-object-timeout-queue*))))))
 
@@ -953,9 +953,9 @@
                           (lambda (x y)
                             (> (timeout x)
                                (timeout y))))))
-      (let ((c3 (make-instance 'context :timeout 46))
-            (c1 (make-instance 'context :timeout 42))
-            (c2 (make-instance 'context :timeout 43)))
+      (let ((c3 (ensure-context :timeout 46))
+            (c1 (ensure-context :timeout 42))
+            (c2 (ensure-context :timeout 43)))
         (assert-non-nil (head *timeout-object-timeout-queue*))
         (assert-equal (data (head *timeout-object-timeout-queue*))
                       c1)
@@ -994,8 +994,8 @@
                           (lambda (x y)
                             (> (timeout x)
                                (timeout y))))))
-      (let ((c1 (make-instance 'context :timeout 42))
-            (c2 (make-instance 'context :timeout 43)))
+      (let ((c1 (ensure-context :timeout 42))
+            (c2 (ensure-context :timeout 43)))
         (assert-equal (data (head *timeout-object-timeout-queue*))
                       c1)
         (setf (timeout c2) 40)
@@ -1118,8 +1118,8 @@
 (deftest "get-context returns alias instead of orig context"
     :test-fn
   (lambda ()
-    (let ((c1 (make-instance 'context :name 'c1))
-          (c2 (make-instance 'context :name 'c2)))
+    (let ((c1 (ensure-context :name 'c1))
+          (c2 (ensure-context :name 'c2)))
       (declare (ignore c1))
       (alias-context c2 'c1)
       (assert-equal c2 (get-context 'c1)))))
@@ -1129,8 +1129,8 @@
   (lambda ()
     (let* ((*contexts-hash* (make-hash-table :test #'equal))
            (*contexts-alias-hash* (make-hash-table :test #'equal))
-           (c1 (make-instance 'context :name 'c1))
-           (c2 (make-instance 'context :name 'c2)))
+           (c1 (ensure-context :name 'c1))
+           (c2 (ensure-context :name 'c2)))
       (alias-context c2 'c1)
       (delete-context 'c1)
       (assert-equal c1 (get-context 'c1)))))
@@ -1514,7 +1514,4 @@
       (assert-equal 43 (data (tail dll)))
       (assert-equal 44 (data (llink (tail dll)))))))
     
-
-               
-
 (run-all-tests)

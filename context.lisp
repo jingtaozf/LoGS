@@ -81,7 +81,9 @@
 ;; after we initialize the context, put it into the contexts collection
 (defmethod initialize-instance :after ((instance context) &rest rest)
   (declare (ignore rest))
-  (enqueue *contexts* instance))
+  (progn
+    (enqueue *contexts* instance)
+    (setf (gethash (name instance) *contexts-hash*) instance)))
 
 
 (defgeneric delete-context (context)
@@ -101,10 +103,12 @@
 ;; if its in the alias, remove that
 ;; else, remove the actual context (assuming that exists)
 (defmethod delete-context ((context t))
-  (when context
-    (if (gethash context *contexts-alias-hash*)
-        (remhash context *contexts-alias-hash*)
-        (delete-real-context context))))
+  (progn 
+    (format t "removing context: ~A~%" context)
+    (when context
+      (if (gethash context *contexts-alias-hash*)
+          (remhash context *contexts-alias-hash*)
+          (delete-real-context context)))))
 
 (defgeneric alias-context (context alias)
   (:documentation "give a context an alias"))
@@ -137,7 +141,9 @@
 
 (defmethod add-to-context (name (message message))
   (let ((context (get-context name)))
-    (add-to-context context message)))
+    (if context
+        (add-to-context context message)
+        (error "couldn't find context: ~A~%" name))))
 
 (defmethod add-to-context ((context context) (message message))
   (add-item context message))
@@ -193,9 +199,9 @@
 (defmethod check-limits ((context context))
   (let ((ret (context-exceeded-limit-p context *now*)))
     (when ret
-      (run-context-actions context)
-      (dll-delete *contexts* context))
-    ret))
+      (expire-context context)
+      (dll-delete *contexts* context)
+    ret)))
 
 (defgeneric context-exceeded-limit-p (context time)
   (:documentation "check to see if a context has exceeded one of its limits"))
@@ -217,3 +223,22 @@
                  (aref
                   (data context)
                   i)))))
+
+;; ensure-context is the new replacement for the fooky make-instance
+;; apparently the standard frowns upon not returning a *NEW* instance from
+;; make-instance.  Sometimes compilers are too smart and cause a new instance
+;; to always be returned. 
+;;
+;; I think this is what is breaking most of the context tests under SBCL
+;; hopefully fixing the tests to use ensure-context instead of make-instance
+;; will do the trick!
+(defmacro ensure-context (&rest rest &key name &allow-other-keys)
+  `(progn
+    (when *debug* 
+      (if (and ,name (get-context ,name))
+          (format t "a context named ~A already exists~%" ,name)))
+    (or
+     (when ,name
+       (get-context ,name))
+     (make-instance 'context
+      ,@rest))))

@@ -180,7 +180,7 @@
 (defgeneric run-actions (rule message matches)
   (:documentation "run a rule's actions."))
 
-(defmethod run-actions ((rule rule) message matchesQ)
+(defmethod run-actions ((rule rule) (message message) matchesQ)
   (let ((actions (actions rule)))
     (when actions
       (mapcar 
