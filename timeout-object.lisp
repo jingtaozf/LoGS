@@ -21,13 +21,13 @@
   ((timeout :initarg :timeout
             :accessor timeout
             :initform ()
-            :type (or null number))))
+            :type (or null integer))))
 
 (defmethod sort-timeouts ((x timeout-object) (y timeout-object))
   (let ((t-x (timeout x))
         (t-y (timeout y)))
-    (declare (fixnum t-x))
-    (declare (fixnum t-y))
+    (declare (integer t-x))
+    (declare (integer t-y))
     (> t-x t-y)))
 
 ;; a priority queue to hold things that can time out
@@ -52,7 +52,7 @@
     (enqueue *timeout-object-timeout-queue* timeout-object)))
 
 (defmethod exceeded-timeout-p ((timeout-object timeout-object) time)
-  (declare (fixnum time))
+  (declare (integer time))
   (with-slots (timeout) timeout-object
     (when timeout 
       (> time timeout))))

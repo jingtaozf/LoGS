@@ -17,7 +17,6 @@
 
 ; proper optimizations?
 (declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-;(declaim (optimize (speed 3)))
 ;(declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 ;; freeze the LoGS classes if we're on cmucl 19
@@ -44,27 +43,23 @@
 #+cmu
 (setq ext:*gc-verbose* ())
 
-
-
 ;; define the LoGS package
 (defpackage :LoGS
-(:use :cl
+  (:use :cl
 	#+allegro :clos
 	#+cmu :pcl
         #+sbcl :sb-mop
 	#+lispworks :hcl
         :cl-user)
-#+sbcl
-(:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
-#+sbcl
-(:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly)
-;#+sbcl
-;(:import-from :sb-posix #:o-nonblock)
-#+sbcl
-(:import-from :sb-sys #:make-fd-stream)
-#+cmu
-(:import-from :extensions #:quit #:RUN-PROGRAM)
-#+cmu
+  #+sbcl
+  (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
+  #+sbcl
+  (:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly)
+  #+sbcl
+  (:import-from :sb-sys #:make-fd-stream)
+  #+cmu
+  (:import-from :extensions #:quit #:RUN-PROGRAM)
+  #+cmu
   (:shadowing-import-from :pcl #:standard-class #:built-in-class
                           #:find-class #:class-name #:class-of))
 
@@ -165,71 +160,8 @@
   (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
-;; don't use internal time?
 #+cmu
-(ext:defswitch "-no-internal-time" #'(lambda (switch) 
-                                       (setq
-                                        *use-internal-real-time* ())))
-
-;; the name of the file to process
-#+cmu
-(ext:defswitch "-file" #'(lambda (switch)
-                           (let ((filename (car (ext:cmd-switch-words switch)))
-                                 (position (cadr (ext:cmd-switch-words switch))))
-                             (setq *messages* 
-                                   (make-instance 'File-Follower 
-                                                  :FileName 
-                                                  filename))
-                             ;; if position is specified, start there
-                             (when position
-                               (set-file-follower-position
-                                *messages*
-                                position)))))
-
-
-;; the names of multiple files
-#+cmu
-(ext:defswitch 
-    "-files" 
-    #'(lambda (switch)
-        (progn
-          (setf *messages*
-                (make-instance 'multi-follower))
-          (mapcar
-           (lambda (filename)
-             (let* ((split  (cl-ppcre::split ":" filename))
-                    (name (car split))
-                    (position-str (cadr split))
-                    (position (when position-str 
-                                (read-from-string position-str)))
-                    (follower (make-instance 
-                               'file-follower
-                               :filename name)))
-               (when position
-                 (set-file-follower-position follower position))
-               (add-item *messages* follower)))
-           (ext:cmd-switch-words switch)))))
-          
-;; the ruleset
-#+cmu
-(ext:defswitch "-ruleset" 
-    #'(lambda (switch)
-        (let ((filename (car (ext:cmd-switch-words switch))))
-          (load (compile-file filename)))))
-
-;; run forever?
-#+cmu
-(ext:defswitch "-run-forever"
-    #'(lambda (switch)
-        (declare (ignore switch))
-        (setq *run-forever* t)))
-
-;; remember which file the message came from?
-#+cmu
-(ext:defswitch "-remember-file"
-    #'(lambda (switch)
-        (declare (ignore switch))
-        (setq *remember-file* t)))
+(load-LoGS-file "command-line_CMUCL")
 
 ;; signal processing
 ;; someday we should have some!

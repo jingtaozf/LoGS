@@ -21,10 +21,10 @@
   ((relative-timeout :initarg :relative-timeout
                      :accessor relative-timeout
                      :initform ()
-                     :type (or null number))
+                     :type (or null integer))
    (next-timeout :accessor next-timeout
                  :initform ()
-                 :type (or null number))))
+                 :type (or null integer))))
 
 (defmethod update-relative-timeout ((relative-timeout-object relative-timeout-object))
   (with-slots (relative-timeout) relative-timeout-object
@@ -36,8 +36,8 @@
 (defmethod sort-relative-timeouts ((x relative-timeout-object) (y relative-timeout-object))
   (let ((t-x (next-timeout x))
         (t-y (next-timeout y)))
-    (declare (fixnum t-x))
-    (declare (fixnum t-y))
+    (declare (integer t-x))
+    (declare (integer t-y))
     (> t-x t-y)))
 
 ;; a priority queue to hold things that can time out
@@ -66,7 +66,7 @@
     (enqueue *relative-timeout-object-timeout-queue* relative-timeout-object)))
 
 (defmethod exceeded-relative-timeout-p ((relative-timeout-object relative-timeout-object) time)
-  (declare (fixnum time))
+  (declare (integer time))
   (with-slots (next-timeout) relative-timeout-object
     (when next-timeout 
       (> time next-timeout))))
