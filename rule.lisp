@@ -35,7 +35,10 @@
              :accessor continuep)
    (actions :initarg :actions
             :accessor actions
-            :initform ()))
+            :initform ())
+   (environment :initarg :environment
+                :accessor environment
+                :initform ()))
   (:documentation "Rules associate messages with actions."))
 
 (defgeneric rule-exceeded-limit-p (rule time)
@@ -64,46 +67,141 @@
                       (t no-match)))
            (values matches sub-matches)))))
 
+(defmacro in-given-environment (env body &rest args)
+  (let* ((vars (gensym))
+         (vals (gensym))
+         (body-result (gensym))
+         (funcall-body (if args 
+                           `(funcall ,body-result ,@args)
+                           `(funcall ,body-result))))
+    `(let ((,vars (mapcar #'car ,env))
+           (,vals (mapcar #'cadr ,env)))
+      `(declare (special ,@,vars))
+      (progv (cons 'env ,vars) (cons ,env ,vals)
+        (let ((,body-result ,body))
+          (cond ((functionp ,body-result)
+                 ,funcall-body)
+                (t
+                 ,body-result)))))))
+
+;; (defmethod check-rule ((rule rule) (message message))
+;;   (unless (dead-p rule)
+;;     (multiple-value-bind (matches sub-matches)
+;;         (rule-matches-p rule message)
+;;       (declare (special matches sub-matches))
+;;       (when *debug* 
+;;         (format t "checking rule: ~A~%" (name rule)))
+;;       (if matches
+;;           (with-slots (delete-rule no-delete-rule actions) 
+;;               rule
+            
+;;             (when actions
+;;               (if (listp matches)
+;;                   (in-given-environment
+;;                    (eval matches)
+;;                    (run-actions rule message matches sub-matches))
+;;                   (run-actions rule message matches sub-matches)))
+            
+;;             (when delete-rule 
+;;               (and
+;;                (funcall delete-rule message)
+;;                (if no-delete-rule
+;;                    (funcall no-delete-rule message)
+;;                    t)
+;;                (setf (dead-p rule) t)
+;;                (dll-delete *ruleset* rule)))
+;;             (values matches sub-matches))))))
+
 (defmethod check-rule ((rule rule) (message message))
   (unless (dead-p rule)
-    (multiple-value-bind (matches sub-matches)
-        (rule-matches-p rule message)
-      (when *debug* 
-        (format t "checking rule: ~A~%" (name rule)))
-      (if matches
-          (with-slots (delete-rule no-delete-rule actions) 
-              rule
-            
-            (when actions
-              (run-actions rule message matches sub-matches))
-            
-            (when delete-rule 
-              (and
-               (funcall delete-rule message)
-               (if no-delete-rule
-                   (funcall no-delete-rule message)
-                   t)
-               (setf (dead-p rule) t)
-               (dll-delete *ruleset* rule)))
-            (values matches sub-matches))))))
+    (when *debug* 
+        (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
+      
+      (in-given-environment 
+       (environment rule)
+       
+       (multiple-value-bind (matchp environment)
+           (rule-matches-p rule message)
+         (when *debug* 
+           (format t "matchp: ~A environment: ~A~%" matchp environment))
 
-(defgeneric run-actions (rule message matches sub-matches)
+         (when matchp
+             (with-slots (delete-rule no-delete-rule actions) 
+                 rule
+               
+               (when actions
+                 (run-actions rule message environment))
+               
+               (when delete-rule 
+                 (and
+                  (funcall delete-rule message)
+                  (if no-delete-rule
+                      (funcall no-delete-rule message)
+                      t)
+                  (setf (dead-p rule) t)
+                  (dll-delete *ruleset* rule)))
+               
+               (when *debug*
+                 (format t "about to return ~A and ~A~%" matchp environment))
+               
+               (values matchp environment)))))))
+
+(defmethod check-rule ((rule rule) (message message))
+  (unless (dead-p rule)
+
+    (when *debug* 
+        (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
+
+    (with-slots (environment) rule
+      (in-given-environment 
+       environment
+       
+       (multiple-value-bind (matchp rule-environment)
+           (rule-matches-p rule message)
+         
+           (when matchp
+
+             (with-slots (delete-rule no-delete-rule actions environment) 
+                 rule  
+
+               (when actions
+                 (run-actions rule message rule-environment))
+               (when delete-rule 
+                 (and
+                  (funcall delete-rule message)
+                  (if no-delete-rule
+                      (funcall no-delete-rule message)
+                      t)
+                  (setf (dead-p rule) t)
+                  (dll-delete *ruleset* rule)))
+               
+               (values matchp rule-environment))))))))
+  
+(defgeneric run-actions (rule message matches)
   (:documentation "run a rule's actions."))
 
-(defmethod run-actions ((rule rule) message matches sub-matches)
+(defmethod run-actions ((rule rule) message matchesQ)
   (let ((actions (actions rule)))
     (when actions
       (mapcar 
        (lambda (action)
          (declare (function action))
+         
          (progn
-           (funcall action message matches sub-matches)))
-       actions))))
+           (when *debug*
+             (format t "running action ~A in env ~A with args: ~A~%"
+                     action 
+                     matchesQ
+                     message))
+           
+           (in-given-environment
+            matchesQ
+            action
+            message)
 
-;; (defmethod (setf timeout) :after (new-value (rule rule))
-;;   (progn
-;;     (dll-delete *rule-timeout-queue* rule)
-;;     (enqueue *rule-timeout-queue* rule)))
+           (when *debug* 
+             (format t "ran action~%"))))
+       actions))))
 
 (defmethod (setf dead-p) :after (new-value (rule rule))
   (when *debug*

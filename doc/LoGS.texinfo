@@ -3,7 +3,8 @@
 @settitle LoGS 0.0.0a
 @set AUTHOR James E. Prewett
 @set EDITION 0.0.0a
-@set UPDATED March 8, 2004
+@c @set UPDATED March 8, 2004
+@set UPDATED September 15, 2004
 @set COPYRIGHT Copyright @copyright{} 2003--2004 James E. Prewett
 
 
@@ -34,7 +35,7 @@ of the @cite{@value{TITLE}}
 last updated on @value{UPDATED}.
 @value{COPYRIGHT}
 @end ifinfo
-@c %Dnd of Description
+@c %End of Description
 
 
 @titlepage
@@ -44,7 +45,7 @@ last updated on @value{UPDATED}.
 @c  The following two commands
 @c  start the copyright page.
 @page
-@vskip 0pt plus 1filll
+@vskip 0pt plus 1fill
 @insertcopying
 
 @end titlepage
@@ -96,23 +97,24 @@ rules (no matter how deeply nested within the originally specified
 rule) and the specification of this should not be overly complex.}. 
 
 Common LISP is the programming language used by LoGS to represent its
-rules and other important structures.  This is simular to how SEC uses
+rules and other important structures.  This is similar to how SEC uses
 Perl, except that all of LoGS is exposed to the user for potential use
 or modification; the LoGS mainline (or any other component) can be
 rewritten at run-time by the user.
 
 This manual assumes that you are familiar with programming in LISP
-using CLOS as well as with Perl compatable regular expressions.  Most
+using CLOS as well as with Perl compatible regular expressions.  Most
 of the LISP presented in this manual is very simple, so you need not
-be a LISP expert to read this manual or use LoGS; however,
-understanding how to create and manipulate CLOS objects in LISP will
-be very useful.  While LoGS strives not to push you into a particular
-mechanism to discover the ``interesting'' log messages, regular
-expressions are probably the most common way of doing so in other log
-analysis applications.  LoGS currently uses the CL-PPCRE package to
-match regular expressions@footnote{There is no reason not to use other
-regular expression packages; however, regular expressions that work
-with CL-PPCRE will be presented in this manual.}. 
+be a LISP expert to read this manual or use LoGS; however, at this
+stage in LoGS' development, understanding how to create and manipulate
+CLOS objects in LISP will be very useful.  While LoGS strives not to
+push you into a particular mechanism to discover the ``interesting''
+log messages, regular expressions are probably the most common way of
+doing so in other log analysis applications.  LoGS currently uses the
+CL-PPCRE package to match regular expressions@footnote{There is no
+reason not to use other regular expression packages; however, regular
+expressions that work with CL-PPCRE will be presented in this
+manual.}.
 
 @cindex LoGS programming language
 @cindex Common LISP
@@ -137,8 +139,9 @@ behavior of the (excellent) Logsurfer program written by
 Wolfgang Ley and Ewe Ellerman. 
 
 An Object--Oriented approach has been taken with LoGS.  Each of the
-five major components are implemented as CLOS classes and may be
-instantiated by calling the standard @code{make-instance} macro.
+five major components, with the exception of actions, are implemented
+as CLOS classes and may be instantiated by calling the standard
+@code{make-instance} macro. 
 
 @cindex instantiation of LoGS objects
 
@@ -159,6 +162,7 @@ LoGS.  Currently LoGS has facilities to handle arbitrary ASCII
 data separated by newlines such as a log file written by the
 system log daemon, syslogd via David Worth's @code{File-Follower} class.
 
+@cindex File-Follower
 @cindex messages
 @cindex data source
 @cindex ASCII
@@ -172,30 +176,35 @@ sub--class of Messages.  It is intended that other types of
 messages be created and that CLOS can be leveraged to do the
 right thing with the right type of message.
 
+@cindex Message class
+@cindex String-message class
 @cindex message object
-@cindex string-message object
+
 
 The only reason why other message formats are not supported is that
-there are currently no message source objects for other message
-sources.
+there are currently no message source objects that produce anything
+beyond String-Message objects.
 
 @cindex alternative message sources
 @cindex message sources, alternative
+@cindex string-message object
+
 
 @node Rules, Rulesets, Messages, LoGS Overview
 @section Rules
 
-Rules are objects that associate Messages with an actions list.  When a
+Rules are objects that associate Messages with a list of actions.  When a
 Rule matches a Message, then the actions associated with that
 rule (which are stored as a list in the Rule's actions slot) are
 called with the Message, the portion of the message that
 caused the match, and any matches found within@footnote{This is useful
-when using regular expressions and potentially elsewhere} referred to
+when using regular expressions and potentially elsewhere.} referred to
 as matches and sub--matches respectively within the code.
 
 @cindex rules
 @cindex rule object
 @cindex actions slot (Rule object)
+@cindex actions list (Rule object)
 @cindex rule actions slot
 @cindex regular expressions
 @cindex matches
@@ -276,7 +285,8 @@ inserted into Rulesets (Rulesets may be nested).
 Rules contained within a ruleset are tested sequentially to see
 if they match a given message.  If the rule does match and its
 continuep slot is nil, then no further rules in the Ruleset are
-tested with that particular message.
+tested with that particular message.  Again, this behavior is intended
+to mimic the behavior of Logsurfer.
 
 @cindex continuep slot (Rule object)
 @cindex continue
@@ -295,10 +305,11 @@ Common LISP ways.
 @cindex action 
 @cindex message
 
-Actions can be associated with Rules, Rulesets (as they are a
-special type of Rule), and Contexts.  Actions associated in this
-way will be run when a rule matches a message, a ruleset matches
-a message, or when a context exceeds one of its limits.
+Actions can be associated with Rules, Rulesets\footnote{Rulesets
+inherit many of their slots and much of their behavior from the Rule
+class.}, and Contexts.  Actions associated in this way will be run
+when a rule matches a message, a ruleset matches a message, or when a
+context exceeds one of its limits. 
 
 @cindex ruleset
 @cindex context
@@ -314,7 +325,7 @@ Contexts are objects that store messages for later use.  Contexts can
 be used for any number of messages (a context with zero messages can
 indeed be meaningful!).  
 
-Simular ly to rules, Contexts associate messages with actions.
+Similarly to rules, contexts associate messages with actions.
 The primary differences between a rule and a context are that contexts
 associate actions with groups of messages whereas rules associate
 actions with a single message and that contexts do not act directly on
@@ -322,15 +333,14 @@ single messages.  Contexts are generally used to store related
 messages, for example, a context could be used to gather all of the
 messages from a given ssh session. 
 
-LoGS 0.0.0 had a bogus notion of contexts borrowed from Logsurfer.
-This notion uses contexts as purely passive objects.  This poses a
-serious efficiency problem (as pointed out by John P. Rouillard in a
-private conversation; Thanks John!)!
+LoGS 0.0.0 had a bogus notion of contexts borrowed from
+Logsurfer. This poses a serious efficiency problem (as pointed out by
+John P. Rouillard in a private conversation; Thanks John!)! 
 
 In versions 0.0.0a and greater, messages can only be added to contexts
 by actions (associated with rules or other contexts).  In this way, we
 can leverage the short--circuit functionality available in LoGS rules
-to gain greater efficiency.  This is also how SEC handles its contexts.
+to gain greater efficiency.  This is similar to how SEC handles its contexts.
 
 @node LoGS Efficiency
 @section LoGS Efficiency
@@ -338,7 +348,7 @@ to gain greater efficiency.  This is also how SEC handles its contexts.
 It is very difficult to talk about the efficiency of LoGS as it really
 depends upon the number and type of rules and contexts that a given message is
 checked against.  Currently, with no rules or contexts, LoGS can
-examine over 500 messages per second on my laptop (1.8Ghz Pentium
+examine over 500 messages per second on my laptop (1.8GHz Pentium
 IV).  
 
 Often, efficiency can be improved by ordering the ruleset so that the
@@ -354,23 +364,19 @@ can be more efficient than those that only match regular expressions.
 
 The current LoGS mainline takes the following steps for an incoming
 message. First, the message is processed.  This consists of testing the message
-against the ruleset and then checking the message against the
-contexts.  Next the ruleset itself is checked to see if any of the
-rules have exceeded one of their limits and need to be destroyed.
-Finally, the contexts are checked to see if any of them have exceeded
-one of their limits and need to be destroyed.
+against the @code{*root-ruleset*}.  Next, LoGS checks to see if any of the
+rules or contexts have exceeded their timeout limits and need to be destroyed.
 
-
-
-
+@cindex *root-ruleset*
+@cindex timeout
 
 @node LoGS Rules, LoGS Rulesets, LoGS Overview, Top
 @chapter LoGS Rules    
 
 Rules are one type of glue that LoGS uses to associate messages
-with actions.  They contain enough information to be able to
-identify messages that they match and to be able to do something
-useful with these messages.
+with action functions.  Rules contain enough information to be able to
+identify messages that they match, to be able to do something useful
+with these messages, and to destroy themselves if needed.
 
 @cindex rule
 @cindex message
@@ -387,12 +393,12 @@ useful with these messages.
 Rule objects consist of: A match function, a no-match function, a
 delete-rule function, an no-delete-rule function, a timeout, a
 continuep value and an actions list.  These components are
-intentionally simular to rules within the Logsurfer log analysis
+intentionally similar to rules within the Logsurfer log analysis
 engine.
 
 The match function is a function that takes a message as its argument
 and returns non-nil if the rule does match the message and nil if it
-does not.  The no-match function is simular to the match function,
+does not.  The no-match function is similar to the match function,
 except that it specifies exceptions to the match function.  If the
 match function returns non-nil, then the no-match function is tested;
 if, then, the no-match function returns non-nil, then it is determined
@@ -503,7 +509,7 @@ Rules match messages when the function stored in their match slot
 returns non-nil and the function stored in their no-match slot
 returns nil.  These functions can be any common LISP function (or,
 more properly, any function callable from your LISP; Imagine LoGS
-running tcl or Perl code!) that takes a single argument of a
+running TCL or Perl code!) that takes a single argument of a
 message object and returns non-nil when they match the message
 and nil when the do not.
 
@@ -563,10 +569,10 @@ regular expression, ``.*''.  This also allows this strategy to be
 somewhat more efficient.
 
 LoGS attempts to allow one working to discover the hidden goodies
-in a logfile to specify how to identify one rather than trying to
+in a log file to specify how to identify one rather than trying to
 impose bogus restrictions on how log files can be analyzed.  One
 interesting idea I have is to create certain rules that do not
-match any messages on Tuesdays between 9:00am and 1:00pm as that
+match any messages on Tuesdays between 9:00am and 1:00PM as that
 is when I have scheduled systems maintenance on one of my
 machines.  That way I can do all sorts of things the nodes of my
 cluster will complain about without being swamped with alarms.
@@ -930,11 +936,11 @@ nested within an outer ruleset, only the inner-most ruleset can be
 accessed (easily).
 
 @menu
-* How LoGS was extended to have nestable rulesets::  
+* How LoGS was extended to have nest-able rulesets::  
 @end menu
 
-@node How LoGS was extended to have nestable rulesets
-@section How LoGS was extended to have nestable rulesets
+@node How LoGS was extended to have nest-able rulesets
+@section How LoGS was extended to have nest-able rulesets
 
 LoGS Rulesets are another example of how LoGS was extended.
 Originally, Rulesets were stored as doubly-linked-lists, but ruleset
@@ -965,7 +971,7 @@ against the current message.  Here is its definition:
     (check-rules message rule)))
 @end smalllisp
 
-That was all that was required to extend LoGS to have nestable
+That was all that was required to extend LoGS to have nest-able
 rulesets!
 
 

@@ -26,42 +26,6 @@
    (llink :initform ()
           :accessor llink)))
 
-;; a doubly-linked-list-item should be linked to itself
-(defmethod initialize-instance :after 
-    ((new-item doubly-linked-list-item) &rest rest)
-  (declare (ignore rest))
-  (setf (rlink new-item) new-item
-        (llink new-item) new-item))
-
-;; insert item between before and after
-(defmethod insert-between ((insert-item doubly-linked-list-item)
-                             (before doubly-linked-list-item)
-                             (after doubly-linked-list-item))
-    (setf (rlink insert-item) after
-          (llink insert-item) before
-          (rlink before) insert-item
-          (llink after) insert-item))
-
-(defmethod insert-after ((insert-item doubly-linked-list-item)
-                         (before doubly-linked-list-item))
-    (insert-between
-     insert-item
-     before
-     (rlink before)))
-
-(defmethod insert-before ((insert-item doubly-linked-list-item)
-                          (after doubly-linked-list-item))
-  (insert-between
-   insert-item
-   (llink after)
-   after))
-
-(defmethod remove-item ((remove-item doubly-linked-list-item))
-  (let ((before (llink remove-item))
-        (after (rlink remove-item)))
-    (setf (rlink before) after
-          (llink after) before)))
-
 ;;;; The Doubly-linked-list class
 
 (defclass doubly-linked-list ()
@@ -73,54 +37,91 @@
                  :accessor list-entries)
   ))
 
-;; insert an item at the head of the queue
-(defmethod enqueue ((doubly-linked-list doubly-linked-list)
-                    insert-item)
-  (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item 
-              :direction :after))
 
-;; insert an item into the queue
 (defgeneric dll-insert (doubly-linked-list neighbor-item insert-item &key direction))
 
+;; general case
 (defmethod dll-insert ((doubly-linked-list doubly-linked-list)
-                       neighbor-item insert-item &key direction)
-  (declare (ignore direction insert-item neighbor-item doubly-linked-list)))
+                       (neighbor-item doubly-linked-list-item)
+                       (insert-item doubly-linked-list-item) 
+                       &key direction)
 
+  (cond
+    ((equal direction :before)
+     (progn
+       (when *debug* 
+         (format t "inserting ~A into ~A before ~A~%" insert-item doubly-linked-list neighbor-item))
+       (when (llink neighbor-item)
+         (setf (rlink (llink neighbor-item)) insert-item))
+       (setf (rlink insert-item) neighbor-item)
+       (setf (llink insert-item) (llink neighbor-item))
+       (setf (llink neighbor-item) insert-item)
+       ;; if the neighbor was the head, we are now the head
+       (when (eq (head doubly-linked-list) neighbor-item)
+         (setf (head doubly-linked-list) insert-item))))
+    ((equal direction :after)
+     (progn
+       (when *debug*
+         (format t "inserting ~A into ~A after ~A~%" insert-item doubly-linked-list neighbor-item))
+        (when (rlink neighbor-item)
+         (setf (llink (rlink neighbor-item)) insert-item))
+       (setf (llink insert-item) neighbor-item)
+       (setf (rlink insert-item) (rlink neighbor-item))
+       (setf (rlink neighbor-item) insert-item)
+       ;; if the neighbor was the tail, we are now the tail
+       (when (eq (tail doubly-linked-list) neighbor-item)
+         (setf (tail doubly-linked-list) insert-item))
+      ))
+    (t
+     (error "unknown direction: ~A~%" direction))))
+
+;; unencapsulated case
 (defmethod dll-insert ((doubly-linked-list doubly-linked-list)
                        (neighbor-item doubly-linked-list-item)
                        insert-item
                        &key direction)
+  (dll-insert doubly-linked-list
+              neighbor-item
+              (make-instance 'doubly-linked-list-item :data insert-item)
+              :direction direction))
 
-          (dll-insert doubly-linked-list
-                      neighbor-item
-                      (make-instance 'doubly-linked-list-item
-                                     :data insert-item)
-                      :direction direction))
+;; null neighbor
+(defmethod dll-insert ((doubly-linked-list doubly-linked-list)
+                       (neighbor-item (eql NIL))
+                       (insert-item doubly-linked-list-item)
+                       &key direction)
+  (cond ((equal direction :before)
+         (progn
+           (when *debug*
+             (format t "inserting item ~A into ~A before nil~%" insert-item doubly-linked-list))
+           (if (head doubly-linked-list)
+               (dll-insert doubly-linked-list (head doubly-linked-list) insert-item :direction direction)
+               (progn
+                 (setf (head doubly-linked-list) insert-item)
+                 (setf (tail doubly-linked-list) insert-item)))))
+        ((equal direction :after)
+         (progn
+           (when *debug*
+             (format t "inserting item ~A into ~A after nil~%" insert-item doubly-linked-list))
+           (if (tail doubly-linked-list)
+               (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item :direction direction)
+               (progn
+                 (setf (head doubly-linked-list) insert-item)
+                 (setf (tail doubly-linked-list) insert-item)))))))
+        
+                
 
 (defmethod dll-insert ((doubly-linked-list doubly-linked-list)
-                              (neighbor-item doubly-linked-list-item)
-                              (insert-item doubly-linked-list-item)
-                              &key direction)
-  (progn
-    (when (not (tail doubly-linked-list))
-      (setf (tail doubly-linked-list) insert-item))
-    (when (not (head doubly-linked-list))
-      (setf (head doubly-linked-list) insert-item))
-    (if (eql direction :after)
-        (progn
-          (insert-after insert-item neighbor-item)
-          (when (or (eql neighbor-item (tail doubly-linked-list))
-                    (not (tail doubly-linked-list)))
-            (setf (tail doubly-linked-list) insert-item)))
-        (progn
-          (insert-before insert-item neighbor-item)
-          (when (or (eql neighbor-item (head doubly-linked-list))
-                    (not (head doubly-linked-list)))
-            (setf (head doubly-linked-list) insert-item))))))
-    
+                       (neighbor-item (eql NIL))
+                       insert-item
+                       &key direction)
+  (dll-insert doubly-linked-list
+              neighbor-item
+              (make-instance 'doubly-linked-list-item :data insert-item)
+              :direction direction))
 
 (defmethod dll-insert :after ((doubly-linked-list doubly-linked-list)
-                              (neighbor-item doubly-linked-list-item)
+                              neighbor-item
                               (insert-item doubly-linked-list-item)
                               &key direction)
   (declare (ignore direction neighbor-item))
@@ -129,23 +130,26 @@
          (list-entries doubly-linked-list)) 
         insert-item))
 
-; for insert at beginning or end (or into empty)
-(defmethod dll-insert ((doubly-linked-list doubly-linked-list)
-                       (neighbor-item list)
-                       insert-item 
-                       &key direction)
-  (let ((enc-insert-item (make-instance 'doubly-linked-list-item
-                                  :data insert-item)))
-    (setf (gethash insert-item (list-entries doubly-linked-list)) 
-          enc-insert-item)
-    (dll-insert doubly-linked-list enc-insert-item enc-insert-item 
-                :direction direction)))
+ (defgeneric enqueue (data-structure item))
+
+(defmethod enqueue ((doubly-linked-list doubly-linked-list)
+                    insert-item)
+  (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item 
+              :direction :after))
 
 (defmethod dll-delete ((doubly-linked-list doubly-linked-list)
                        item-to-delete)
   (let ((lookup (gethash item-to-delete (list-entries doubly-linked-list))))
     (when lookup
       (dll-delete doubly-linked-list lookup))))
+
+(defmethod remove-item ((remove-item doubly-linked-list-item))
+  (let ((before (llink remove-item))
+        (after (rlink remove-item)))
+    (when before
+      (setf (rlink before) after))
+    (when after
+      (setf (llink after) before))))
 
 (defmethod dll-delete ((doubly-linked-list doubly-linked-list)
                        (item-to-delete doubly-linked-list-item))

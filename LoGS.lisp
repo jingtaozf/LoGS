@@ -41,6 +41,7 @@
 (:use :cl
 	#+allegro :clos
 	#+cmu :pcl
+        #+sbcl :sb-mop
 	#+lispworks :hcl
         :cl-user)
 #+cmu
@@ -151,39 +152,88 @@ both matches and continuep is nil."))
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
     (loop with *current-rule* = head
           and found = ()
-          when (not (head ruleset))
-          do
-          (when *debug* 
-            (format t "finished checking ruleset~%"))
-          (return ())
+
+          ;;; there are no (more) rules in this ruleset
           when (not *current-rule*)
           do
           (when *debug*
             (format t "no more rules~%"))
           (return found)
 
+          ;; we've already checked everything
           when (and *current-rule* (gethash *current-rule* seen))
           do
           (progn
             (when *debug* (format t "returning found: ~A~%" found))
             (return found))
 
+          ;; there's a rule to check
           when *current-rule*
           do 
           (setf (gethash *current-rule* seen) t)
           (let ((data (data *current-rule*)))
             (if (dead-p data)
-                (progn
-                  (dll-delete ruleset *current-rule*)
-                  (when *debug* (format t "rule is dead~%")))
+                (dll-delete ruleset *current-rule*)
                 (progn
                   (when *debug* (format t "checking rule~%"))
                   (and 
-                   (setq found (check-rule data message))
+                   (multiple-value-bind
+                         (matchp bind-list)
+                       (check-rule data message)
+                     (when *debug*
+                       (format t "match is: ~A~%" matchp))
+                     (setq found matchp))
+                   
                    (unless (continuep data)
                      (return t))))))
           (let ((rlink (rlink *current-rule*)))
             (setq *current-rule* rlink)))))
+
+(defmethod check-rules ((message message) (ruleset doubly-linked-list))
+  (let ((head (head ruleset))
+        ;(seen (make-hash-table :test #'equal))
+        (*ruleset* ruleset))
+    (when
+        *debug*
+      (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
+    (loop with *current-rule* = head
+          and found = ()
+
+          ;;; there are no (more) rules in this ruleset
+          when (not *current-rule*)
+          do
+          (when *debug*
+            (format t "no more rules~%"))
+          (return found)
+
+          ;; we've already checked everything
+;;         when (and *current-rule* (gethash *current-rule* seen))
+;;           do
+;;           (progn
+;;             (when *debug* (format t "returning found: ~A~%" found))
+;;             (return found))
+
+          ;; there's a rule to check
+       when *current-rule*
+       do 
+         ;(setf (gethash *current-rule* seen) t)
+         (let ((data (data *current-rule*)))
+           (if (dead-p data)
+               (dll-delete ruleset *current-rule*)
+               (progn
+                 (when *debug* (format t "checking rule~%"))
+                 (and 
+                  (multiple-value-bind
+                        (matchp bind-list)
+                      (check-rule data message)
+                    (when *debug*
+                      (format t "match is: ~A~%" matchp))
+                    (setq found matchp))
+                  
+                  (unless (continuep data)
+                    (return t))))))
+         (let ((rlink (rlink *current-rule*)))
+           (setq *current-rule* rlink)))))
 
 (defgeneric check-limits (thing)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
@@ -224,12 +274,15 @@ both matches and continuep is nil."))
 
 (defmethod run-context-actions ((context context))
   "Run the actions associated with a context."
-  (when (actions context)
-    (mapcar 
-     (lambda (x) 
-       (declare (function x))
-       (funcall x context))
-     (actions context))))
+  (progn
+    (when *debug*
+      (format t "running context actions~%"))
+    (when (actions context)
+      (mapcar 
+       (lambda (x) 
+         (declare (function x))
+         (funcall x context))
+       (actions context)))))
 
 #+cmu
 (ext:defswitch "-no-internal-time" #'(lambda (switch) 

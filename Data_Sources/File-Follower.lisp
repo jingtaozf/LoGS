@@ -51,9 +51,14 @@
 
 (defun get-file-length-from-filename (filename)
   "Given a filename, return the number of bytes currently in the file."
-  (nth-value 8 (unix:unix-stat filename)))
+  #+cmu
+  (nth-value 8 (unix:unix-stat filename))
 
-(defmethod set-file-follower-position ((file-follower file-follower)
+  #+sbcl
+  (nth-value 8 (sb-unix:unix-stat filename))
+  )
+
+(Defmethod set-file-follower-position ((file-follower file-follower)
                                        (position number))
   (file-position
    (filestream file-follower)

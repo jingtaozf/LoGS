@@ -73,16 +73,18 @@
   (dll-insert
    *ruleset*
    (head *ruleset*)
-   rule))
+   rule
+   :direction :before))
 
 (defmethod rule-before ((rule rule))
   (unless *current-rule*
     (error "no current rule"))
   (dll-insert
-     *ruleset*
-     (or (gethash (data *current-rule*) (list-entries *ruleset*))
-         (error "WTF?"))
-     rule))
+   *ruleset*
+   (or (gethash (data *current-rule*) (list-entries *ruleset*))
+       (error "WTF?"))
+   rule
+   :direction :before))
 
 (defmethod rule-after ((rule rule))
   (dll-insert

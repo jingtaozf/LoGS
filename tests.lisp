@@ -21,7 +21,7 @@
 (in-package :LoGS)
 (use-package :ORG.ANCAR.CLUNIT)
 
-(setf *do-error* t)
+(defvar *do-error* t)
 
 (defun assert-equal (a b &key test)
        (not 
@@ -110,14 +110,14 @@
       (assert-non-nil (gethash 42 (list-entries dll)))
       (assert-equal 42 (data (gethash 42 (list-entries dll)))))))
 
-(deftest "only item in linked list is its own rlink & llink"
+(deftest "only item in linked list has no rlink or llink"
     :test-fn
   (lambda ()
     (let ((dll (make-instance 'doubly-linked-list)))
       (dll-insert dll () 42 :direction :before)
       (and
-       (assert-equal (head dll) (rlink (head dll)))
-       (assert-equal (head dll) (llink (head dll)))))))
+       (assert-equal () (rlink (head dll)))
+       (assert-equal () (llink (head dll)))))))
 
 (deftest "only item in linked list is head and tail"
     :test-fn
@@ -154,9 +154,8 @@
                                      :match #'match-all
                                      :actions
                                      (list
-                                      (lambda (message matches sub-matches)
-                                        (declare 
-                                         (ignore message matches sub-matches))
+                                      (lambda (message)
+                                        (declare (ignore message))
                                         (setf ran-tail-rule t))))))
       
       
@@ -261,8 +260,6 @@
   (lambda () 
     (let ((r1 (make-instance 'rule))
           (r2 (make-instance 'rule)))
-;      (format t "Name R1: ~A -- ~A~%" r1 (name r1))
-;      (format t "Name R2: ~A -- ~A~%" r2 (name r2))
       (not (eq r1 r2)))))
 
 (deftest "rule is entered into ruleset name table"
@@ -363,7 +360,7 @@
            (c2 (make-instance 'context :name (name c1))))
       (eq c1 c2))))
 
-(deftest "default style rule matches message"
+(Deftest "default style rule matches message"
     :test-fn
   (lambda ()
     (let ((message (make-instance 'message :message "this is a message"))
@@ -506,9 +503,8 @@
                                  :match #'match-all
                                  :actions
                                  (list
-                                  (lambda (message matches sub-matches)
-                                    (declare 
-                                     (ignore message matches sub-matches))
+                                  (lambda (message)
+                                    (declare (ignore message))
                                     (setf xyzzy 42)))))
            (message (make-instance 'message :message "test message")))
       (enqueue ruleset rule)
@@ -842,9 +838,8 @@
                                 :match #'match-all
                                 :actions 
                                 (list
-                                 (lambda (message matches sub-matches) 
-                                   (declare 
-                                    (ignore message matches sub-matches))
+                                 (lambda (message)
+                                   (declare (ignore message))
                                    (progn 
                                      (setf thing t))))))
            (message (make-instance 'message :message "test message")))
@@ -860,8 +855,8 @@
     (let ((lst (make-instance 'doubly-linked-list))
           (item1 (make-instance 'rule))
           (item2 (make-instance 'rule)))
-      (assert-non-nil (enqueue lst item1))
-      (assert-non-nil (dll-insert lst (head lst) item2 :direction :after))
+      (enqueue lst item1)
+      (dll-insert lst (head lst) item2 :direction :after)
       (assert-equal item1 (data (head lst)))
       (assert-equal item2 (data (rlink (head lst)))))))
 
@@ -871,8 +866,8 @@
     (let ((lst (make-instance 'doubly-linked-list))
           (item1 (make-instance 'rule))
           (item2 (make-instance 'rule)))
-      (assert-non-nil (enqueue lst item1))
-      (assert-non-nil (dll-insert lst (head lst) item2 :direction :before))
+      (enqueue lst item1)
+      (dll-insert lst (head lst) item2 :direction :before)
       (assert-equal item2 (data (head lst)))
       (assert-equal item1 (data (rlink (head lst)))))))
 
@@ -909,7 +904,6 @@
       (enqueue pq 42)
       (assert-non-nil (gethash 42 (list-entries pq))))))
 
-;; this was making a context as the head of the rule timeout queue  WTF?
 (deftest "timed-out rule is removed from priority queue"
     :test-fn
   (lambda ()
@@ -921,11 +915,9 @@
                                (timeout y))))))
       (let ((rule (make-instance 'rule :timeout 1)))
         (declare (ignore rule))
-        ;; call the whatever to cause removal
         (assert-non-nil (head *timeout-object-timeout-queue*))
         (check-limits *timeout-object-timeout-queue*)
         (assert-nil (head *timeout-object-timeout-queue*))))))
-
 
 (deftest "timed-out-rule is removed from pq hash"
     :test-fn
@@ -959,7 +951,8 @@
         (assert-equal (data (rlink (head *timeout-object-timeout-queue*)))
                       c2)
         (assert-equal (data (rlink (rlink (head *timeout-object-timeout-queue*))))
-                      c3)))))
+                      c3)))
+))
 
 (deftest "rules end up in right order in priority queue"
     :test-fn
@@ -1015,7 +1008,6 @@
         (assert-equal (data (head *timeout-object-timeout-queue*))
                       r2)))))
 
-
 (deftest "nomatch negates match in rule"
     :test-fn
   (lambda ()
@@ -1048,56 +1040,6 @@
       (or (not (head *ruleset*))
           (dead-p (data (head *ruleset*)))))))
 
-
-(deftest "doubly-linked-list-item insert-between"
-    :category "dlli"
-    :test-fn
-    (lambda () 
-      (let ((item1 (make-instance 'doubly-linked-list-item))
-            (item2 (make-instance 'doubly-linked-list-item))
-            (item3 (make-instance 'doubly-linked-list-item)))
-        (insert-between item2 item1 item3)
-        (assert-equal item2 (rlink item1))
-        (assert-equal item3 (rlink item2))
-        (assert-equal item2 (llink item3))
-        (assert-equal item1 (llink item2)))))
-
-(deftest "doubly-linked-list-item insert-after"
-    :category "dlli"
-    :test-fn
-    (lambda ()
-      (let ((item1 (make-instance 'doubly-linked-list-item))
-            (item2 (make-instance 'doubly-linked-list-item)))
-        (insert-after item2 item1) ; insert item2 after item1
-        (assert-equal item2 (rlink item1))
-        (assert-equal item1 (rlink item2))
-        (assert-equal item2 (llink item1))
-        (assert-equal item1 (llink item2)))))
-
-(deftest "doubly-linked-list-item insert-before"
-    :category "dlli"
-    :test-fn
-    (lambda ()
-      (let ((item1 (make-instance 'doubly-linked-list-item))
-            (item2 (make-instance 'doubly-linked-list-item)))
-        (insert-before item2 item1)
-        (assert-equal item2 (llink item1))
-        (assert-equal item1 (llink item2))
-        (assert-equal item2 (rlink item1))
-        (assert-equal item1 (rlink item2)))))
-
-(deftest "doubly-linked-list-item remove-item"
-    :category "dlli"
-    :test-fn
-    (lambda () 
-      (let ((item1 (make-instance 'doubly-linked-list-item))
-            (item2 (make-instance 'doubly-linked-list-item)))
-        (insert-after item2 item1)
-        (remove-item item2)
-        (assert-equal item1 (llink item1))
-        (assert-equal item1 (rlink item1)))))
-
-
 (deftest "rule inside ruleset inside ruleset"
     :category "ruleset"
     :test-fn
@@ -1109,8 +1051,8 @@
              (rule (make-instance 'rule :match #'match-all
                                   :actions 
                                   (list
-                                   (lambda (a b c)
-                                     (declare (ignore a b c))
+                                   (lambda (message)
+                                     (declare (ignore message))
                                      (setf xyzzy 42))))))
         (enqueue  r2 rule)
         (enqueue *ruleset* r2)
@@ -1162,7 +1104,6 @@
                                               ()))))
       (not (check-rule rule message)))))
 
-
 (deftest "get-context returns alias instead of orig context"
     :test-fn
   (lambda ()
@@ -1207,30 +1148,30 @@
                 (lambda (message)
                   (equal (message message) "the"))
                 (list
-                 (lambda (message matches sub-matches)
-                   (declare (ignore message matches sub-matches))
+                 (lambda (message)
+                   (declare (ignore message))
                    (setf seen-the t)))))
       (enqueue *root-ruleset*
                (Single
                 (lambda (message)
                   (equal (message message) "ran"))
                 (list
-                 (lambda (message matches sub-matches)
-                   (declare (ignore message matches sub-matches))
+                 (lambda (message)
+                   (declare (ignore message))
                    (setf seen-ran t)))))
       (enqueue *root-ruleset*
                (Single
                 (lambda (message)
                   (equal (message message) "cat"))
                 (list
-                 (lambda (message matches sub-matches)
-                   (declare (ignore message matches sub-matches))
+                 (lambda (message)
+                   (declare (ignore message))
                    (setf seen-cat t)))))
       (main)
-      (and seen-the (not seen-cat) seen-ran)))
+      (assert-non-nil (and seen-the (not seen-cat) seen-ran))))
 
-(deftest "filter function works"
-    :test-fn #'test-filter)
+ (deftest "filter function works"
+     :test-fn #'test-filter)
 
 (defun test-suppress ()
   (let* ((*now* (get-internal-real-time))
@@ -1250,8 +1191,7 @@
                            (declare (ignore message))
                            t)
                          (list
-                          (lambda (message matches sub-matches)
-                            (declare (ignore matches sub-matches))
+                          (lambda (message)
                             (setf seen-messages 
                                   (cons (message message)
                                         seen-messages))))))
@@ -1288,8 +1228,7 @@
                            (declare (ignore message))
                            t)
                          (list
-                          (lambda (message matches sub-matches)
-                            (declare (ignore matches sub-matches))
+                          (lambda (message)
                             (setf seen-messages 
                                   (cons (message message)
                                         seen-messages))))))
@@ -1321,8 +1260,8 @@
      '("the" "ran" "cat"))))
     
 
-(deftest "suppress function works"
-    :test-fn #'test-suppress)
+ (deftest "suppress function works"
+     :test-fn #'test-suppress)
 
 (deftest "suppress function stops after timeout"
     :test-fn #'test-suppress2)
@@ -1337,25 +1276,30 @@
            (list 
             "the"
             "cat"
+            "the"
             "ran"
             "the")))
+
          (suppress-until-rule
           (suppress-until
            (lambda (message)
-             (declare (ignore message))
-             t)
+             (equal (message message) "the"))
            (lambda (message)
-             (equal (message message) "ran"))))
+             (equal (message message) "ran"))
+           :name 'suppress-until-rule))
+
          (match-count 0)
          (catch-all-rule
-          (Single
-           (lambda (message)
-             (declare (ignore message))
-             t)
-           (list 
-            (lambda (message matches sub-matches)
-              (declare (ignore message matches sub-matches))
-              (incf match-count))))))
+          (make-instance 'rule
+                         :match #'match-all
+                         :name 'xxx
+                         :actions
+                         (list
+                          (lambda (message)
+                            (declare (ignore message))
+                            (progn
+                              (format t "xyzzy!")
+                              (incf match-count)))))))
     
     (enqueue *root-ruleset* suppress-until-rule)
     (enqueue *root-ruleset* catch-all-rule)
@@ -1386,8 +1330,7 @@
              (declare (ignore message))
              t)
            (list 
-            (lambda (message matches sub-matches)
-              (declare (ignore message matches sub-matches))
+            (lambda (message)
               (incf match-count))))))
     
     (enqueue *root-ruleset* catch-all-rule)
@@ -1414,8 +1357,7 @@
           (single-with-suppress
            #'match-all
            (list
-            (lambda (message matches sub-matches)
-              (declare (ignore message matches sub-matches))
+            (lambda ()
               (incf count)))
            1)))
     (enqueue *root-ruleset* rule)
@@ -1464,11 +1406,10 @@
 
           ;; actions2
           (list
-           (lambda (message matches sub-matches)
-             (declare (ignore message matches sub-matches))
+           (lambda (message)
+             (declare (ignore message))
              (incf count))))))
 
-    (format t "root-ruleset: ~A~%" *root-ruleset*)
     (enqueue *root-ruleset* rule)
     (main)
     
@@ -1477,6 +1418,92 @@
 
 (deftest "test pair rule type"
     :test-fn #'test-pair-finding-match2)
+
+
+
+;; 5 inserts:
+;;
+;; insert empty list
+;; insert head of list
+;; insert tail of list
+;; insert between 2 elements
+
+
+(deftest "insert empty list"
+    :test-fn
+  (lambda ()
+    (let ((dll (make-instance 'doubly-linked-list)))
+      (dll-insert dll (head dll) 42 :direction :before)
+      (assert-equal 42 (data (head dll)))
+      (assert-equal 42 (data (tail dll))))))
+
+(deftest "insert head of list"
+    :test-fn
+  (lambda ()
+    (let ((dll (make-instance 'doubly-linked-list)))
+      (dll-insert dll (head dll) 42 :direction :before)
+      (dll-insert dll (head dll) 43 :direction :before)
+      (assert-equal 43 (data (head dll)))
+      (assert-equal 42 (data (tail dll))))))
+
+(deftest "insert head of list, rlink & llinks are right"
+    :test-fn
+  (lambda ()
+    (let ((dll (make-instance 'doubly-linked-list)))
+      (dll-insert dll (head dll) 42 :direction :before)
+      (dll-insert dll (head dll) 43 :direction :before)
+      (assert-equal 42 (data (rlink (head dll))))
+      (assert-equal 43 (data (llink (tail dll)))))))
+      
+(deftest "insert tail of list"
+    :test-fn
+  (lambda ()
+    (let ((dll (make-instance 'doubly-linked-list)))
+      (dll-insert dll (head dll) 42 :direction :before)
+      (dll-insert dll (tail dll) 43 :direction :after)
+      (assert-equal 42 (data (head dll)))
+      (assert-equal 43 (data (tail dll))))))
+
+(deftest "insert tail of list, rlinks & llinks are right"
+    :test-fn
+  (lambda ()
+    (let ((dll (make-instance 'doubly-linked-list)))
+      (dll-insert dll (head dll) 42 :direction :before)
+      (dll-insert dll (tail dll) 43 :direction :after)
+      (assert-equal 43 (data (rlink (head dll))))
+      (assert-equal 42 (data (llink (tail dll)))))))
+
+(deftest "insert after head (before tail) of list"
+    :test-fn
+  (lambda ()
+    (let ((dll (make-instance 'doubly-linked-list)))
+      ;; head is 42
+      (dll-insert dll (head dll) 42 :direction :before)
+      ;; tail is 43
+      (dll-insert dll (tail dll) 43 :direction :after)
+      ;; insert between head and tail, after head
+      (dll-insert dll (head dll) 44 :direction :after)
+      (assert-equal 42 (data (head dll)))
+      (assert-equal 43 (data (tail dll)))
+      (assert-equal 44 (data (rlink (head dll))))
+      (assert-equal 44 (data (llink (tail dll))))) 
+      ))
+
+(deftest "insert before tail (after head) of list"
+    :test-fn
+  (lambda ()
+    (let ((dll (make-instance 'doubly-linked-list)))
+      ;; head is 42
+      (dll-insert dll (head dll) 42 :direction :before)
+      ;; tail is 43
+      (dll-insert dll (tail dll) 43 :direction :after)
+      ;; insert between head and tail, before tail
+      (dll-insert dll (tail dll) 44 :direction :before)
+      (assert-equal 42 (data (head dll)))
+      (assert-equal 43 (data (tail dll)))
+      (assert-equal 44 (data (llink (tail dll)))))))
+    
+
                
 
 (run-all-tests)

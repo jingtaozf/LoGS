@@ -68,11 +68,15 @@
 ;; else, return a new instance with that name
 (defmethod make-instance :around ((instance (eql 'CONTEXT)) &rest rest &key name &allow-other-keys)
   (declare (ignore rest))
-  (or
-   (and name
-        (get-context name))
-   (let ((inst (call-next-method)))
-     (setf (gethash (name inst) *contexts-hash*) inst))))
+  (progn
+    (when *debug* 
+      (if (and name (get-context name))
+          (format t "a context named ~A already exists~%" name)))
+    (or
+     (when name
+       (get-context name))
+     (let ((inst (call-next-method)))
+       (setf (gethash (name inst) *contexts-hash*) inst)))))
 
 ;; after we initialize the context, put it into the contexts collection
 (defmethod initialize-instance :after ((instance context) &rest rest)
@@ -140,8 +144,11 @@
 
 ;; if this context is full, run actions and kill it!
 (defmethod add-to-context :after ((context context) (message message))
-  (when (context-exceeded-limit-p context *now*)
-    (expire-context context)))
+  (if (context-exceeded-limit-p context *now*)
+      (progn
+        (when *debug*
+          (format t "expiring context ~A (named ~A)~%" context (name context)))
+        (expire-context context))))
 
 ;; run a context's actions then delete it.
 (defgeneric expire-context (context)

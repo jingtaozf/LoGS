@@ -45,16 +45,16 @@
 
 ;; suppress messages matching match1 until match2 is seen
 (defun suppress-until (match1 match2 &key name)
-  "create a rule that causes messages that match match1 to be suppressed until a message matching match2 is seen"
   (make-instance 'rule
                  :name name
                  :match
                  (lambda (message)
-                   (if (funcall match2 message)
-                       (progn
-                         (setf (dead-p (data *current-rule*)) t)
-                         ())
-                       (funcall match1 message)))))
+                   (or
+                    (funcall match1 message)
+                    (funcall match2 message)))
+                 :delete-rule
+                 match2))
+                    
 
 ;; I DO NOT LIKE THIS NAME!
 (defun single (match-func actions-list &key name)
@@ -77,28 +77,48 @@
                             (suppress match-func time)))))
 
 
-(defun pair (match1 actions1 match2 actions2 &key name name1 name2)
-  "like SEC pair rule."
-  (make-instance 'rule
-                 :name name
-                 :match match1
-                 :actions
-                 (append
-                  (list
-                   ;; make a rule to ignore match1 until match2 is seen
-                   (lambda (message matches sub-matches)
-                     (rule-before
-                      (suppress-until match1 match2 :name name1)))
-                   ;; make a rule to trigger actions2 when match2 is seen
-                   (lambda (message matches sub-matches)
-                     (rule-before
-                      (make-instance 'rule
-                                     :name name2
-                                     :match match2
-                                     :delete-rule (lambda (message) t)
-                                     :actions actions2))))
-                  actions1)))
+;; (defun pair (match1 actions1 match2 actions2 &key name name1 name2)
+;;   "like SEC pair rule."
+;;   (make-instance 'rule
+;;                  :name name
+;;                  :match match1
+;;                  :actions
+;;                  (append
+;;                   (list
+;;                    ;; make a rule to ignore match1 until match2 is seen
+;;                    (lambda (message)
+;;                      (rule-before
+;;                       (suppress-until match1 match2 :name name1)))
+;;                    ;; make a rule to trigger actions2 when match2 is seen
+;;                    (lambda (message)
+;;                      (rule-before
+;;                       (make-instance 'rule
+;;                                      :name name2
+;;                                      :match match2
+;;                                      :delete-rule (lambda (message) t)
+;;                                      :actions actions2))))
+;;                   actions1)))
 
+
+(defun pair (match1 actions1 match2 actions2)
+  (make-instance 
+   'rule
+   :match match1
+   :actions
+   (append
+    (list
+     (lambda (message)
+       (let ((ign-match1 (make-instance 'rule
+                                        :match match1))
+             (find-match2 (make-instance 'rule
+                                         :match
+                                         match2
+                                         :environment
+                                         env
+                                         :actions actions2)))
+         (rule-before find-match2)
+         (rule-before ign-match1))))
+    actions1)))
 
 ;;; XXX finish me!
 (defun pair-with-window (match1 actions1 match2 actions2 missing-actions window 
@@ -126,21 +146,22 @@
                  ;:timeout timeout
                  :actions
                  (append
-                  (list
-                   ;; make a rule to ignore match1 until match2 is seen
-                   (lambda (message matches sub-matches)
-                     (rule-before
-                      (suppress-until match1 match2)))
-                   ;; make a rule to trigger actions2 when match2 is seen
-                   (lambda (message matches sub-matches)
-                     (rule-before
-                      (make-instance 'rule
-                                     :name match2-rule-name
-                                     :match match2
-                                     :timeout timeout
-                                     :delete-rule (lambda (message) t)
-                                     :actions actions2))))
-                  actions1))))
+                  (with-sub-matches-as-dollar-things
+                      (list
+                       ;; make a rule to ignore match1 until match2 is seen
+                       (lambda (message)
+                         (rule-before
+                          (suppress-until match1 match2)))
+                       ;; make a rule to trigger actions2 when match2 is seen
+                       (lambda (message)
+                         (rule-before
+                          (make-instance 'rule
+                                         :name match2-rule-name
+                                         :match match2
+                                         :timeout timeout
+                                         :delete-rule (lambda (message) t)
+                                         :actions actions2))))
+                    actions1)))))
 
 ;; XXX don't like this!
 (defun long-message (long actions-list &key name)
@@ -170,8 +191,7 @@
                  :timeout (timeout context)
                  :actions
                  (list
-                  (lambda (message matches sub-matches)
-                    (declare (ignore matches sub-matches))
+                  (lambda (message)
                     (add-to-context context message)))))
                  
 (defmethod gather-into (match context &key name)
@@ -224,7 +244,7 @@
 
 (defun print-log ()
   "print the message"
-  (lambda (message matches sub-matches)
+  (lambda (message)
     (format t "~A~%" (message message))))
 
 (defun echo ()
