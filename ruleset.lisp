@@ -60,8 +60,8 @@
          (if no-delete-rule
              (funcall no-delete-rule message)
              t)
-         (setf (dead-p rule) t)
-         (dll-delete *ruleset* rule)))
+         (setf (dead-p ruleset) t)
+         (dll-delete *ruleset* ruleset)))
 
       (when matches
         (if (or (not (functionp no-match))
