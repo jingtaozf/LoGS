@@ -110,8 +110,10 @@
 
 ;; load message producers
 (load-LoGS-file "Data-Source" :directory '(:relative "Data_Sources"))
-(load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
+
 (load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
+(load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
+
 
 ;; load low-level file stuff
 #+cmu

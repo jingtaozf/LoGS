@@ -15,7 +15,7 @@ Copyright @copyright{} 2003--2005 James E. Prewett.
 
 @smallexample
 @group
-  Copyright (C)  2003--2005 James E. Prewett
+  Copyright (C)  2003-2005 James E. Prewett
   Permission is granted to copy, distribute and/or modify this document
   under the terms of the GNU Free Documentation License, Version 1.2
   or any later version published by the Free Software Foundation;
@@ -201,10 +201,10 @@ beyond String-Message objects.
 Rules are objects that associate Messages with a list of actions.  When a
 Rule matches a Message, then the actions associated with that
 rule (which are stored as a list in the Rule's actions slot) are
-called with the Message, the portion of the message that
-caused the match, and any matches found within@footnote{This is useful
-when using regular expressions and potentially elsewhere.} referred to
-as matches and sub--matches respectively within the code.
+called with the Message that was matched in the environment stored in
+the environment slot of the rule and the environment returned
+by the match function (the bindings specified in the environment
+returned by the match function override the bindings in the rule's environment).
 
 @cindex rules
 @cindex rule object
@@ -215,13 +215,13 @@ as matches and sub--matches respectively within the code.
 @cindex matches
 @cindex sub--matches
 
-A Rule object consists of these slots: match, no-match,
-delete-rule, no-delete-rule, timeout, continuep, actions, and environment.
-All of these slots have default values.  This allows for rule
-specifications to be rather short for very simple rules.
-However, it is generally useful to at least specify a function
-for the match slot (otherwise the rule can never match a message,
-see below).
+A Rule object consists of these slots: match, no-match, delete-rule,
+no-delete-rule, timeout, continuep, actions, and environment. All of
+these slots have default values (in most cases, the default value is
+NIL).  This allows for rule specifications to be rather short for very
+simple rules. However, it is generally useful to at least specify a
+function for the match slot (otherwise the rule can never match a
+message, see below). 
 
 @cindex Rule slots
 @cindex match slot (Rule object)
@@ -301,17 +301,17 @@ to mimic the behavior of Logsurfer.
 @node Actions, LoGS Contexts, Rulesets, LoGS Overview
 @section Actions
 
-Actions are functions or methods that take 3 arguments, the
-Message that is triggering the action, the portion of the message
-that triggered the match, and any sub--matches that occurred
-(think regular expressions).  Actions may be created at run--time
+Actions are functions or methods that take a single argument, the
+Message that is triggering the action.  Actions are run inside the
+environment returned by the match function inside the environment
+stored in the Rule's match slot.  Actions may be created at run--time
 as a result of running another action in any of the standard
 Common LISP ways.
 
 @cindex action 
 @cindex message
 
-Actions can be associated with Rules, Rulesets\footnote{Rulesets
+Actions can be associated with Rules, Rulesets@footnote{Rulesets
 inherit many of their slots and much of their behavior from the Rule
 class.}, and Contexts.  Actions associated in this way will be run
 when a rule matches a message, a ruleset matches a message, or when a
@@ -327,17 +327,17 @@ context exceeds one of its limits.
 @node LoGS Contexts, LoGS Efficiency, Actions, LoGS Overview
 @section LoGS Contexts
 
-Contexts are objects that store messages for later use.  Contexts can
+Contexts are passive objects that store messages for later use.  Contexts can
 be used for any number of messages (a context with zero messages can
 indeed be meaningful!).  
 
 Similarly to rules, contexts associate messages with actions.
 The primary differences between a rule and a context are that contexts
 associate actions with groups of messages whereas rules associate
-actions with a single message and that contexts do not act directly on
+actions with a single message and also that contexts do not act directly on
 single messages.  Contexts are generally used to store related
 messages, for example, a context could be used to gather all of the
-messages from a given ssh session. 
+messages from a given SSH session. 
 
 LoGS 0.0.0 had a bogus notion of contexts borrowed from
 Logsurfer. This poses a serious efficiency problem (as pointed out by
@@ -390,7 +390,8 @@ rules or contexts have exceeded their timeout limits and need to be destroyed.
 Rules are one type of glue that LoGS uses to associate messages
 with action functions.  Rules contain enough information to be able to
 identify messages that they match, to be able to do something useful
-with these messages, and to destroy themselves if needed.
+with these messages, and to destroy themselves if needed.  Rules are
+also able to carry state with them in their environment slot.
 
 @cindex rule
 @cindex message
@@ -450,7 +451,8 @@ the delete-rule function.
 
 The timeout is a value in seconds for when the rule should be
 deleted.  This value is the time in seconds such as that returned by
-get-universal-time. 
+get-universal-time.  Simularly, the relative-timeout value is the
+time in seconds that a rule is allowed to exist without matching a message.
 
 The continuep value specifies that, even if this rule matches a
 message that that message should also be checked against subsequent
@@ -497,23 +499,21 @@ does nothing when it matches these messages).  Rules of this form
 allow us to easily filter out messages that are not interesting
 to us.
 
+Since this sort of filtering is relatively common, the @code{filter}
+function has been added to LoGS.  @code{Filter} is responsible for
+creating a rule like that seen above, but its syntax is simpler.
+This new functionality might be used like this:
+
+@smalllisp
+(filter
+   (lambda (message)
+     (cl-ppcre::scan
+        ``CROND\\[\\d+\\]: \\(root\\) CMD \\(run-parts /etc/cron\\.hourly\\)'' 
+        (message message))))
+@end smalllisp
+
 @cindex filtering
 @cindex Rule for filtering
-
-LoGS also has a sort of short--hand notation for rules of this
-form to simplify their specification.  The '!' operator can be
-used to specify a rule of this form.  The last rule could have
-been specified like this:
-
-@code{! ``CROND\\[\\d+\\]: \\(root\\) CMD \\(run-parts /etc/cron\\.hourly\\)''}
-
-@findex !
-
-The last example illustrates how LoGS is becoming easier to use.  Most
-log analysis tasks are simple and repetitive (eg. weeding out all of
-those messages that indicate your machine has the hardware you expect
-when it boots; my laptop spits out 93 of these messages every time it
-boots!) and these simple tasks should be simple to perform!
 
 @menu
 * How a rule matches a message.::  
@@ -553,7 +553,7 @@ and nil when the do not.
 It is common to use regular expressions to specify the messages
 that match the rule.  This is how messages are matched in most
 other log analysis applications such as Logsurfer, SEC, Swatch,
-etc.  It has been pointed out (XXX reference here XXX) that this
+etc.  It has been pointed out that this
 may not always be the optimal way to match messages.  
 
 A simple case in which using regular expressions is both
@@ -591,7 +591,9 @@ Here is another way to write that same rule:
 @smalllisp
 (make-instance 'rule
                :match
-               (lambda (message) t)
+               (lambda (message)
+                 (declare (ignore message))
+                 t)
                :actions
                (list 
                  (lambda (message)
@@ -674,6 +676,8 @@ created by the match function in the action function.
              (message message))))))
 @end smalllisp
 
+@cindex passing state to action functions
+
 
 @node Rule Nesting, Dynamic Rules, Using Rules to implement Artificial Ignorance, LoGS Rules
 @section Rule Nesting
@@ -754,8 +758,9 @@ Lets take a closer look at how LoGS rules may be created and deleted.
 A rule may be created within the LoGS system by either being created
 as a part of the initial ruleset or by running an action that ends up
 inserting a rule into a ruleset.  Rules may be deleted by running an
-action that causes them to be removed from one or more rulesets, or by
-exceeding the timeout for the rule.
+action that causes them to be removed from one or more rulesets, by
+matching a message and having the delete-rule function also return
+non-NIL, or by exceeding the timeout for the rule.
 
 @cindex timeout
 @cindex rule timeout

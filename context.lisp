@@ -82,7 +82,8 @@
     (let ((c (gethash context *contexts-hash*)))
       (dll-delete *contexts* c)
       (remhash context *contexts-hash*)
-      (dll-delete *timeout-object-timeout-queue* c))))
+      (dll-delete *timeout-object-timeout-queue* c)
+      (dll-delete *relative-timeout-object-timeout-queue* c))))
 
 ; delete a context by name
 ;; if its in the alias, remove that
