@@ -143,7 +143,8 @@ the given ruleset until it finds a rule that
 both matches and continuep is nil."))
 
 (defmethod check-rules ((message message) (ruleset doubly-linked-list))
-  (let ((head (head ruleset)))
+  (let ((head (head ruleset))
+        (seen (make-hash-table :test #'equal)))
     (when
         *debug*
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
@@ -151,23 +152,37 @@ both matches and continuep is nil."))
           and found = ()
           when (not (head ruleset))
           do
+          (when *debug* 
+            (format t "finished checking ruleset~%"))
           (return ())
           when (not *current-rule*)
           do
+          (when *debug*
+            (format t "no more rules~%"))
           (return found)
+
+          when (and *current-rule* (gethash *current-rule* seen))
+          do
+          (progn
+            (when *debug* (format t "returning found: ~A~%" found))
+            (return found))
+
           when *current-rule*
           do 
+          (setf (gethash *current-rule* seen) t)
           (let ((data (data *current-rule*)))
             (if (dead-p data)
-                (dll-delete ruleset *current-rule*)
-                (and 
-                 (setq found (check-rule data message))
-                 (unless (continuep data)
-                   (return t)))))
+                (progn
+                  (dll-delete ruleset *current-rule*)
+                  (when *debug* (format t "rule is dead~%")))
+                (progn
+                  (when *debug* (format t "checking rule~%"))
+                  (and 
+                   (setq found (check-rule data message))
+                   (unless (continuep data)
+                     (return t))))))
           (let ((rlink (rlink *current-rule*)))
-            (if (eq rlink (head ruleset))
-                (return found)
-                (setq *current-rule* rlink))))))
+            (setq *current-rule* rlink)))))
 
 (defgeneric check-limits (thing)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))

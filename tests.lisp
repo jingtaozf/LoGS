@@ -70,6 +70,14 @@
         (push s lst)))
     lst))
 
+(defun match-all (message)
+  (declare (ignore message))
+  t)
+
+(defun match-none (message)
+  (declare (ignore message))
+  ())
+
 ;; dummy test
 (deftest "foo" :test-fn (lambda () t))
 
@@ -277,7 +285,6 @@
           (*ruleset* (make-instance 'ruleset)))
       (enqueue *ruleset* r1)
       (let ((*current-rule* (head *ruleset*)))
-        (format t "xxx: ~A~%"  (gethash (data *current-rule*) (list-entries *ruleset*)))
         (rule-after r2)
         (assert-equal r2 (gethash (name r2) (elements *ruleset*)))))))
 
@@ -290,14 +297,12 @@
       (enqueue *ruleset* r1)
       (let ((*current-rule* (head *ruleset*)))
         (rule-after rule)
-        (format t "blah: ~A~%" (gethash (name rule) (elements *ruleset*)))
-        (format t "thing: ~A~%" (gethash (name rule) (elements *ruleset*)))
         (assert-equal rule (gethash (name rule) (elements *ruleset*)))))))
 
 (deftest "rule-tail is entered into ruleset name table"
     :test-fn
   (lambda () 
-    (let ((*current-rule (make-instance 'rule :name 'r1))
+    (let ((*current-rule* (make-instance 'rule :name 'r1))
           (r2 (make-instance 'rule :name 'r2))
           (*ruleset* (make-instance 'ruleset)))
       (enqueue *ruleset* *current-rule*)
@@ -328,9 +333,10 @@
     :test-fn
   (lambda ()
     (let ((message (make-instance 'message :message "this is a message"))
-          (rule (make-instance 'rule :match (lambda (message) t))))
+          (rule (make-instance 'rule :match #'match-all)))
       (multiple-value-bind (matches sub-matches)
           (check-rule rule message)
+        (declare (ignore sub-matches))
         (assert-non-nil matches)))))
 
 (deftest "no exception works"
@@ -338,10 +344,11 @@
   (lambda () 
     (let ((message (make-instance 'message :message "asdf"))
           (rule (make-instance 'rule
-                               :match (lambda (message) t)
-                               :no-match (lambda (message) ()))))
+                               :match #'match-all
+                               :no-match #'match-none)))
       (multiple-value-bind (matches sub-matches)
           (check-rule rule message)
+        (declare (ignore sub-matches))
         (assert-non-nil matches)))))
 
 
@@ -356,8 +363,8 @@
 (deftest "ruleset match works"
     :test-fn
   (lambda ()
-    (let ((ruleset (make-instance 'ruleset :match (lambda (message) t)))
-          (rule (make-instance 'rule :match (lambda (message) t)))
+    (let ((ruleset (make-instance 'ruleset :match #'match-all))
+          (rule (make-instance 'rule :match #'match-all))
           (message (make-instance 'message)))
       (enqueue ruleset rule)
       (check-rule ruleset message))))
@@ -365,35 +372,36 @@
 (deftest "empty ruleset does not match"
     :test-fn
   (lambda ()
-    (let ((ruleset (make-instance 'ruleset :match (lambda (message) t)))
+    (let ((ruleset (make-instance 'ruleset :match #'match-all))
           (message (make-instance 'message)))
       (not (check-rule ruleset message))))) 
 
 (deftest "matching ruleset with non-matching rules does not match"
     :test-fn
   (lambda ()
-    (let ((ruleset (make-instance 'ruleset :match (lambda (message) t)))
+    (let ((ruleset (make-instance 'ruleset :match #'match-all))
           (message (make-instance 'message))
-          (r1 (make-instance 'rule :match (lambda (message) ()))))
+          (r1 (make-instance 'rule :match #'match-none)))
       (enqueue ruleset r1)
       (not (check-rule ruleset message)))))
 
 (deftest "matching ruleset with matching rule does match"
     :test-fn
   (lambda ()
-    (let ((ruleset (make-instance 'ruleset :match (lambda (message) t)))
+    (let ((ruleset (make-instance 'ruleset :match #'match-all))
           (message (make-instance 'message))
-          (r1 (make-instance 'rule :match (lambda (message) t))))
+          (r1 (make-instance 'rule :match #'match-all)))
       (enqueue ruleset r1)
       (check-rule ruleset message))))
 
 (deftest "ruleset with matching no-match does not match"
     :test-fn
   (lambda ()
-    (let ((ruleset (make-instance 'ruleset :match (lambda (message) t)
-                                  :no-match (lambda (message) t)))
+    (let ((ruleset (make-instance 'ruleset 
+                                  :match #'match-all
+                                  :no-match #'match-all))
           (message (make-instance 'message))
-          (r1 (make-instance 'rule :match (lambda (message) t))))
+          (r1 (make-instance 'rule :match #'match-all)))
       (enqueue ruleset r1)
       (not 
        (check-rule ruleset message)))))
@@ -425,14 +433,13 @@
           (rule (make-instance 'rule)))
       (enqueue ruleset rule)
       (dll-delete ruleset rule)
-      (format t "~A~%" (list-entries ruleset))
       (assert-nil (gethash rule (list-entries ruleset))))))
 
 (deftest "check-rules finds simple match"
     :test-fn
   (lambda () 
     (let ((ruleset (make-instance 'ruleset))
-          (rule (make-instance 'rule :match (lambda (message) t)))
+          (rule (make-instance 'rule :match #'match-all))
           (message (make-instance 'message)))
       (enqueue ruleset rule)
       (check-rules message ruleset))))
@@ -450,7 +457,7 @@
     :test-fn
   (lambda ()
     (let ((ruleset (make-instance 'ruleset))
-          (rule (make-instance 'rule :match (lambda (message) ())))
+          (rule (make-instance 'rule :match #'match-none))
           (message (make-instance 'message)))
       (enqueue ruleset rule)
       (not (check-rules message ruleset)))))
@@ -460,15 +467,15 @@
   (lambda ()
     (let* ((ruleset (make-instance 'ruleset))
            (xyzzy 0)
-           (rule (make-instance 'rule :match (lambda (message) ())))
+           (rule (make-instance 'rule :match #'match-none))
            (rule2 (make-instance 'rule 
-                                 :match (lambda (message) t)
+                                 :match #'match-all
                                  :actions
                                  (list
                                   (lambda (message matches sub-matches)
-                                    (progn
-                                    (format t "running rule~%")
-                                    (setf xyzzy 42))))))
+                                    (declare 
+                                     (ignore message matches sub-matches))
+                                    (setf xyzzy 42)))))
            (message (make-instance 'message)))
       (enqueue ruleset rule)
       (enqueue ruleset rule2)
@@ -479,9 +486,9 @@
     :test-fn
   (lambda ()
     (let ((ruleset (make-instance 'ruleset))
-          (rule1 (make-instance 'rule :match (lambda (message) ())))
-          (rule2 (make-instance 'rule :match (lambda (message) ())))
-          (rule3 (make-instance 'rule :match (lambda (message) ())))
+          (rule1 (make-instance 'rule :match #'match-none))
+          (rule2 (make-instance 'rule :match #'match-none))
+          (rule3 (make-instance 'rule :match #'match-none))
           (message (make-instance 'message)))
       (enqueue ruleset rule1)
       (enqueue ruleset rule2)
@@ -626,7 +633,12 @@
                                      :if-does-not-exist :create)
         (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
       (let* ((ff (make-instance 'file-follower :filename testfile))
-             (messages (mapcar (lambda (x) (get-logline ff)) file-lines)))
+             (messages 
+              (mapcar 
+               (lambda (x) 
+                 (declare (ignore x))
+                 (get-logline ff)) 
+               file-lines)))
         (loop as q in 
               (mapcar (lambda (x y) (equal X (message Y)))
                       file-lines messages)
@@ -721,8 +733,8 @@
                                    :actions
                                    (list
                                     (lambda (context)
-                                      (progn
-                                        (setf fooble t)))))))
+                                      (declare (ignore context))
+                                      (setf fooble t))))))
       (add-to-context (name context) (make-instance 'message))
       ;; context should exceed limit here and run actions
       (add-to-context (name context) (make-instance 'message))
@@ -738,7 +750,8 @@
                             (> (timeout  x)
                                (timeout  y))))))
       (let ((context (make-instance 'context :timeout 0))
-            (now 1))
+            (*now* 1))
+        (declare (ignore context))
         (assert-non-nil (head *timeout-object-timeout-queue*))
         (check-limits *timeout-object-timeout-queue*)
         (assert-nil (head *timeout-object-timeout-queue*))))))
@@ -755,6 +768,7 @@
                                (timeout y))))))
       (let* ((*now* 42)
              (context (make-instance 'context :timeout (- *now* 1))))
+        (declare (ignore context))
         (assert-non-nil (head *contexts*))
         (assert-non-nil (head *timeout-object-timeout-queue*))
         (check-limits *timeout-object-timeout-queue*)
@@ -776,9 +790,9 @@
                                      :actions
                                      (list
                                       (lambda (context)
-                                        (progn
-                                          (setf *fooble* t)
-                                          (format t "running context action fooble: ~A~%" *fooble*)))))))
+                                        (declare (ignore context))
+                                        (setf *fooble* t))))))
+
         (assert-non-nil (context-exceeded-limit-p context *now*))
         (check-limits *timeout-object-timeout-queue*)
         (assert-non-nil *fooble*)))))
@@ -788,16 +802,15 @@
   (lambda ()
     
     (let* ((thing ())
-           (ruleset1 (make-instance 'ruleset :match (lambda (message) t)))
-           (ruleset2 (make-instance 'ruleset :match (lambda (message) t)))
+           (ruleset1 (make-instance 'ruleset :match #'match-all))
+           (ruleset2 (make-instance 'ruleset :match #'match-all))
            (rule (make-instance 'rule 
-                                :match (lambda (message) t)
+                                :match #'match-all
                                 :actions 
                                 (list
                                  (lambda (message matches sub-matches) 
-                                   (declare (ignore message 
-                                                    matches 
-                                                    sub-matches))
+                                   (declare 
+                                    (ignore message matches sub-matches))
                                    (progn 
                                      (setf thing t))))))
            (message (make-instance 'message)))
@@ -839,6 +852,7 @@
                              (> (timeout x)
                                 (timeout y))))))
       (let ((rule (make-instance 'rule :timeout 1)))
+        (declare (ignore rule))
         (assert-non-nil (head *timeout-object-timeout-queue*))))))
 
 (deftest "context with timeout is inserted into priority queue"
@@ -851,6 +865,7 @@
                             (> (timeout x)
                                (timeout y))))))
       (let ((context (make-instance 'context :timeout 1)))
+        (declare (ignore context))
         (assert-non-nil (head *timeout-object-timeout-queue*))))))
 
 (deftest "item is entered into priority queue's list-entries"
@@ -871,6 +886,7 @@
                             (> (timeout x)
                                (timeout y))))))
       (let ((rule (make-instance 'rule :timeout 1)))
+        (declare (ignore rule))
         ;; call the whatever to cause removal
         (assert-non-nil (head *timeout-object-timeout-queue*))
         (check-limits *timeout-object-timeout-queue*)
@@ -971,11 +987,13 @@
   (lambda ()
     (let ((dummy ()))
       (let ((rule (make-instance 'rule
-                                 :match (lambda (message) t)
-                                 :no-match (lambda (message) t)
+                                 :match #'match-all
+                                 :no-match #'match-all
                                  :actions
                                  (list
                                   (lambda (message matches sub-matches)
+                                    (declare 
+                                     (ignore message matches sub-matches))
                                     (setf dummy t)))))
             (message (make-instance 'message)))
         (check-rule rule message)
@@ -985,8 +1003,8 @@
     :test-fn
   (lambda () 
     (let ((rule (make-instance 'rule
-                               :match (lambda (message) t)
-                               :delete-rule (lambda (message) t)))
+                               :match #'match-all
+                               :delete-rule #'match-all))
           (*ruleset* (make-instance 'ruleset))
           (message (make-instance 'message)))
       (assert-nil (head *ruleset*))
@@ -1050,17 +1068,16 @@
     :category "ruleset"
     :test-fn
     (lambda ()
-      (let* ((*ruleset* (make-instance 'ruleset :match (lambda (x) t)))
-             (r2 (make-instance 'ruleset :match (lambda (x) t)))
+      (let* ((*ruleset* (make-instance 'ruleset :match #'match-all))
+             (r2 (make-instance 'ruleset :match #'match-all))
              (xyzzy 0)
              (message (make-instance 'message))
-             (rule (make-instance 'rule :match (lambda (x) t)
+             (rule (make-instance 'rule :match #'match-all
                                   :actions 
                                   (list
                                    (lambda (a b c)
-                                     (progn
-                                       (format t "setting xyzzy~%")
-                                       (setf xyzzy 42)))))))
+                                     (declare (ignore a b c))
+                                     (setf xyzzy 42))))))
         (enqueue  r2 rule)
         (enqueue *ruleset* r2)
         (check-rules message *ruleset*)
@@ -1083,8 +1100,12 @@
   (lambda ()
     (let ((message (make-instance 'message :message "this is a message"))
           (rule (make-instance 'rule
-                               :match (lambda (message) t)
-                               :no-match (lambda (message) t))))
+                               :match (lambda (message) 
+                                        (declare (ignore message))
+                                        t)
+                               :no-match (lambda (message) 
+                                           (declare (ignore message))
+                                           t))))
       (not (check-rule rule message)))))
 
 (deftest "regexp rule works"
@@ -1102,7 +1123,9 @@
     :test-fn
   (lambda ()
     (let ((message (make-instance 'message :message "this is a message"))
-          (rule (make-instance 'rule :match (lambda (message) ()))))
+          (rule (make-instance 'rule :match (lambda (message) 
+                                              (declare (ignore message))
+                                              ()))))
       (not (check-rule rule message)))))
 
 
@@ -1111,6 +1134,7 @@
   (lambda ()
     (let ((c1 (make-instance 'context :name 'c1))
           (c2 (make-instance 'context :name 'c2)))
+      (declare (ignore c1))
       (alias-context c2 'c1)
       (assert-equal c2 (get-context 'c1)))))
 
@@ -1168,11 +1192,178 @@
                  (lambda (message matches sub-matches)
                    (declare (ignore message matches sub-matches))
                    (setf seen-cat t)))))
-      (enqueue *root-ruleset* *default-rule*)
       (main)
       (and seen-the (not seen-cat) seen-ran)))
 
 (deftest "filter function works"
     :test-fn #'test-filter)
+
+(defun test-suppress ()
+  (let* ((*now* (get-internal-real-time))
+         (*root-ruleset* (make-instance 'ruleset))
+         (*messages* 
+          (make-instance 
+           'list-follower
+           :message-list
+           (list 
+            "the"
+            "cat"
+            "ran"
+            "the")))
+         (seen-messages ())
+         (save-messages (Single 
+                         (lambda (message)
+                           (declare (ignore message))
+                           t)
+                         (list
+                          (lambda (message matches sub-matches)
+                            (declare (ignore matches sub-matches))
+                            (setf seen-messages 
+                                  (cons (message message)
+                                        seen-messages))))))
+         (rule (Suppress 
+                (lambda (message)
+                  (equal (message message) "the"))
+                1)))
+    
+    (enqueue *root-ruleset* rule)
+    (enqueue *root-ruleset* save-messages)
+    (main)
+    (assert-equal 
+     seen-messages
+     '("ran" "cat"))))
+
+(defun test-suppress2 ()
+  (let* ((*now* (get-internal-real-time))
+         (*root-ruleset* (make-instance 'ruleset))
+         (*messages* 
+          (make-instance 
+           'list-follower
+           :message-list
+           (list 
+            "the"
+            "cat"
+            "ran"
+            "the")))
+         (seen-messages ())
+         (foo (single (lambda (message) 
+                        (declare (ignore message))
+                        t) ()))
+         (save-messages (Single 
+                         (lambda (message)
+                           (declare (ignore message))
+                           t)
+                         (list
+                          (lambda (message matches sub-matches)
+                            (declare (ignore matches sub-matches))
+                            (setf seen-messages 
+                                  (cons (message message)
+                                        seen-messages))))))
+         (rule (Suppress 
+                (lambda (message)
+                  (equal (message message) "the"))
+                0
+                :name 'foo
+                )))
+    
+    (enqueue *root-ruleset* rule)
+    (enqueue *root-ruleset* save-messages)
+    (enqueue *root-ruleset* foo)
+
+    (loop as x from 1 to 3 do
+          (let ((*message* (get-logline *messages*)))
+            (check-rules *message* *root-ruleset*)
+            (check-limits *timeout-object-timeout-queue*)
+            ))
+
+    (setf *now* (* 2 *now*))
+    (check-limits *timeout-object-timeout-queue*)
+
+    (let ((*message* (get-logline *messages*)))
+            (check-rules *message* *root-ruleset*))
+
+    (assert-equal 
+     seen-messages
+     '("the" "ran" "cat"))))
+    
+
+(deftest "suppress function works"
+    :test-fn #'test-suppress)
+
+(deftest "suppress function stops after timeout"
+    :test-fn #'test-suppress2)
+
+
+(defun test-suppress-until ()
+  (let* ((*root-ruleset* (make-instance 'ruleset))
+         (*messages* 
+          (make-instance 
+           'list-follower
+           :message-list
+           (list 
+            "the"
+            "cat"
+            "ran"
+            "the")))
+         (suppress-until-rule
+          (suppress-until
+           (lambda (message)
+             (declare (ignore message))
+             t)
+           (lambda (message)
+             (equal (message message) "ran"))))
+         (match-count 0)
+         (catch-all-rule
+          (Single
+           (lambda (message)
+             (declare (ignore message))
+             t)
+           (list 
+            (lambda (message matches sub-matches)
+              (declare (ignore message matches sub-matches))
+              (incf match-count))))))
+    
+    (enqueue *root-ruleset* suppress-until-rule)
+    (enqueue *root-ruleset* catch-all-rule)
+    
+    (main)
+    
+    (assert-equal match-count 2)))
+
+(deftest "test suppress-until"
+    :test-fn #'test-suppress-until)
+
+
+(defun test-single ()
+  (let* ((*root-ruleset* (make-instance 'ruleset))
+         (*messages* 
+          (make-instance 
+           'list-follower
+           :message-list
+           (list 
+            "the"
+            "cat"
+            "ran"
+            "the")))
+         (match-count 0)
+         (catch-all-rule
+          (Single
+           (lambda (message)
+             (declare (ignore message))
+             t)
+           (list 
+            (lambda (message matches sub-matches)
+              (declare (ignore message matches sub-matches))
+              (incf match-count))))))
+    
+    (enqueue *root-ruleset* catch-all-rule)
+    (main)
+    (assert-equal match-count 4)))
+
+(deftest "test single rule type"
+    :test-fn #'test-single)
+
+    
+
 
 (run-all-tests)

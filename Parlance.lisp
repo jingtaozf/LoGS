@@ -33,10 +33,8 @@
    :name name
    :match match-func))
 
-;; make sure that I can filter out messages using filter
-;; eg. they won't be seen by subsequent rules.
-
-
+;; suppress messages matching match1 until timeout has been exceeded
+;; how is this different from throttling?  Shouldn't this be called throttling?
 (defun suppress (match-func timeout &key name)
   "create a rule that causes messages that match to be ignore for a certain period of time from *now*"
   (make-instance
@@ -47,6 +45,7 @@
 
 ;; suppress messages matching match1 until match2 is seen
 (defun suppress-until (match1 match2 &key name)
+  "create a rule that causes messages that match match1 to be suppressed until a message matching match2 is seen"
   (make-instance 'rule
                  :name name
                  :match
@@ -57,6 +56,7 @@
                          ())
                        (funcall match1 message)))))
 
+;; I DO NOT LIKE THIS NAME!
 (defun single (match-func actions-list &key name)
   "create a rule that triggers the functions in the actions list as a result of a match"
   (make-instance 
@@ -65,6 +65,7 @@
    :match match-func
    :actions actions-list))
 
+;; single with throttle?
 (defun single-with-suppress (match-func actions-list time &key name)
   "run the actions in the actions list in response to a match, then add a rule before this one to ignore this message for a while"
   (make-instance 'rule
@@ -74,6 +75,7 @@
                            actions-list
                            (rule-before
                             (suppress match-func time)))))
+
 
 (defun pair (match1 actions1 match2 actions2 &key name name1 name2)
   "like SEC pair rule."
@@ -151,6 +153,7 @@
 
 
 (defun print-context (context)
+  "print out the contents of a context"
   (when (> (ecount context) 0)
     (map-into 
      (make-array (list (ecount context)))
@@ -159,6 +162,7 @@
 
 
 (defmethod gather-into (match (context context) &key name)
+  "gather messages matching match into the given context"
   (make-instance 'rule
                  :name name
                  :match match
@@ -171,9 +175,11 @@
                     (add-to-context context message)))))
                  
 (defmethod gather-into (match context &key name)
+  "gather messages matching match into the named context"
   (gather-into match (get-context context) :name name))
 
 (defun gather (match timeout actions &key name)
+  "gather messages matching match into a context.  When the timeout is exceeded, run the context actions provided."
   (let ((context (make-instance 
                   'context 
                   :timeout (+ *now* (* timeout INTERNAL-TIME-UNITS-PER-SECOND))
@@ -181,6 +187,7 @@
     (gather-into match context :name name)))
 
 (defun gather-related (matchlist timeout actions &key names)
+  "gather messages matching one of the functions in the match list into a context.  When the timeout is exceeded, run the context actions provided."
   (let ((context (make-instance
                   'context
                   :timeout (+ *now* (* timeout INTERNAL-TIME-UNITS-PER-SECOND))
@@ -197,12 +204,10 @@
            (rule-before
             (gather-into match context)))
          matchlist))))
-                       
-
-
 
 ;; throttle action.
 (defmacro throttle (timeout &key name)
+  "filter out messages that match the match function of this rule until the timeout is exceeded"
   (let ((a (gensym))
         (b (gensym))
         (c (gensym)))
@@ -218,11 +223,24 @@
 ;;;; action function creating functions
 
 (defun print-log ()
+  "print the message"
   (lambda (message matches sub-matches)
     (format t "~A~%" (message message))))
+
+(defun echo ()
+  "an alias for print-log"
+  (print-log))
 
 ;;;; match functions
 
 (defun match-all (message) 
+  "match every message"
   (declare (ignore message)) 
   t)
+
+(defun match-regexp (regexp)
+  "create a function that will match the given regular expression"
+  (lambda (message)
+    (cl-ppcre::scan-to-strings
+     regexp
+     (message message))))
