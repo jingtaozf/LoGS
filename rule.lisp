@@ -17,7 +17,7 @@
 
 (in-package :LoGS)
 
-(defclass rule (killable-item named-object timeout-object)
+(defclass rule (killable-item named-object timeout-object relative-timeout-object)
   ((match :initarg :match
           :accessor match
           :initform ()
@@ -161,7 +161,7 @@
            (rule-matches-p rule message)
          
            (when matchp
-
+             (update-relative-timeout rule)
              (with-slots (delete-rule no-delete-rule actions environment) 
                  rule  
 
@@ -204,9 +204,13 @@
              (format t "ran action~%"))))
        actions))))
 
-(defmethod check-limits ((rule rule))
-  (and (rule-exceeded-limit-p rule *now*)
-       (setf (dead-p rule) t)))
+(defmethod check-limits :around ((rule rule))
+  (let ((ret (call-next-method)))
+    (when ret
+      (setf (dead-p rule) t))))
+
+;  (and (rule-exceeded-limit-p rule *now*)
+;       (setf (dead-p rule) t)))
 
 (defmethod (setf dead-p) :after (new-value (rule rule))
   (when (and +debug+ (eq new-value t))

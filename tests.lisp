@@ -727,6 +727,14 @@
           (now 48))
       (context-exceeded-limit-p context now))))
 
+(deftest "contexts that have expired their relative timeout are shown to exceed limit"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 48)
+          (context (ensure-context :relative-timeout 1)))
+      (context-exceeded-limit-p context (+ *now* 1
+                                           (* INTERNAL-TIME-UNITS-PER-SECOND 1))))))
+
 (deftest "contexts that don't have timeouts don't exceed limits"
     :test-fn
   (lambda ()
@@ -793,16 +801,17 @@
   (lambda ()
     (let* ((fooble ())
            (context (ensure-context
-                     :max-lines 1
-                     :actions
-                     (list
-                      (lambda (context)
-                        (declare (ignore context))
-                        (setf fooble t))))))
+                                   :max-lines 1
+                                   :actions
+                                   (list
+                                    (lambda (context)
+                                      (declare (ignore context))
+                                      (setf fooble t))))))
       (add-to-context (name context) (make-instance 'message))
       ;; context should exceed limit here and run actions
       (add-to-context (name context) (make-instance 'message))
       (assert-non-nil fooble))))
+
 
 (deftest "timed-out context runs actions"
     :test-fn
@@ -815,6 +824,7 @@
                       (lambda (context)
                         (declare (ignore context))
                         (setf fooble t))))))
+      (declare (ignore context)) ; we use it, just not here
       (let ((*now* 2))
         (check-limits *timeout-object-timeout-queue*)
         (assert-non-nil fooble)))))
@@ -1550,5 +1560,92 @@
       (assert-equal 42 (data (head dll)))
       (assert-equal 43 (data (tail dll)))
       (assert-equal 44 (data (llink (tail dll)))))))
+
+(deftest "rule that exceeds relative-timeout is shown to have exceeded limits"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 1)
+           (rule (make-instance 'rule :relative-timeout 1
+                               :match (lambda (message)
+                                        (declare (ignore message))
+                                        t))))
+      ;; make *now* larger than the timeout
+      (setf *now* 
+            (+ *now* 1
+               (* INTERNAL-TIME-UNITS-PER-SECOND 1)))
+      (assert-non-nil (check-limits rule)))))
+
+(deftest "rule that exceeds relative-timeout is marked as dead"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 1)
+           (rule (make-instance 'rule :relative-timeout 1
+                               :match (lambda (message)
+                                        (declare (ignore message))
+                                        t))))
+      ;; make *now* larger than the timeout
+      (setf *now* 
+            (+ *now* 1
+               (* INTERNAL-TIME-UNITS-PER-SECOND 1)))
+      (check-limits rule)
+      (assert-non-nil (dead-p rule)))))
+
+(deftest "rule relative-timeouts are updated on match"
+    :test-fn
+  (lambda ()
+    (let* ((*now* 1)
+           (rule (make-instance 'rule :relative-timeout 1
+                               :match (lambda (message)
+                                        (declare (ignore message))
+                                        t))))
+      ;; make *now* larger than the timeout
+      (setf *now* 
+            (+ *now* 1
+               (* INTERNAL-TIME-UNITS-PER-SECOND 1)))
+      (check-rule rule (make-instance 'message))
+      (assert-nil (check-limits rule)))))
+
+(deftest "ruleset with relative timeout is updated on match"
+    :test-fn
+  (lambda ()
+    (let ((*now* 123)
+          (ruleset (make-instance 'ruleset :relative-timeout 1)))
+      (enqueue ruleset (make-instance 'rule :match (lambda (message)
+                                                     (declare (ignore message))
+                                                     t)))
+      (setf *now* 456)
+      (check-rules (make-instance 'message) ruleset)
+      (assert-non-nil (> (next-timeout ruleset) 456)))))
+                                      
+(deftest "ruleset with relative timeout is NOT update without match"
+    :test-fn
+  (lambda ()
+    (let ((*now* 123)
+          (ruleset (make-instance 'ruleset :relative-timeout 1)))
+      (enqueue ruleset (make-instance 'rule :match (lambda (message)
+                                                     (declare (ignore message))
+                                                     NIL)))
+      (setf *now* 456)
+      (check-rules (make-instance 'message) ruleset)
+      (assert-nil (> (next-timeout ruleset) 456)))))
+
+(deftest "ruleset that exceeds relative timeout is shown to exceed limits"
+    :test-fn
+  (lambda ()
+    (let ((*now* 123)
+          (ruleset (make-instance 'ruleset :relative-timeout 1)))
+      
+      (setf *now* 456)
+      (assert-non-nil (check-limits ruleset)))))
+
+(deftest "ruleset that exceeds relative timeout is marked as dead"
+    :test-fn
+  (lambda ()
+    (let ((*now* 123)
+          (ruleset (make-instance 'ruleset :relative-timeout 1)))
+      
+      (setf *now* 456)
+      (check-limits ruleset)
+      (assert-non-nil (dead-p ruleset)))))
     
 (run-all-tests)

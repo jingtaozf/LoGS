@@ -23,6 +23,17 @@
 ;;; Basically, this file is here to make things a little higher-level
 ;;; than the LoGS core provides by itself.
 
+;; wrappers to call make-instance
+
+(defmacro rule (&rest rest)
+  `(make-instance 'rule ,@rest))
+
+(defmacro context (&rest rest)
+  `(ensure-context ,@rest))
+
+(defmacro ruleset (&rest rest)
+  `(make-instance 'ruleset ,@rest))
+
 ;;; ways to ignore things
 
 ;; filter out matching messages

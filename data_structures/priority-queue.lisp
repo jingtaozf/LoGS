@@ -48,7 +48,7 @@
                    (return (dll-insert pq x item :direction :after))))
                 (t (setf x (rlink x)))))))
 
-(defmethod check-limits ((pq priority-queue))
+(defmethod check-limits OR ((pq priority-queue))
   (loop as dlli = (head pq)
         when +debug+
         do (format t "checking pq: ~A dlli: ~A~%" pq dlli)

@@ -15,7 +15,6 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-;; a priority queue to hold things that can time out
 (defclass timeout-object ()
   ((timeout :initarg :timeout
             :accessor timeout
@@ -29,6 +28,7 @@
     (declare (fixnum t-y))
     (> t-x t-y)))
 
+;; a priority queue to hold things that can time out
 (defvar *timeout-object-timeout-queue*
   (make-instance 'priority-queue 
                  :comparison-function 
@@ -55,5 +55,9 @@
     (when timeout 
       (> time timeout))))
 
-(defmethod check-limits ((timeout-object timeout-object))
-  (exceeded-timeout-p timeout-object *now*))
+(defmethod check-limits OR ((timeout-object timeout-object)) 
+           (if  +debug+
+                (let ((ret (exceeded-timeout-p timeout-object *now*)))
+                  (format t "checking timeout object limit.  ret: ~A~%" ret)
+                  ret)
+                (exceeded-timeout-p timeout-object *now*)))

@@ -82,36 +82,44 @@ both matches and continuep is nil."))
         +debug+
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
 
-    (loop with *current-rule* = head
-       and found = ()
-
-       ;; there's a rule to check
-       when *current-rule*
-       do 
-       (let ((data (data *current-rule*)))
-         (if (dead-p data)
-             (dll-delete ruleset *current-rule*)
-             (progn
-               (when +debug+ (format t "checking rule~%"))
-               (and 
-                (multiple-value-bind
-                      (matchp bind-list)
-                    (check-rule data message)
-                  (declare (ignore bind-list))
-                  (when +debug+
-                    (format t "match is: ~A~%" matchp))
-                  (setq found matchp))
-                  
-                (unless (continuep data)
-                  (return t))))))
-       (setq *current-rule* (rlink *current-rule*))
+    (let 
+        ((didmatch
+          
+          (loop with *current-rule* = head
+             and found = ()
+               
+             ;; there's a rule to check
+             when *current-rule*
+             do 
+               (let ((data (data *current-rule*)))
+                 (if (dead-p data)
+                     (dll-delete ruleset *current-rule*)
+                     (progn
+                       (when +debug+ (format t "checking rule~%"))
+                       (and 
+                        (multiple-value-bind
+                              (matchp bind-list)
+                            (check-rule data message)
+                          (declare (ignore bind-list))
+                          (when +debug+
+                            (format t "match is: ~A~%" matchp))
+                          (setq found matchp))
+                        
+                        (unless (continuep data)
+                          (return t))))))
+               (setq *current-rule* (rlink *current-rule*))
         
-       ;; there are no (more) rules in this ruleset
-       when (not *current-rule*)
-       do
-       (when +debug+
-         (format t "no more rules~%"))
-       (return found))))
+             ;; there are no (more) rules in this ruleset
+             when (not *current-rule*)
+             do
+               (when +debug+
+                 (format t "no more rules~%"))
+               (return found))))
+      (when didmatch
+        (when +debug+
+          (format t "updating ruleset's relative timeout~%"))
+        (update-relative-timeout ruleset))
+      didmatch)))
 
 (defmethod rule-head ((rule rule))
   (dll-insert

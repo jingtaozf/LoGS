@@ -111,8 +111,10 @@
 (load-LoGS-file "message")
 (load-LoGS-file "named-object")
 (load-LoGS-file "timeout-object")
+(load-LoGS-file "relative-timeout-object")
 (load-LoGS-file "killable-item")
 (load-LoGS-file "collection")
+(load-LoGS-file "limited-collection")
 (load-LoGS-file "context")
 
 ;; load message producers
@@ -153,6 +155,7 @@
 ;; none of this belongs here!
 
 (defgeneric check-limits (thing)
+  (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
 ;; don't use internal time?

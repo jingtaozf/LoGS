@@ -36,7 +36,7 @@
     (reset-contexts-alias-hash)
     (reset-contexts)))
 
-(defclass context (collection timeout-object killable-item)
+(defclass context (limited-collection timeout-object relative-timeout-object killable-item)
   ((actions :initarg :actions
                   :initform ()
                   :accessor actions
@@ -131,11 +131,13 @@
 
 ;; if this context is full, run actions and kill it!
 (defmethod add-to-context :after ((context context) (message message))
-  (if (context-exceeded-limit-p context *now*)
-      (progn
-        (when +debug+
-          (format t "expiring context ~A (named ~A)~%" context (name context)))
-        (expire-context context))))
+  (progn
+    (update-relative-timeout context)
+    (if (context-exceeded-limit-p context *now*)
+        (progn
+          (when +debug+
+            (format t "expiring context ~A (named ~A)~%" context (name context)))
+          (expire-context context)))))
 
 ;; run a context's actions then delete it.
 (defgeneric expire-context (context)
@@ -177,24 +179,25 @@
          (funcall x context))
        (actions context)))))
 
-(defmethod check-limits ((context context))
-  (let ((ret (context-exceeded-limit-p context *now*)))
+ (defmethod check-limits :around ((context context))
+   (let ((ret (call-next-method)))
+     (when ret
+       (expire-context context)
+       (dll-delete *contexts* context)
+     ret)))
+
+(defmethod destroy-context-if-exceeded-limit ((context context))
+  (let ((ret (check-limits context)))
     (when ret
-      (expire-context context)
-      (dll-delete *contexts* context)
-    ret)))
+      (expire-context context))
+    ret))
 
 (defgeneric context-exceeded-limit-p (context time)
   (:documentation "check to see if a context has exceeded one of its limits"))
 
 (defmethod context-exceeded-limit-p ((context context) time)
-  (or
-   ; context is old
-   (when (timeout context)
-     (> time (timeout context)))
-   ; context is full
-   (when (max-lines context)
-     (> (Ecount context) (max-lines context)))))
+  (let ((*now* time))
+    (check-limits  context)))
 
 (defmethod write-context ((context context) (stream stream))
   (loop for i from 0 below (ecount context) 

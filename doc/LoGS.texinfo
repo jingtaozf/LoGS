@@ -64,6 +64,7 @@ last updated on @value{UPDATED}.
 * LoGS Rules::                  
 * LoGS Rulesets::               
 * LoGS Contexts::               
+* LoGS Internals::              
 * Copying This Manual::         
 * Concept Index::               
 * Function Index::              
@@ -1085,7 +1086,7 @@ against the current message.  Here is its definition:
 That was all that was required to extend LoGS to have nest-able
 rulesets!
 
-@node LoGS Contexts, Copying This Manual, LoGS Rulesets, Top
+@node LoGS Contexts, LoGS Internals, LoGS Rulesets, Top
 @chapter LoGS Contexts
 
 
@@ -1262,7 +1263,48 @@ NOTE:  This has become an active area of interest for me!  I hope to
 expand greatly on this section and do an even better job of finding the
 goodies.
 
-@node Copying This Manual, Concept Index, LoGS Contexts, Top
+@node LoGS Internals, Copying This Manual, LoGS Contexts, Top
+@chapter LoGS Internals
+
+@node LoGS Data Structures
+@section LoGS Data Structures
+
+Internal to LoGS are the following important data structures:
+collections, doubly linked lists, and priority queues.  Each will be
+discussed in subsequent sub--sections of this manual.
+
+@node Collections
+@subsection Collections
+
+Collections are essentially arrays of arbitrary data.  Collections
+are used as a building--block (the storage component) for the Context
+class.
+
+@node Doubly Linked Lists
+@subsection Doubly Linked Lists
+
+Doubly linked lists are also used for storing data.  They are a basic
+component of the Ruleset class in LoGS.
+
+@node Priority Queues
+@subsection Priority Queues
+
+Priority queues are built from the Doubly Linked List class.  They
+maintain a list of data sorted by its (arbitrary) priority.  They are
+used for storing lists of things that can time--out in LoGS.
+
+@node Other Fundamental Data Structures
+@section Other Fundamental Data Structures
+
+@node Named Objects
+@subsection Named Objects
+
+Named objects are objects that have names associated with them.  If a
+name is not provided when a named-object is created, a unique name is
+generated.  This is currently done by calling @code{(gensym)}.  Named
+objects may have  any name except for @code{NIL}.
+
+@node Copying This Manual, Concept Index, LoGS Internals, Top
 @appendix Copying This Manual
 
 @menu
