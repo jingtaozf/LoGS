@@ -604,7 +604,7 @@
 (deftest "new file-follower gets a line"
     :test-fn
   (lambda ()
-    (let* ((testfile "/tmp/testfile")
+    (let* ((testfile "testfile")
            (ff ()))
       ;; open the file the first time. overwrite it if it exists.
       (with-open-file (output-stream testfile :direction :output 
@@ -635,11 +635,11 @@
 (deftest "file follower addition works"
     :test-fn
   (lambda ()
-    (let* ((testfile "/tmp/testfile")
+    (let* ((testfile "testfile")
            (ff ()))
       ;; open the file the first time. overwrite it if it exists.
       (with-open-file (output-stream testfile :direction :output 
-                                     :if-exists :overwrite
+                                     :if-exists :SUPERSEDE
                                      :if-does-not-exist :create)
         ;; put a line into it.
         (format output-stream "this is a line~%"))
@@ -694,10 +694,10 @@
 (deftest "file follower makes correct series of messages"
     :test-fn
   (lambda ()
-    (let* ((testfile "/tmp/testfile2")
+    (let* ((testfile "testfile2")
            (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
       (with-open-file (output-stream testfile :direction :output 
-                                     :if-exists :overwrite
+                                     :if-exists :SUPERSEDE
                                      :if-does-not-exist :create)
         (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
       (let* ((ff (make-instance 'file-follower :filename testfile))

@@ -24,13 +24,14 @@
 (defun fifo-p (filename)
   (if
    (logand 4096 
-           (nth-value 3 
-                      (unix-stat filename)))
-           t ()))
+           (SB-POSIX:STAT-MODE 
+            (sb-posix:stat
+             filename)))
+   t ()))
 
 (defun open-fifo (filename)
   (let ((fifofd 
-         (unix-open
+         (SB-POSIX:OPEN 
           filename
           (logior O-RDONLY
                   O-NONBLOCK)
@@ -39,9 +40,8 @@
 
 (defun get-file-length-from-filename (filename)
   "Given a filename, return the number of bytes currently in the file."
-  (nth-value 8 (unix-stat filename)))
+  (SB-POSIX:STAT-SIZE (SB-POSIX:STAT filename)))
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
-  (nth-value 2 
-             (unix-stat filename)))
+  (SB-POSIX:STAT-INO (sb-posix:stat filename)))
