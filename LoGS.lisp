@@ -79,12 +79,6 @@
   This may change, do not rely on this.")
 (declaim (type INTEGER *now*))
 
-;; this cruft is to make file loading more portable
-(defparameter *LoGS-base-directory*
-  (make-pathname :name nil :type nil :version nil
-                 :defaults (parse-namestring *load-truename*))
-  "Where LoGS lives.")
-
 ;; 0.03 seems to be a good value for my laptop.
 ;; how do I properly set this?
 (defparameter *LoGS-sleep-time* .03
@@ -93,19 +87,19 @@
 (defparameter *remember-file* ()
   "Should we remember with file a message comes from?")
 
-(defun load-LoGS-file (filename)
+(defun load-LoGS-file (filename &key directory)
   "load the named file"
   (load 
    (compile-file
     (make-pathname :name filename
                    :type "lisp"
                    :version ()
-                   :defaults *LoGS-base-directory*))))
+                   :directory directory))))
 
 ;;;; XXX CLEAN THIS SECTION UP XXX!
 ;; load fundamental data structures
-(load-LoGS-file "data_structures/doubly-linked-list")
-(load-LoGS-file "data_structures/priority-queue")
+(load-LoGS-file "doubly-linked-list" :directory '(:relative "data_structures"))
+(load-LoGS-file "priority-queue" :directory '(:relative "data_structures"))
 
 ;; load LoGS data structures
 (load-LoGS-file "message")
@@ -118,10 +112,10 @@
 (load-LoGS-file "context")
 
 ;; load message producers
-(load-LoGS-file "Data_Sources/Data-Source")
-(load-LoGS-file "Data_Sources/List-Follower")
-(load-LoGS-file "Data_Sources/File-Follower")
-(load-LoGS-file "Data_Sources/Multi-Follower")
+(load-LoGS-file "Data-Source" :directory '(:relative "Data_Sources"))
+(load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
+(load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
+(load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
 
 ;; load rules
 (load-LoGS-file "rule")
