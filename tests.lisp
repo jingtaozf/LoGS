@@ -174,7 +174,7 @@
       
       (enqueue *root-ruleset* dying-rule)
       (enqueue *root-ruleset* tail-rule)
-      (main)
+      (process-files)
       (assert-non-nil ran-tail-rule))))
 
       
@@ -729,7 +729,7 @@
                               :actions (list (lambda (x) 
                                                (declare (ignore x))
                                                (incf counter)))))
-      (main)
+      (process-files)
       (remove-file day1)
       (remove-file day2)
       (remove-file day3)
@@ -1300,7 +1300,7 @@
                  (lambda (message)
                    (declare (ignore message))
                    (setf seen-cat t)))))
-      (main)
+      (process-files)
       (assert-non-nil (and seen-the (not seen-cat) seen-ran))))
 
  (deftest "filter function works"
@@ -1335,7 +1335,7 @@
     
     (enqueue *root-ruleset* rule)
     (enqueue *root-ruleset* save-messages)
-    (main)
+    (process-files)
     (assert-equal 
      seen-messages
      '("ran" "cat"))))
@@ -1435,7 +1435,7 @@
     (enqueue *root-ruleset* suppress-until-rule)
     (enqueue *root-ruleset* catch-all-rule)
     
-    (main)
+    (process-files)
     
     (assert-equal match-count 2)))
 
@@ -1466,7 +1466,7 @@
               (incf match-count))))))
     
     (enqueue *root-ruleset* catch-all-rule)
-    (main)
+    (process-files)
     (assert-equal match-count 4)))
 
 (deftest "test single rule type"
@@ -1543,7 +1543,7 @@
              (incf count))))))
 
     (enqueue *root-ruleset* rule)
-    (main)
+    (process-files)
     
     (assert-equal count 1)))
 
@@ -1800,21 +1800,25 @@
 (deftest "--file option test"
     :test-fn
   (lambda ()
-    (progn
-      (process-options *opts* '("--file" "foo.txt"))
+    (let ((*file-list* ()))
+      (declare (special *file-list*))
+      (process-command-line *opts* '("--file" "foo.txt"))
       (typep *messages* 'file-follower))))
 
 (deftest "--file option with position test"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfile2")
+    (let* ((*file-list* ())
+           (testfile "testfile2")
            (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
-      (with-open-file (output-stream testfile :direction :output 
+      (declare (special *file-list*))
+      (with-open-file (output-stream "testfile2" :direction :output 
                                      :if-exists :SUPERSEDE
                                      :if-does-not-exist :create)
         (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
-
-      (process-options *opts* '("--file" "testfile2" "42"))
+      
+      
+      (process-command-line *opts* '("--file" "testfile2" "42"))
       (and 
        (typep *messages* 'file-follower)
        (let ((ret (assert-equal 42 (file-position (filestream *messages*)))))

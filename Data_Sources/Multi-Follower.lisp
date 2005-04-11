@@ -22,7 +22,7 @@
 
 (in-package :LoGS)
 
-(defclass Multi-Follower (collection)
+(defclass Multi-Follower (collection Data-Source)
   ((current-follower :initform 0 :accessor current-follower)))
 
 (defmethod get-logline ((Mf Multi-Follower))

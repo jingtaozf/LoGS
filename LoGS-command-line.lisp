@@ -1,3 +1,4 @@
+
 (defvar *opts*
   (list
    (make-instance 'cli-opt
@@ -13,30 +14,31 @@
                   :arguments '("<filename>" "[position]")
                   ;; XXX needs to change, get rid of *messages*
                   :action #'(lambda (filename &optional position)
-                              (setq LoGS::*messages* 
-                                    (make-instance 'LoGS::File-Follower 
-                                                   :FileName 
-                                                   filename))
-                              ;; if position is specified, start there
-                              (when position
-                                (LoGS::set-file-follower-position
-                                 LoGS::*messages*
-                                 (read-from-string position))))
+                              (let ((ff (make-instance 'LoGS::File-Follower 
+                                                       :FileName 
+                                                       filename)))
+                                ;; if position is specified, start there
+                                (when position
+                                  (when (not ff) (error "no ff~%"))
+                                  (LoGS::set-file-follower-position
+                                   ff
+                                   (read-from-string position)))
+                                (push ff *file-list*)))
                   :description "name of the file to process and optional position")
    
    (make-instance 'cli-opt
                   :name "--PBS-file"
                   :arguments '("<filename>")
                   :action #'(lambda (filename &optional position)
-                              (setq LoGS::*messages* 
-                                    (make-instance 'LoGS::PBS-File-Follower 
-                                                   :FileName 
-                                                   filename))
-                              ;; if position is specified, start there
-                              (when position
-                                (LoGS::set-file-follower-position
-                                 LoGS::*messages*
-                                 (read-from-string position)))))
+                              (let ((ff (make-instance 'LoGS::PBS-File-Follower
+                                                       :FileName
+                                                       filename)))
+                                ;; if position is specified, start there
+                                (when position
+                                  (LoGS::set-file-follower-position
+                                   LoGS::*messages*
+                                   (read-from-string position)))
+                                (push ff *file-list*))))
    (make-instance 'cli-opt
                   :name "--files"
                   :arguments '("<filename>" "...")
@@ -60,7 +62,7 @@
                              (when position
                                (LoGS::set-file-follower-position 
                                 follower position))
-                             (LoGS::add-item *messages* follower)))
+                             (push follower *file-list*)))
                          filenames)))
                   :description "names of files to process and optional position (separated by colons eg. logfile:42)")
        

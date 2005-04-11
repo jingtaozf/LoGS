@@ -199,42 +199,52 @@
       (break "someone sent us a hup" t)))
 
 
+(defun process-command-line (opts args)
+  (let ((*file-list* ()))
+    (declare (special *file-list*))
+    (progn
+      (when +debug+
+        (format t "processing options~%"))
+      (PROCESS-OPTIONS opts args)
+      (let ((len (length *file-list*)))
+        (cond ((eq 1 len) (setf *messages* (car *file-list*)))
+              (t (progn
+                   (setf *messages* (make-instance 'LoGS::multi-follower))
+                   (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*))))))))
+
 (defun main ()
-  "Main is the current LoGS mainline.  As of this revision, it tries
-to mimic Logsurfer's behaviour (modulo context handling).  Main iterates over 
-incoming messages, checking each against the current ruleset. 
-
-Main currently does:
-1. Processes an incoming line if there is one.
-2. Check to see if any rules need to be removed.
-3. Check to see if any contexts need to be removed."
-
   (progn
     ;; process any command line options
     (when +debug+
       (format t "processing options~%"))
-    
     (let ((args (get-application-args)))
-      (PROCESS-OPTIONS *opts* args))
-    
-    (loop as *message* = (get-logline *messages*)
-          ;; exit if there is no message and we're not running forever
-          when (and (not *run-forever*) (not *message*))
-          do
-          (return)
-     ;; if we are running forever and there is no message sleep 
-          when (and *run-forever* (not *message*))
-          do
-          (sleep *LoGS-sleep-time*)
-          
-          ;; update the internal time
-          when *use-internal-real-time*
-          do
-          (setq *now* (get-internal-real-time))
-          
-          ;; check the message against the ruleset if it exists
-          ;; and check the timeout objects
-          when t
+      (process-command-line *opts* args))
+    ;; process any files
+    (process-files)))
+
+;; pretty much the former mainline
+;; adding the option processing to the mainline made testing more difficult
+;; so I broke the processing out to a separate function.
+(defun process-files ()    
+  
+  (loop as *message* = (get-logline *messages*)
+        ;; exit if there is no message and we're not running forever
+        when (and (not *run-forever*) (not *message*))
+        do
+        (return)
+        ;; if we are running forever and there is no message sleep 
+        when (and *run-forever* (not *message*))
+        do
+        (sleep *LoGS-sleep-time*)
+        
+        ;; update the internal time
+        when *use-internal-real-time*
+        do
+        (setq *now* (get-internal-real-time))
+        
+        ;; check the message against the ruleset if it exists
+        ;; and check the timeout objects
+        when t
           do
           (when (and *message* (head *root-ruleset*))
             (check-rules *message* *root-ruleset*))
@@ -243,4 +253,4 @@ Main currently does:
             (check-limits *timeout-object-timeout-queue*))
           
           (when (head *relative-timeout-object-timeout-queue*)
-            (check-limits *relative-timeout-object-timeout-queue*)))))
+            (check-limits *relative-timeout-object-timeout-queue*))))
