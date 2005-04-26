@@ -81,7 +81,6 @@ associated with our filename. if there is, we start following that filename."
         (and (not (eql (inode ff) stat-inode))
              (read-line (start-file-follower ff) nil)))))
 
-;; Thank you Damien Kick!
 (defmethod get-logline ((ff file-follower))
 "Wrap the next line of the file associated with the file-follower inside of
 a message."
