@@ -22,16 +22,25 @@
    (spawnprog :accessor spawnprog :initform () :initarg :spawnprog)
    (spawnargs :accessor spawnargs :initform () :initarg :spawnargs)))
 
+;; generic way to launch or program
+;; returns a stream we can do stuff with
+(defun spawn-prog (program args)
+  #+cmu
+  (extensions:process-output
+   (run-program program args :output :stream))
+  #+sbcl
+  (process-output
+   (run-program program args :output :stream))
+  
+  ;; XXX finish me for openmcl & Allegro
+  )
+
 (defgeneric start-spawn (spawn)
   (:documentation "get a spawn all set up"))
 
 (defmethod start-spawn ((spawn spawn))
   ;; XXX CMU SPECIFIC XXX
-  (let ((stream (extensions:process-output
-                 (run-program
-                  (spawnprog Spawn)
-                  (spawnargs Spawn)
-                  :output :stream))))
+  (let ((stream (spawn-prog (spawnprog Spawn) (spawnargs Spawn))))
     (setf (spawnstream spawn)
           stream)))
 
