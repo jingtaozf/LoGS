@@ -29,7 +29,7 @@
   (extensions:process-output
    (run-program program args :output :stream :wait ()))
   #+sbcl
-  (process-output
+  (sb-ext:process-output
    (run-program program args :output :stream :wait ()))
 
   #+openmcl
