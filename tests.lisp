@@ -1824,5 +1824,35 @@
        (let ((ret (assert-equal 42 (file-position (filestream *messages*)))))
          (remove-file testfile)
          ret)))))
+
+(deftest "spawn works"
+    :test-fn
+  (lambda ()
+    (let* ((testfile "testfile2")
+           (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
+      
+      ;; write the file
+      (with-open-file (output-stream "testfile2" :direction :output 
+                                     :if-exists :SUPERSEDE
+                                     :if-does-not-exist :create)
+        (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
+      
+      (let ((*messages* 
+             (make-instance 'spawn
+                            :spawnprog "/bin/cat"
+                            :spawnargs (list
+                                        testfile)))
+            (testval t))
+        
+        ;; check to see that the output of the cat process
+        ;; matches the stuff we wrote to the file
+        (mapcar 
+         (lambda (x) 
+           (let ((message (get-logline *messages*)))
+             (or (equal (message message) x)
+                 (setq testval ()))))
+         file-lines)
+        (assert-non-nil testval)))))
+
        
 (run-all-tests)

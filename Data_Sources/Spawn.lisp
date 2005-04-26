@@ -27,19 +27,26 @@
 (defun spawn-prog (program args)
   #+cmu
   (extensions:process-output
-   (run-program program args :output :stream))
+   (run-program program args :output :stream :wait ()))
   #+sbcl
   (process-output
-   (run-program program args :output :stream))
-  
-  ;; XXX finish me for openmcl & Allegro
+   (run-program program args :output :stream :wait ()))
+
+  #+openmcl
+  (ccl:external-process-output-stream 
+   (ccl:run-program program args :output :stream :wait ()))
+  ;; XXX finish me for Allegro
+
+  #+allegro
+  (excl:run-shell-command 
+   (format () "~A ~{ ~A~}" program args)
+           :output :stream :wait ())
   )
 
 (defgeneric start-spawn (spawn)
   (:documentation "get a spawn all set up"))
 
 (defmethod start-spawn ((spawn spawn))
-  ;; XXX CMU SPECIFIC XXX
   (let ((stream (spawn-prog (spawnprog Spawn) (spawnargs Spawn))))
     (setf (spawnstream spawn)
           stream)))

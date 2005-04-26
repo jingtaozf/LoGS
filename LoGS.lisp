@@ -133,6 +133,7 @@
 (load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "PBS-File-Follower" :directory '(:relative "Data_Sources"))
+(load-LoGS-file "Spawn" :directory '(:relative "Data_Sources"))
 
 (load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
 
