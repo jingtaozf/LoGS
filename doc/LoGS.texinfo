@@ -1,14 +1,14 @@
 \input texinfo   @c -*-texinfo-*-
 @setfilename LoGS.info
-@settitle LoGS 0.0.1
+@settitle LoGS 0.0.2
 @set AUTHOR James E. Prewett
-@set EDITION 0.0.1
-@set UPDATED February 8, 2005
+@set EDITION 0.0.2
+@set UPDATED April 27, 2005
 @set COPYRIGHT Copyright @copyright{} 2003--2005 James E. Prewett
 
 
 @copying
-This manual is for LoGS, version 0.0.1.
+This manual is for LoGS, version 0.0.2.
 
 Copyright @copyright{} 2003--2005 James E. Prewett.
 
