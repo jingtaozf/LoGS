@@ -38,10 +38,9 @@
 #+sbcl
 (setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 65712128)
 
-
 ; Turn off gc messages
 #+cmu
-(setq ext:*gc-verbose* ())
+(setq ext:*gc-verbose* NIL)
 
 ;; define the LoGS package
 (defpackage :LoGS
@@ -115,8 +114,6 @@
 (load-LoGS-file "limited-collection")
 (load-LoGS-file "context")
 
-
-
 ;; load low-level file stuff
 #+cmu
 (load-LoGS-file "File-Follower_CMUCL.low" :directory '(:relative "Data_Sources"))
@@ -134,6 +131,7 @@
 (load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "PBS-File-Follower" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "Spawn" :directory '(:relative "Data_Sources"))
+(load-LoGS-file "STDIN-Follower" :directory '(:relative "Data_Sources"))
 
 (load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
 
@@ -209,6 +207,7 @@
       (PROCESS-OPTIONS opts args)
       (let ((len (length *file-list*)))
         (cond ((eq 1 len) (setf *messages* (car *file-list*)))
+              ((eq 0 len) (setf *messages* (make-instance 'STDIN-follower)))
               (t (progn
                    (setf *messages* (make-instance 'LoGS::multi-follower))
                    (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*))))))))

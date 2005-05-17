@@ -65,7 +65,18 @@
                              (push follower *file-list*)))
                          filenames)))
                   :description "names of files to process and optional position (separated by colons eg. logfile:42)")
-       
+
+   (make-instance 'cli-opt
+                  :name "--spawn" 
+                  :arguments '("<command>" "...")
+                  :action
+                  #'(lambda (command &rest args)
+                      (let ((spawn (make-instance 'spawn 
+                                                  :spawnprog command
+                                                  :spawnargs args)))
+                                                  
+                      (push spawn *file-list*))))
+                      
    (make-instance 'cli-opt
                   :name "--ruleset"
                   :arguments '("<ruleset>")
@@ -88,4 +99,6 @@
                   :arguments ()
                   :action
                   #'(lambda ()
-                      (setq LoGS::*remember-file* t)))))
+                      (setq LoGS::*remember-file* t)))
+
+   ))
