@@ -19,9 +19,6 @@
 
 (defvar *mail-program* "/usr/bin/mail")
 
-
-;; this is very simple, better implementations will come... seems to work for now!
-
 (defmacro exec (program &rest args)
   `(lambda (messages) 
     (declare (ignore messages))
@@ -35,14 +32,40 @@
     (excl:run-shell-command (format () "~A ~{ ~A~}" ,program ,args))
     ))
 
+
+;; these allow us to abstract writing things to files.
+;; this should simplify our rulesets considerably
+(defgeneric write-to-file (filename message))
+
+(defmethod write-to-file (filename (message message))
+  (with-open-file
+      (file filename
+            :direction :output
+            :if-exists :append
+            :if-does-not-exist :create)
+    (format file "~A~%" (message message))))
+
+(defmethod write-to-file (filename (context context))
+  (with-open-file
+      (file filename
+            :direction :output
+            :if-exists :append
+            :if-does-not-exist :create)
+    (write-context context file)))
+
+(defmethod write-to-file (filename (string string))
+  (with-open-file
+      (file filename
+            :direction :output
+            :if-exists :append
+            :if-does-not-exist :create)
+    (format file "~A~%" string)))
+
+;; make a function to write the message to a file
 (defmacro file-write (filename)
-  `(lambda (message)
-    (with-open-file 
-        (file ,filename 
-         :direction :output 
-         :if-exists :append 
-         :if-does-not-exist :create)
-      (format file "~A~%" (message message)))))
+  `(lambda (thing)
+     (write-to-file ,filename thing)))
+
 
 (defmethod pipe ((message message) (program string) &rest args)
   #+cmu
