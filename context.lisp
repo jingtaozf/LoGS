@@ -142,14 +142,14 @@
   (add-item context message))
 
 ;; if this context is full, run actions and kill it!
-(defmethod add-to-context :after ((context context) (message message))
-  (progn
-    (update-relative-timeout context)
-    (if (context-exceeded-limit-p context *now*)
-        (progn
-          (when +debug+
-            (format t "expiring context ~A (named ~A)~%" context (name context)))
-          (expire-context context)))))
+;; (defmethod add-to-context :after ((context context) (message message))
+;;   (progn
+;;     (update-relative-timeout context)
+;;     (if (context-exceeded-limit-p context *now*)
+;;         (progn
+;;           (when +debug+
+;;             (format t "expiring context ~A (named ~A)~%" context (name context)))
+;;           (expire-context context)))))
 
 ;; run a context's actions then delete it.
 (defgeneric expire-context (context)
@@ -206,11 +206,14 @@
        (dll-delete *contexts* context))
        ret))
 
+;; (defmethod destroy-context-if-exceeded-limit ((context context))
+;;   (let ((ret (check-limits context)))
+;;     (when ret
+;;       (expire-context context))
+;;     ret))
+
 (defmethod destroy-context-if-exceeded-limit ((context context))
-  (let ((ret (check-limits context)))
-    (when ret
-      (expire-context context))
-    ret))
+  (check-limits context))
 
 (defgeneric context-exceeded-limit-p (context time)
   (:documentation "check to see if a context has exceeded one of its limits"))

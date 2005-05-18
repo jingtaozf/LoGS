@@ -866,10 +866,32 @@
                                       (declare (ignore context))
                                       (setf fooble t))))))
       (add-to-context (name context) (make-instance 'message))
+      (check-limits context)
       ;; context should exceed limit here and run actions
       (add-to-context (name context) (make-instance 'message))
+      (check-limits context)
       (assert-non-nil fooble))))
 
+(deftest "context runs actions exactly once"
+    :test-fn
+  (lambda ()
+    (let* ((fooble 0)
+           (context (ensure-context
+                                   :max-lines 1
+                                   :actions
+                                   (list
+                                    (lambda (context)
+                                      (declare (ignore context))
+                                      (incf fooble))))))
+      (add-to-context (name context) (make-instance 'message))
+      (check-limits context)
+      (format t "fooble: ~A~%" fooble)
+
+      ;; context should exceed limit here and run actions
+      (add-to-context (name context) (make-instance 'message))
+      (check-limits context)
+      (format t "fooble: ~A~%" fooble)
+      (assert-equal fooble 1))))
 
 (deftest "timed-out context runs actions"
     :test-fn

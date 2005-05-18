@@ -44,7 +44,13 @@
    (environment :initarg :environment
                 :accessor environment
                 :initform ()
-                :type list))
+                :type list)
+   (match-count :accessor match-count
+                :initform 0
+                :type integer)
+   (match-try :accessor match-try
+                :initform 0
+                :type integer))
   (:documentation "Rules associate messages with actions."))
 
 (defgeneric rule-exceeded-limit-p (rule time)
@@ -64,6 +70,12 @@
   (with-slots (match no-match)
       rule
     
+    ;; do bookkeeping
+    (when *count-rules*
+      (format t "incrementing rule try count~%")
+      (incf (match-try rule)))
+
+    ;; is this code right? XXX check me XXX  (sub-matches?)
     (multiple-value-bind (matches sub-matches)
         (cond ((functionp match) (funcall match message))
               (t match))
@@ -71,6 +83,11 @@
       (and matches
            (not (cond ((functionp no-match) (funcall no-match message))
                       (t no-match)))
+           ;; bookkeeping ; increment the count since we've matched
+           (or (when *count-rules*
+                 (format t "incrmenting rule match count~%")
+                 (incf (match-count rule)))
+               t)
            (values matches sub-matches)))))
 
 (defmacro in-given-environment (env body &rest args)
