@@ -67,7 +67,7 @@
 (in-package :LoGS)
 
 ;; this is a constant so we can optimize out the checks for production runs
-(defconstant +debug+ () "should debugging information be displayed?")
+(defconstant +debug+ NIL "should debugging information be displayed?")
 (declaim (type (or t nil) +debug+))
 
 (defparameter *use-internal-real-time* t 

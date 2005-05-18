@@ -23,17 +23,20 @@
          :initarg :dead))
   (:documentation "an item that can be killed; if it is dead, it should be removed."))
 
-(defmethod (setf dead-p) :after (new-value (killable-item killable-item))
-  (declare (ignore new-value))
-  (when
-      +debug+
-    (format t "killing item: ~A~%" killable-item)))
+(when +debug+
+  (defmethod (setf dead-p) :after (new-value (killable-item killable-item))
+    (declare (ignore new-value))
+    (when
+        +debug+
+      (format t "killing item: ~A~%" killable-item))))
 
+;; so we can "kill" NIL
 (defmethod (setf dead-p) (new-value (killable-item list)) 
   ()) 
 
 (defmethod kill ((killable-item killable-item))
   (setf (dead-p killable-item) t))
 
-(defmethod kill (item)
-  (setf (dead-p item) t))
+;; what in the heck does this do? 
+;(defmethod kill (item)
+;  (setf (dead-p item) t))
