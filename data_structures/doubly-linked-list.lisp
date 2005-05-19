@@ -47,69 +47,79 @@
                        (neighbor-item doubly-linked-list-item)
                        (insert-item doubly-linked-list-item) 
                        &key direction)
-
-  (cond
-    ((equal direction :before)
-     (progn
-       (when +debug+ 
-         (format t "inserting ~A into ~A before ~A~%" insert-item doubly-linked-list neighbor-item))
-       (when (llink neighbor-item)
-         (setf (rlink (llink neighbor-item)) insert-item))
-       (setf (rlink insert-item) neighbor-item)
-       (setf (llink insert-item) (llink neighbor-item))
-       (setf (llink neighbor-item) insert-item)
-       ;; if the neighbor was the head, we are now the head
-       (when (eq (head doubly-linked-list) neighbor-item)
-         (setf (head doubly-linked-list) insert-item))))
-    ((equal direction :after)
-     (progn
-       (when +debug+
-         (format t "inserting ~A into ~A after ~A~%" insert-item doubly-linked-list neighbor-item))
-        (when (rlink neighbor-item)
-         (setf (llink (rlink neighbor-item)) insert-item))
-       (setf (llink insert-item) neighbor-item)
-       (setf (rlink insert-item) (rlink neighbor-item))
-       (setf (rlink neighbor-item) insert-item)
-       ;; if the neighbor was the tail, we are now the tail
-       (when (eq (tail doubly-linked-list) neighbor-item)
-         (setf (tail doubly-linked-list) insert-item))
-      ))
-    (t
-     (error "unknown direction: ~A~%" direction))))
-
+  (if (gethash 
+       (data insert-item)
+       (list-entries doubly-linked-list))
+      (format t "item already exists in list~%")
+    
+      (cond
+        ((equal direction :before)
+         (progn
+           (when +debug+ 
+             (format t "inserting ~A into ~A before ~A~%" insert-item doubly-linked-list neighbor-item))
+           (when (llink neighbor-item)
+             (setf (rlink (llink neighbor-item)) insert-item))
+           (setf (rlink insert-item) neighbor-item)
+           (setf (llink insert-item) (llink neighbor-item))
+           (setf (llink neighbor-item) insert-item)
+           ;; if the neighbor was the head, we are now the head
+           (when (eq (head doubly-linked-list) neighbor-item)
+             (setf (head doubly-linked-list) insert-item))))
+        ((equal direction :after)
+         (progn
+           (when +debug+
+             (format t "inserting ~A into ~A after ~A~%" insert-item doubly-linked-list neighbor-item))
+           (when (rlink neighbor-item)
+             (setf (llink (rlink neighbor-item)) insert-item))
+           (setf (llink insert-item) neighbor-item)
+           (setf (rlink insert-item) (rlink neighbor-item))
+           (setf (rlink neighbor-item) insert-item)
+           ;; if the neighbor was the tail, we are now the tail
+           (when (eq (tail doubly-linked-list) neighbor-item)
+             (setf (tail doubly-linked-list) insert-item))
+           ))
+        (t
+         (error "unknown direction: ~A~%" direction)))))
+  
 ;; unencapsulated case
 (defmethod dll-insert ((doubly-linked-list doubly-linked-list)
                        (neighbor-item doubly-linked-list-item)
                        insert-item
                        &key direction)
-  (dll-insert doubly-linked-list
-              neighbor-item
-              (make-instance 'doubly-linked-list-item :data insert-item)
-              :direction direction))
-
+  (unless (gethash 
+           insert-item
+           (list-entries doubly-linked-list))
+    (dll-insert doubly-linked-list
+                neighbor-item
+                (make-instance 'doubly-linked-list-item :data insert-item)
+                :direction direction)))
+  
 ;; null neighbor
 (defmethod dll-insert ((doubly-linked-list doubly-linked-list)
                        (neighbor-item (eql NIL))
                        (insert-item doubly-linked-list-item)
                        &key direction)
-  (cond ((equal direction :before)
-         (progn
-           (when +debug+
-             (format t "inserting item ~A into ~A before nil~%" insert-item doubly-linked-list))
-           (if (head doubly-linked-list)
-               (dll-insert doubly-linked-list (head doubly-linked-list) insert-item :direction direction)
-               (progn
-                 (setf (head doubly-linked-list) insert-item)
-                 (setf (tail doubly-linked-list) insert-item)))))
-        ((equal direction :after)
-         (progn
-           (when +debug+
-             (format t "inserting item ~A into ~A after nil~%" insert-item doubly-linked-list))
-           (if (tail doubly-linked-list)
-               (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item :direction direction)
-               (progn
-                 (setf (head doubly-linked-list) insert-item)
-                 (setf (tail doubly-linked-list) insert-item)))))))
+  (unless (gethash 
+           (data insert-item) 
+           (list-entries doubly-linked-list))
+    (cond ((equal direction :before)
+           (progn
+             (when +debug+
+               (format t "inserting item ~A into ~A before nil~%" insert-item doubly-linked-list))
+             (if (head doubly-linked-list)
+                 (dll-insert doubly-linked-list (head doubly-linked-list) insert-item :direction direction)
+                 (progn
+                   (setf (head doubly-linked-list) insert-item)
+                   (setf (tail doubly-linked-list) insert-item)))))
+          ((equal direction :after)
+           (progn
+             (when +debug+
+               (format t "inserting item ~A into ~A after nil~%" insert-item doubly-linked-list))
+             (if (tail doubly-linked-list)
+                 (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item :direction direction)
+                 (progn
+                   (setf (head doubly-linked-list) insert-item)
+                   (setf (tail doubly-linked-list) insert-item))))))))
         
                 
 
@@ -117,10 +127,13 @@
                        (neighbor-item (eql NIL))
                        insert-item
                        &key direction)
-  (dll-insert doubly-linked-list
-              neighbor-item
-              (make-instance 'doubly-linked-list-item :data insert-item)
-              :direction direction))
+  (unless (gethash 
+           insert-item
+           (list-entries doubly-linked-list))
+    (dll-insert doubly-linked-list
+                neighbor-item
+                (make-instance 'doubly-linked-list-item :data insert-item)
+                :direction direction)))
 
 (defmethod dll-insert :after ((doubly-linked-list doubly-linked-list)
                               neighbor-item

@@ -88,6 +88,7 @@
 
 (defmethod delete-real-context ((context t))
   (when context
+    (when +debug+ (format t "deleting context: ~A~%" context))
     (let ((c (gethash context *contexts-hash*)))
       (dll-delete *contexts* c)
       (remhash context *contexts-hash*)
@@ -157,7 +158,10 @@
 
 (defmethod expire-context ((context context))
   (let ((min-lines (min-lines context)))
-    
+  
+    (when +debug+ (format t "expiring context: ~A named: ~A~%" 
+                          context (name context)))
+  
     (when (or 
            (not min-lines)
            (> (ecount context) min-lines))
