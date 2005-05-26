@@ -101,4 +101,10 @@
                   #'(lambda ()
                       (setq LoGS::*remember-file* t)))
 
+   (make-instance 'cli-opt
+                  :name "--count-rules"
+                  :arguments ()
+                  :action
+                  #'(lambda ()
+                      (setq LoGS::*count-rules* t)))
    ))

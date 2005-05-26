@@ -71,9 +71,10 @@
       rule
     
     ;; do bookkeeping
-    (when *count-rules*
-      (format t "incrementing rule try count~%")
-      (incf (match-try rule)))
+    (when +enable-rule-count+
+      (when *count-rules*
+        (when +debug+ (format t "incrementing rule try count~%"))
+        (incf (match-try rule))))
 
     ;; is this code right? XXX check me XXX  (sub-matches?)
     (multiple-value-bind (matches sub-matches)
@@ -84,10 +85,12 @@
            (not (cond ((functionp no-match) (funcall no-match message))
                       (t no-match)))
            ;; bookkeeping ; increment the count since we've matched
-           (or (when *count-rules*
-                 (format t "incrmenting rule match count~%")
-                 (incf (match-count rule)))
-               t)
+           (or
+            (when +enable-rule-count+
+              (when *count-rules*
+                (when +debug+ (format t "incrmenting rule match count~%"))
+                (incf (match-count rule))))
+              t)
            (values matches sub-matches)))))
 
 (defmacro in-given-environment (env body &rest args)
@@ -175,3 +178,6 @@
 (defmethod (setf dead-p) :after (new-value (rule rule))
   (when (and +debug+ (eq new-value t))
     (format t "killing rule: ~A name: ~A~%" rule (name rule))))
+
+(defmethod display-count ((rule rule) stream)
+  (format stream "~A ~A ~A~%" (name rule) (match-count rule) (match-try rule)))

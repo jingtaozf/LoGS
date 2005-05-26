@@ -51,6 +51,10 @@
   (with-slots (match no-match delete-rule no-delete-rule actions) 
       ruleset
 
+    (when +enable-rule-count+
+      (when *count-rules*
+        (incf (match-try ruleset))))
+
     (multiple-value-bind (matches sub-matches)
         (if (functionp match)
             (funcall match message)
@@ -66,6 +70,9 @@
          (dll-delete *ruleset* ruleset)))
 
       (when matches
+        (when +enable-rule-count+
+          (when *count-rules*
+            (incf (match-count ruleset))))
         (if (or (not (functionp no-match))
                 (not (funcall no-match message)))
             (let ((*ruleset* ruleset))
@@ -83,6 +90,11 @@ both matches and continuep is nil."))
     (when
         +debug+
       (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
+
+    ;; (when +enable-rule-count+
+;;       (when *count-rules*
+;;         (incf (match-try ruleset))))
+
     
     (let 
         ((didmatch
@@ -120,8 +132,9 @@ both matches and continuep is nil."))
       (when didmatch
         (when +debug+
           (format t "updating ruleset's relative timeout~%"))
+        
         (update-relative-timeout ruleset))
-      didmatch)))
+      didmatch))))
 
 (defmethod rule-head ((rule rule))
   (dll-insert
@@ -157,3 +170,19 @@ both matches and continuep is nil."))
 (defmethod dll-delete :after ((ruleset ruleset)
                               (item doubly-linked-list-item))
   (remhash (name (data item)) (elements ruleset)))
+
+(defmethod display-count ((ruleset ruleset) stream)
+  (progn
+    (format stream "~A ~A ~A~%" (name ruleset) (match-count ruleset) (match-try ruleset))
+    (loop with *current-rule* = (head ruleset)
+       when *current-rule*
+       do
+         (display-count (data *current-rule*) stream)
+         (setq *current-rule* (rlink *current-rule*))
+
+         when (not *current-rule*)
+         do
+         (return t))))
+         
+
+       

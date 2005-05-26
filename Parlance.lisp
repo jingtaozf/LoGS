@@ -303,3 +303,26 @@
     (cl-ppcre::scan-to-strings
      regexp
      (message message))))
+
+(defmacro match-regexp2 (regexp string &optional bind-list)
+  (let ((thing (cons 'list 
+                     (mapcar
+                      (lambda (v)
+                        `(list (quote ,v) ,v))
+                        bind-list))))
+    `(register-groups-bind 
+      ,bind-list
+      (,regexp ,string)
+      (values
+       t
+       ,thing))))
+
+(register-groups-bind
+ (foo)
+ ("the (.*) ran" "the cat ran")
+ (values
+  t
+  (mapcar (lambda (v) (eval v)) (list 'foo))))
+
+  
+  

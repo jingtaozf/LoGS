@@ -885,12 +885,10 @@
                                       (incf fooble))))))
       (add-to-context (name context) (make-instance 'message))
       (check-limits context)
-      (format t "fooble: ~A~%" fooble)
 
       ;; context should exceed limit here and run actions
       (add-to-context (name context) (make-instance 'message))
       (check-limits context)
-      (format t "fooble: ~A~%" fooble)
       (assert-equal fooble 1))))
 
 (deftest "timed-out context runs actions"

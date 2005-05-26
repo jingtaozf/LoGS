@@ -16,8 +16,8 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-(declaim (optimize (speed 0) (debug 3) (safety 3)))
+(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+;(declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
@@ -88,7 +88,10 @@
   "Should we remember with file a message comes from?")
 (declaim (type (or t nil) *remember-file*))
 
-(defparameter *count-rules* ()
+;; this is a constant so we can optimize out the checks for production runs
+(defconstant +enable-rule-count+ t "will we allow rules/rulesets to be counted?")
+
+(defparameter *count-rules* t
   "should we keep track of rule counts?")
 
 (defun load-LoGS-file (filename &key directory)
@@ -231,29 +234,29 @@
 (defun process-files ()    
   
   (loop as *message* = (get-logline *messages*)
-        ;; exit if there is no message and we're not running forever
-        when (and (not *run-forever*) (not *message*))
-        do
-        (return)
-        ;; if we are running forever and there is no message sleep 
-        when (and *run-forever* (not *message*))
-        do
-        (sleep *LoGS-sleep-time*)
-        
-        ;; update the internal time
-        when *use-internal-real-time*
-        do
-        (setq *now* (get-internal-real-time))
-        
-        ;; check the message against the ruleset if it exists
-        ;; and check the timeout objects
-        when t
-          do
-          (when (and *message* (head *root-ruleset*))
-            (check-rules *message* *root-ruleset*))
-          
-          (when (head *timeout-object-timeout-queue*)
-            (check-limits *timeout-object-timeout-queue*))
-          
-          (when (head *relative-timeout-object-timeout-queue*)
-            (check-limits *relative-timeout-object-timeout-queue*))))
+     ;; exit if there is no message and we're not running forever
+     when (and (not *run-forever*) (not *message*))
+     do
+       (return)
+     ;; if we are running forever and there is no message sleep 
+     when (and *run-forever* (not *message*))
+     do
+       (sleep *LoGS-sleep-time*)
+       
+     ;; update the internal time
+     when *use-internal-real-time*
+     do
+       (setq *now* (get-internal-real-time))
+              
+     ;; check the message against the ruleset if it exists
+     ;; and check the timeout objects
+     when t
+     do
+       (when (and *message* (head *root-ruleset*))
+         (check-rules *message* *root-ruleset*))
+       
+       (when (head *timeout-object-timeout-queue*)
+         (check-limits *timeout-object-timeout-queue*))
+       
+       (when (head *relative-timeout-object-timeout-queue*)
+         (check-limits *relative-timeout-object-timeout-queue*))))
