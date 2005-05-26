@@ -239,10 +239,6 @@
 ;; apparently the standard frowns upon not returning a *NEW* instance from
 ;; make-instance.  Sometimes compilers are too smart and cause a new instance
 ;; to always be returned. 
-;;
-;; I think this is what is breaking most of the context tests under SBCL
-;; hopefully fixing the tests to use ensure-context instead of make-instance
-;; will do the trick!
 (defmacro ensure-context (&rest rest &key name &allow-other-keys)
   `(progn
     (when +debug+ 
@@ -253,3 +249,19 @@
        (get-context ,name))
      (make-instance 'context
       ,@rest))))
+
+;; expire all remaining contexts
+
+(defun expire-all-contexts ()
+    (let ((context (head *contexts*)))
+      (loop 
+
+         when context
+         do
+           (let ((next (rlink context)))
+             (expire-context (data context))
+             (setq context next))
+                        
+         when (not context)
+         do
+           (return t))))

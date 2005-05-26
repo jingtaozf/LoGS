@@ -178,7 +178,7 @@
   "Should we keep going once we've reached the end of the file?")
 
 ;; does nothing... yet.
-(defvar *die-die-die* ()
+(defvar *run-before-exit* ()
   "a list of functions to call when LoGS is done running (before exiting).")
 
 ;; none of this belongs here!
@@ -226,7 +226,11 @@
     (let ((args (get-application-args)))
       (process-command-line *opts* args))
     ;; process any files
-    (process-files)))
+    (process-files)
+    (mapcar
+     (lambda (function)
+       (funcall function))
+     *run-before-exit*)))
 
 ;; pretty much the former mainline
 ;; adding the option processing to the mainline made testing more difficult
