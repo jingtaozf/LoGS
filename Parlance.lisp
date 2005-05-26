@@ -315,14 +315,4 @@
       (,regexp ,string)
       (values
        t
-       ,thing))))
-
-(register-groups-bind
- (foo)
- ("the (.*) ran" "the cat ran")
- (values
-  t
-  (mapcar (lambda (v) (eval v)) (list 'foo))))
-
-  
-  
+       ,thing))))  

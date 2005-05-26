@@ -134,7 +134,7 @@ both matches and continuep is nil."))
           (format t "updating ruleset's relative timeout~%"))
         
         (update-relative-timeout ruleset))
-      didmatch))))
+      didmatch)))
 
 (defmethod rule-head ((rule rule))
   (dll-insert
