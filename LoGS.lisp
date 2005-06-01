@@ -257,10 +257,10 @@
      when t
      do
        (when (and *message* (head *root-ruleset*))
-         (check-rules *message* *root-ruleset*))
+         (LoGS::check-rules *message* *root-ruleset*))
        
-       (when (head *timeout-object-timeout-queue*)
-         (check-limits *timeout-object-timeout-queue*))
+       (when (head LoGS::*timeout-object-timeout-queue*)
+         (LoGS::check-limits LoGS::*timeout-object-timeout-queue*))
        
-       (when (head *relative-timeout-object-timeout-queue*)
-         (check-limits *relative-timeout-object-timeout-queue*))))
+       (when (head LoGS::*relative-timeout-object-timeout-queue*)
+         (LoGS::check-limits LoGS::*relative-timeout-object-timeout-queue*))))

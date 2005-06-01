@@ -125,10 +125,10 @@
          
            (when matchp
              (update-relative-timeout rule)
-             (with-slots (delete-rule no-delete-rule actions environment) 
+             (with-slots (delete-rule no-delete-rule environment) 
                  rule  
 
-               (when actions
+               (when (actions rule)
                  (run-actions rule message rule-environment))
                (when delete-rule 
                  (and
