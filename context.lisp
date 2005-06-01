@@ -142,15 +142,12 @@
 (defmethod add-to-context ((context context) (message message))
   (add-item context message))
 
-;; if this context is full, run actions and kill it!
-;; (defmethod add-to-context :after ((context context) (message message))
-;;   (progn
-;;     (update-relative-timeout context)
-;;     (if (context-exceeded-limit-p context *now*)
-;;         (progn
-;;           (when +debug+
-;;             (format t "expiring context ~A (named ~A)~%" context (name context)))
-;;           (expire-context context)))))
+;; what about adding a context to a context?
+
+(defmethod add-to-context ((context context) (add-context context))
+  (loop for i from 0 below (ecount add-context) 
+     do
+       (add-to-context context (aref (data add-context) i))))
 
 ;; run a context's actions then delete it.
 (defgeneric expire-context (context)
@@ -226,7 +223,7 @@
   (let ((*now* time))
     (check-limits  context)))
 
-(defmethod write-context ((context context) (stream stream))
+(defmethod write-context ((context context) stream)
   (loop for i from 0 below (ecount context) 
         do
         (format stream "~A~%" 
