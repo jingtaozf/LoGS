@@ -34,6 +34,9 @@
 (defmacro ruleset (&rest rest)
   `(make-instance 'ruleset ,@rest))
 
+(defmacro window (&rest rest)
+  `(make-instance 'window ,@rest))
+
 ;;; ways to ignore things
 
 ;; filter out matching messages

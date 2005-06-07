@@ -119,6 +119,7 @@
 (load-LoGS-file "collection")
 (load-LoGS-file "limited-collection")
 (load-LoGS-file "context")
+(load-LoGS-file "window")
 
 ;; load low-level file stuff
 #+cmu

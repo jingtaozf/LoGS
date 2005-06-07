@@ -891,6 +891,26 @@
       (check-limits context)
       (assert-equal fooble 1))))
 
+(deftest "un-killable context runs actions exactly once"
+    :test-fn
+  (lambda ()
+    (let* ((fooble 0)
+           (context (ensure-context
+                                   :max-lines 1
+                                   :lives-after-timeout t
+                                   :actions
+                                   (list
+                                    (lambda (context)
+                                      (declare (ignore context))
+                                      (incf fooble))))))
+      (add-to-context (name context) (make-instance 'message))
+      (check-limits context)
+
+      ;; context should exceed limit here and run actions
+      (add-to-context (name context) (make-instance 'message))
+      ;; calling check-limits here wouldn't be right!
+      (assert-equal fooble 1))))
+
 (deftest "timed-out context runs actions"
     :test-fn
   (lambda ()
@@ -1874,5 +1894,37 @@
          file-lines)
         (assert-non-nil testval)))))
 
-       
+
+(deftest "old items are removed from window"
+    :test-fn
+  (lambda ()
+    (let ((window (make-instance 'window :window-length 1)))
+      (add-item window (make-instance 'message))
+      (add-item window (make-instance 'message))
+      (setf *now* (+ *now* (* 10 INTERNAL-TIME-UNITS-PER-SECOND)))
+      (check-limits window)
+      (assert-nil (head (data window))))))
+
+(deftest "non-old items are not removed from window"
+    :test-fn
+  (lambda ()
+    (let ((window (make-instance 'window :window-length 1)))
+      (add-item window (make-instance 'message))
+      (add-item window (make-instance 'message))
+      (setf *now* (+ *now* (* 10 INTERNAL-TIME-UNITS-PER-SECOND)))
+      (let ((save-message (make-instance 'message)))
+        (add-item window save-message)
+        (check-limits window)
+        (and 
+         (assert-equal (cadr (data (head (data window)))) save-message)
+         (assert-nil (rlink (head (data window)))))))))
+
+(deftest "window with too many non-old entries is shown to exceed limits"
+    :test-fn
+  (lambda ()
+    (let ((window (make-instance 'window :max-lines 1)))
+      (add-item window (make-instance 'message))
+      (add-item window (make-instance 'message))
+      (assert-non-nil (check-limits window)))))
+
 (run-all-tests)

@@ -20,23 +20,10 @@
 (defvar *contexts-hash* (make-hash-table :test #'equal)
   "a hash to hold all of their contexts so that we can find them by name.")
 
-(defun reset-contexts-hash () (setf *contexts-hash* (make-hash-table :test #'equal)))
-
 (defvar *contexts-alias-hash* (make-hash-table :test #'equal))
-
-(defun reset-contexts-alias-hash () (setf *contexts-alias-hash* (make-hash-table :test #'equal)))
 
 (defvar *contexts* (make-instance 'doubly-linked-list)
   "The current set of contexts.")
-
-(defun reset-contexts () (setf *contexts* (make-instance 'doubly-linked-list)))
-
-(defun clear-contexts ()
-  "remove all contexts"
-  (progn
-    (reset-contexts-hash)
-    (reset-contexts-alias-hash)
-    (reset-contexts)))
 
 (defclass context (limited-collection timeout-object relative-timeout-object killable-item)
   ((actions :initarg :actions
@@ -90,10 +77,12 @@
   (when context
     (when +debug+ (format t "deleting context: ~A~%" context))
     (let ((c (gethash context *contexts-hash*)))
-      (dll-delete *contexts* c)
-      (remhash context *contexts-hash*)
-      (dll-delete *timeout-object-timeout-queue* c)
-      (dll-delete *relative-timeout-object-timeout-queue* c))))
+      (when c
+        (kill c)
+        (dll-delete *contexts* c)
+        (remhash context *contexts-hash*)
+        (dll-delete *timeout-object-timeout-queue* c)
+        (dll-delete *relative-timeout-object-timeout-queue* c)))))
 
 ; delete a context by name
 ;; if its in the alias, remove that
@@ -149,6 +138,12 @@
      do
        (add-to-context context (aref (data add-context) i))))
 
+(defmethod add-item :after ((context context) item &rest rest)
+  (declare (ignore rest))
+  (let ((max-lines (max-lines context)))
+    (when (and max-lines (> (ecount context) max-lines))
+      (expire-context context))))
+
 ;; run a context's actions then delete it.
 (defgeneric expire-context (context)
   (:documentation "cause a context to run its actions, then be deleted"))
@@ -201,11 +196,12 @@
        (actions context)))))
 
  (defmethod check-limits :around ((context context))
-   (let ((ret (call-next-method)))
-     (when ret 
-       (expire-context context)
-       (dll-delete *contexts* context))
-       ret))
+   (or (dead-p context)
+       (let ((ret (call-next-method)))
+         (when ret 
+           (expire-context context)
+           (dll-delete *contexts* context))
+         ret)))
 
 ;; (defmethod destroy-context-if-exceeded-limit ((context context))
 ;;   (let ((ret (check-limits context)))
@@ -262,3 +258,17 @@
          when (not context)
          do
            (return t))))
+
+(defun reset-contexts-hash () (setf *contexts-hash* (make-hash-table :test #'equal)))
+
+(defun reset-contexts-alias-hash () (setf *contexts-alias-hash* (make-hash-table :test #'equal)))
+
+(defun reset-contexts () (setf *contexts* (make-instance 'doubly-linked-list)))
+
+(defun clear-contexts ()
+  "remove all contexts"
+  (progn
+    (reset-contexts-hash)
+    (reset-contexts-alias-hash)
+    (reset-contexts)))
+
