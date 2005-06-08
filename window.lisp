@@ -58,3 +58,13 @@
 
 (defmethod add-item :before ((window window) item &rest rest)
   (remove-old window))
+
+(defmethod write-context ((window window) stream)
+  (let ((current (head (data window))))
+    (loop for i from 0 below (ecount window) 
+       while current
+       do
+         (format stream "~A~%" 
+                 (message (cadr (data current))))
+         (setf current (rlink current)))))
+
