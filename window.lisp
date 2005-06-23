@@ -68,3 +68,14 @@
                  (message (cadr (data current))))
          (setf current (rlink current)))))
 
+;;; XXX when a context with the same name exists, it will be retrieved!
+(defmacro ensure-window (&rest rest &key name &allow-other-keys)
+  `(progn
+    (when +debug+ 
+      (if (and ,name (get-context ,name))
+          (format t "a context named ~A already exists at~%" ,name (get-context ,name))))
+    (or
+     (when ,name
+       (get-context ,name))
+     (make-instance 'window
+      ,@rest))))

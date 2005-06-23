@@ -141,10 +141,10 @@
                
                (values matchp rule-environment))))))))
   
-(defgeneric run-actions (rule message matches)
+(defgeneric run-actions (rule message environment)
   (:documentation "run a rule's actions."))
 
-(defmethod run-actions ((rule rule) (message message) found-matches)
+(defmethod run-actions ((rule rule) (message message) environment)
   (let ((actions (actions rule)))
     (when actions
       (mapcar 
@@ -155,13 +155,18 @@
            (when +debug+
              (format t "running action ~A in env ~A with args: ~A~%"
                      action 
-                     found-matches
+                     environment
                      message))
 
-           (in-given-environment
-            found-matches
-            action
-            message)
+           (if (listp environment)
+               (in-given-environment
+                environment
+                action
+                message)
+               (in-given-environment
+                ()
+                action
+                message))
 
            (when +debug+ 
              (format t "ran action~%"))))

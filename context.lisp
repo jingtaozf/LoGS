@@ -134,9 +134,12 @@
 ;; what about adding a context to a context?
 
 (defmethod add-to-context ((context context) (add-context context))
-  (loop for i from 0 below (ecount add-context) 
-     do
-       (add-to-context context (aref (data add-context) i))))
+  (progn
+    (when +debug+
+      (format t "adding context: ~A to context: ~A~%" add-context context))
+    (loop for i from 0 below (ecount add-context) 
+       do
+         (add-to-context context (aref (data add-context) i)))))
 
 (defmethod add-item :after ((context context) item &rest rest)
   (declare (ignore rest))
@@ -236,7 +239,7 @@
   `(progn
     (when +debug+ 
       (if (and ,name (get-context ,name))
-          (format t "a context named ~A already exists~%" ,name)))
+          (format t "a context named ~A already exists at~%" ,name (get-context ,name))))
     (or
      (when ,name
        (get-context ,name))
