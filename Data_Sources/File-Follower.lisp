@@ -86,6 +86,11 @@ associated with our filename. if there is, we start following that filename."
 a message."
   (let ((line (get-line ff)))
     (when line
-      (if *remember-file*
-          (make-instance 'from-message :message line :from-file (filename ff))
-          (make-instance 'message :message line)))))
+      (cond ((and *remember-file* *tag-messages*)
+             (make-instance 'message :message line :from-file (filename ff) :tag ()))
+            (*remember-file*
+             (make-instance 'message :message line :from-file (filename ff)))
+            (*tag-messages*
+             (make-instance 'message :message line :tag ()))
+            (t
+             (make-instance 'message :message line))))))

@@ -57,7 +57,8 @@
                                    LoGS::*messages*
                                    (read-from-string position)))
                                 (push ff *file-list*))))
-   (make-instance 'cli-opt
+
+      (make-instance 'cli-opt
                   :name "--files"
                   :arguments '("<filename>" "...")
                   :action 
@@ -118,6 +119,13 @@
                   :action
                   #'(lambda ()
                       (setq LoGS::*remember-file* t)))
+
+   (make-instance 'cli-opt
+                  :name "--tag-messages"
+                  :arguments ()
+                  :action
+                  #'(lambda ()
+                      (setq LoGS::*tag-messages* t)))
 
    (make-instance 'cli-opt
                   :name "--count-rules"

@@ -88,6 +88,9 @@
   "Should we remember with file a message comes from?")
 (declaim (type (or t nil) *remember-file*))
 
+(defparameter *tag-messages* ()
+  "should we allow messages to be tagged?")
+
 ;; this is a constant so we can optimize out the checks for production runs
 (defconstant +enable-rule-count+ t "will we allow rules/rulesets to be counted?")
 

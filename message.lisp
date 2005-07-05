@@ -19,15 +19,13 @@
 
 ;;; a message class.
 (defclass message () 
-  ((message :initarg :message :accessor message :initform ()))
+  ((message :initarg :message :accessor message :initform ())
+   (from-file :initarg :from-file :accessor from-file :initform ())
+   (tag :initarg :tag :accessor tag :initform ()))
   (:documentation "A class to hold messages.  You probably want string-message instead."))
 
 ;;; a string message class
 
 (defclass string-message (message) ()
   (:documentation "A class that holds string messages."))
-
-(defclass from-message (message)
-  ((from-file :initarg :from-file :accessor from-file))
-  (:documentation "a Message class that knows which log file it is from"))
 
