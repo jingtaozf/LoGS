@@ -35,6 +35,7 @@
      (and ino
           (progn
             (setf (Inode ff) ino)
+            (when (filestream ff) (close (filestream ff)))
             (if
              (fifo-p (filename ff))
              (setf (Filestream ff)
@@ -47,6 +48,9 @@
 
 (defmethod set-file-follower-position ((file-follower file-follower)
                                        (position number))
+  (format t "setting file follower: ~A's filestream: ~A position to ~A~%" 
+          file-follower 
+          (filestream file-follower) position)
   (file-position
    (filestream file-follower)
    position))
@@ -75,10 +79,14 @@
 "Return the next line of this file.  We refuse to read eof.  When we 
 have reached end of the file, we check to see if there is a new inode 
 associated with our filename. if there is, we start following that filename."
-  (if (peek-char nil (filestream ff) nil)
-      (read-line (filestream ff) nil)
+  (if (open-stream-p (filestream ff))
+      (if (peek-char nil (filestream ff) nil)
+          (read-line (filestream ff) nil)
+          (let ((stat-inode (get-inode-from-filename (filename ff))))
+            (and (not (eql (inode ff) stat-inode))
+                 (read-line (start-file-follower ff) nil))))
       (let ((stat-inode (get-inode-from-filename (filename ff))))
-        (and (not (eql (inode ff) stat-inode))
+        (when (not (eql (inode ff) stat-inode))
              (read-line (start-file-follower ff) nil)))))
 
 (defmethod get-logline ((ff file-follower))

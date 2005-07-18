@@ -22,12 +22,12 @@
 (use-package :ORG.ANCAR.CLUNIT)
 
 ;; UGH!
-#+allegro
+#+(or allegro clisp)
 (set-dispatch-macro-character #\# #\$
                               (lambda(s c n)
                                 (let ((thing (read s nil (values) t))) ())))
 
-#+allegro
+#+(or allegro clisp)
 (set-dispatch-macro-character #\# #\_
                               (lambda(s c n)
                                 (let ((thing (read s nil (values) t))) ())))
@@ -41,7 +41,9 @@
           #+sbcl
           (sb-posix:unlink filename)
           #+openmcl
-          (#_unlink (ccl::make-cstring filename)))
+          (#_unlink (ccl::make-cstring filename))
+          #+clisp
+          (delete-file filename))
 
 (defun assert-equal (a b &key test)
        (not 
@@ -674,7 +676,7 @@
 (deftest "file-follower inode rollover works"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfileaxxx"))
+    (let* ((testfile "testfile4"))
       (with-open-file (output-stream testfile :direction :output 
                                      :if-exists :overwrite
                                      :if-does-not-exist :create)
@@ -685,17 +687,17 @@
          (and
           (get-line ff)
           (not (get-line ff))))
+
+        (close (filestream ff)) 
+
         (with-open-file (output-stream testfile :direction :output 
                                        :if-exists :rename-and-delete
                                        :if-does-not-exist :create)
           (format output-stream "here is another~%"))
+
         (let ((line (get-line ff)))
-          #+cmu
-          (unix:unix-unlink testfile)
-          #+sbcl
-          (sb-posix:unlink testfile)
-          #+openmcl
-          (#_unlink (ccl::make-cstring testfile))
+          (close (filestream ff))
+          (remove-file testfile)
           (assert-non-nil line)
           )))))
 
@@ -730,6 +732,7 @@
                                                (declare (ignore x))
                                                (incf counter)))))
       (process-files)
+      (close (filestream *messages*))
       (remove-file day1)
       (remove-file day2)
       (remove-file day3)
@@ -1784,7 +1787,7 @@
                                   :timeout 124
                                   :lives-after-timeout ())))
       (setf *now* 125)
-      (check-limits context)
+      (assert-non-nil (check-limits context))
       (assert-nil (get-context (name context))))))
 
 (deftest "min-lines context test"
@@ -1849,19 +1852,20 @@
     :test-fn
   (lambda ()
     (let* ((*file-list* ())
-           (testfile "testfile2")
+           (testfile "testfile3")
            (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
       (declare (special *file-list*))
-      (with-open-file (output-stream "testfile2" :direction :output 
+      (with-open-file (output-stream testfile :direction :output 
                                      :if-exists :SUPERSEDE
                                      :if-does-not-exist :create)
         (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
       
       
-      (process-command-line *opts* '("--file" "testfile2" "42"))
+      (process-command-line *opts* `("--file" ,testfile "42"))
       (and 
        (typep *messages* 'file-follower)
        (let ((ret (assert-equal 42 (file-position (filestream *messages*)))))
+         (close (filestream *messages*))
          (remove-file testfile)
          ret)))))
 

@@ -41,6 +41,9 @@
   (excl:run-shell-command 
    (format () "~A ~{ ~A~}" program args)
            :output :stream :wait ())
+
+  #+clisp
+  (ext:run-program program :arguments args :output :stream :wait ())
   )
 
 (defgeneric start-spawn (spawn)

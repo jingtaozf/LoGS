@@ -133,6 +133,8 @@
 (load-LoGS-file "File-Follower_OpenMCL.low" :directory '(:relative "Data_Sources"))
 #+allegro
 (load-LoGS-file "File-Follower_Allegro.low" :directory '(:relative "Data_Sources"))
+#+clisp
+(load-LoGS-file "File-Follower_CLISP.low" :directory '(:relative "Data_Sources"))
 
 ;; load message producers
 (load-LoGS-file "Data-Source" :directory '(:relative "Data_Sources"))
@@ -190,7 +192,6 @@
 (defgeneric check-limits (thing)
   (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
-
 
 ;; signal processing
 ;; someday we should have some!
