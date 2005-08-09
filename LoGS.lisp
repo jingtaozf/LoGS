@@ -145,7 +145,10 @@
 (load-LoGS-file "Spawn" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "STDIN-Follower" :directory '(:relative "Data_Sources"))
 
+(load-LoGS-file "Buffered-SQL-Follower" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
+
+
 
 ;; load rules
 (load-LoGS-file "rule")

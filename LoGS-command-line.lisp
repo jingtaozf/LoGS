@@ -58,6 +58,19 @@
                                    (read-from-string position)))
                                 (push ff *file-list*))))
 
+   (make-instance 'cli-opt
+                  :name "--mysql-follower"
+                  :arguments '("<host>" "<database>" "<username>" "<password>" "<query>")
+                  :action #'(lambda (host database username password query)
+                              (let ((ff (make-instance 
+                                         'LoGS::buffered-sql-Follower
+                                         :username username
+                                         :password password
+                                         :host host
+                                         :database database
+                                         :thequery query)))
+                                (push ff *file-list*))))
+
       (make-instance 'cli-opt
                   :name "--files"
                   :arguments '("<filename>" "...")
