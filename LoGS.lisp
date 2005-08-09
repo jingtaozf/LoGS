@@ -159,9 +159,6 @@
 
 
 ;; command line options
-;; migrating to new system
-;#+cmu
-;(load-LoGS-file "command-line_CMUCL")
 (load-LoGS-file "LoGS-command-line")
 
 
