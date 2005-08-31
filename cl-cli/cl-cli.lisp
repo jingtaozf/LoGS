@@ -11,6 +11,9 @@
 
 (in-package :cl-cli)
 
+#+cmucl
+(setf EXTENSIONS::*COMPLAIN-ABOUT-ILLEGAL-SWITCHES* ())
+
 (defclass cli-opt ()
   ((name :initform () :initarg :name :accessor name)
    (arguments :initform () :initarg :arguments :accessor arguments)
@@ -127,3 +130,12 @@
 
     ;; FIXME: openmcl version missing
 )
+
+;; display option help
+(defun help (opts)
+  (mapcar (lambda (option)
+	    (format t "~A~10T~{~T~A~}~25T~A~%" 
+		    (name option)
+		    (or (arguments option) '(""))
+		    (description option)))
+	  opts))
