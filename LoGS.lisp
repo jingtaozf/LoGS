@@ -94,6 +94,8 @@
 ;; this is a constant so we can optimize out the checks for production runs
 (defconstant +enable-rule-count+ t "will we allow rules/rulesets to be counted?")
 
+(defconstant +use-sql+ () "should we build in the buffered-sql-follower?")
+
 (defparameter *count-rules* t
   "should we keep track of rule counts?")
 
@@ -145,7 +147,8 @@
 (load-LoGS-file "Spawn" :directory '(:relative "Data_Sources"))
 (load-LoGS-file "STDIN-Follower" :directory '(:relative "Data_Sources"))
 
-(load-LoGS-file "Buffered-SQL-Follower" :directory '(:relative "Data_Sources"))
+(when +use-sql+
+  (load-LoGS-file "Buffered-SQL-Follower" :directory '(:relative "Data_Sources")))
 (load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
 
 

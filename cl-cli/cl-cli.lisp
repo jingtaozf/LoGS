@@ -11,7 +11,7 @@
 
 (in-package :cl-cli)
 
-#+cmucl
+#+cmu
 (setf EXTENSIONS::*COMPLAIN-ABOUT-ILLEGAL-SWITCHES* ())
 
 (defclass cli-opt ()
@@ -137,5 +137,5 @@
 	    (format t "~A~10T~{~T~A~}~25T~A~%" 
 		    (name option)
 		    (or (arguments option) '(""))
-		    (description option)))
+		    (or (description option) "")))
 	  opts))

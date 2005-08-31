@@ -56,7 +56,8 @@
                                   (LoGS::set-file-follower-position
                                    LoGS::*messages*
                                    (read-from-string position)))
-                                (push ff *file-list*))))
+                                (push ff *file-list*)))
+                  :description "follow a sequence of PBS log files starting with the named file")
 
    (make-instance 'cli-opt
                   :name "--mysql-follower"
@@ -69,7 +70,8 @@
                                          :host host
                                          :database database
                                          :thequery query)))
-                                (push ff *file-list*))))
+                                (push ff *file-list*)))
+                  :description "follow the result of a database query")
 
       (make-instance 'cli-opt
                   :name "--files"
@@ -131,21 +133,26 @@
                   :arguments ()
                   :action
                   #'(lambda ()
-                      (setq LoGS::*remember-file* t)))
+                      (setq LoGS::*remember-file* t))
+                  :description "store the name of the file that a given message came from in the from-file slot of the message if set")
 
    (make-instance 'cli-opt
                   :name "--tag-messages"
                   :arguments ()
                   :action
                   #'(lambda ()
-                      (setq LoGS::*tag-messages* t)))
+                      (setq LoGS::*tag-messages* t))
+                  :description
+                  "allow messages to be given tags")
 
    (make-instance 'cli-opt
                   :name "--count-rules"
                   :arguments ()
                   :action
                   #'(lambda ()
-                      (setq LoGS::*count-rules* t)))
+                      (setq LoGS::*count-rules* t))
+                  :description
+                  "count the number of times a rule is matched/attempted")
    (make-instance 'cli-opt
                   :name "--expire-contexts-on-exit"
                   :arguments ()
@@ -154,5 +161,20 @@
                       (setq LoGS::*run-before-exit*
                             (cons
                              #'expire-all-contexts
-                             LoGS::*run-before-exit*))))
+                             LoGS::*run-before-exit*)))
+                  :description
+                  "expire all remaining contexts before exiting LoGS")
+
+   (make-instance 'cli-opt
+                  :name "--help"
+                  :arguments ()
+                  :action
+                  #'(lambda ()
+                      (progn
+                        (cl-cli::help LoGS::*opts*)
+                        #+allegro
+                        (exit)
+                        #-allegro
+                        (quit)))
+                  :description "display this help text")
    ))

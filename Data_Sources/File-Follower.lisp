@@ -48,9 +48,6 @@
 
 (defmethod set-file-follower-position ((file-follower file-follower)
                                        (position number))
-  (format t "setting file follower: ~A's filestream: ~A position to ~A~%" 
-          file-follower 
-          (filestream file-follower) position)
   (file-position
    (filestream file-follower)
    position))
