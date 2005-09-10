@@ -196,6 +196,12 @@
   (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
+(defun quit-LoGS ()
+  #+allegro
+  (exit)
+  #-allegro
+  (quit))
+
 ;; signal processing
 ;; someday we should have some!
 ;; these are just here till I get to it... 

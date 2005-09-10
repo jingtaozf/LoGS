@@ -32,6 +32,17 @@
                               (lambda(s c n)
                                 (let ((thing (read s nil (values) t))) ())))
 
+;; this is /brain-dead/ 
+;; it does /not/ do the right thing when filename.1 already exists!
+;; if it rolls over, the new filename is returned, else nil
+(defun roll-over (filename)
+  (let ((newname (format () "~A.1" filename)))
+    (when
+        #+cmu
+      (unix:unix-rename filename newname)
+      #+(or clisp sbcl allegro openmcl)
+      (rename-file filename newname)
+      newname)))
 
 (defvar *do-error* t)
 
@@ -676,7 +687,8 @@
 (deftest "file-follower inode rollover works"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfile4"))
+    (let* ((testfile "testfile4")
+           (testfile-rollover ()))
       (with-open-file (output-stream testfile :direction :output 
                                      :if-exists :overwrite
                                      :if-does-not-exist :create)
@@ -690,14 +702,18 @@
 
         (close (filestream ff)) 
 
+        ;; ensure the rollover
+        (setq testfile-rollover (roll-over (filename ff)))
+
         (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :rename-and-delete
+                                       :if-exists :error
                                        :if-does-not-exist :create)
           (format output-stream "here is another~%"))
 
         (let ((line (get-line ff)))
           (close (filestream ff))
           (remove-file testfile)
+          (when testfile-rollover (remove-file testfile-rollover))
           (assert-non-nil line)
           )))))
 

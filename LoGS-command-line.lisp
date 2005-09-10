@@ -166,6 +166,14 @@
                   "expire all remaining contexts before exiting LoGS")
 
    (make-instance 'cli-opt
+                  :name "--sleep-time"
+                  :arguments '("<seconds>")
+                  :action
+                  #'(lambda (seconds)
+                      (setf *LoGS-sleep-time* (read-from-string seconds)))
+                  :description
+                  "how long to sleep when there are no messages to process")
+   (make-instance 'cli-opt
                   :name "--help"
                   :arguments ()
                   :action
