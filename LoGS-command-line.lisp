@@ -61,17 +61,41 @@
 
    (make-instance 'cli-opt
                   :name "--mysql-follower"
-                  :arguments '("<host>" "<database>" "<username>" "<password>" "<query>")
-                  :action #'(lambda (host database username password query)
-                              (let ((ff (make-instance 
-                                         'LoGS::buffered-sql-Follower
-                                         :username username
-                                         :password password
-                                         :host host
-                                         :database database
-                                         :thequery query)))
-                                (push ff *file-list*)))
-                  :description "follow the result of a database query")
+                  :arguments '("<host>" "<database>" "<username>" "<password>" "<query>" "[buffer-size]")
+                  :action 
+                  
+                  (if +use-sql+
+                      #'(lambda (host database username password query &optional buffer-size)
+                          (if +use-sql+
+                              (let ((ff 
+                                     (if (and buffer-size (integerp (read-from-string buffer-size)))
+                                         (make-instance 
+                                          'LoGS::buffered-sql-Follower
+                                          :username username
+                                          :password password
+                                          :host host
+                                          :database database
+                                          :thequery query
+                                          :buffer-size buffer-size
+                                          )
+                                         (make-instance 
+                                          'LoGS::buffered-sql-Follower
+                                          :username username
+                                          :password password
+                                          :host host
+                                          :database database
+                                          :thequery query
+                                          ))))
+                                (push ff *file-list*))))
+                      #'(lambda (host database username password query &optional buffer-size)
+                          (progn
+                            (format t "SQL support does not exist in this build of LoGS... exiting~%")
+                            (quit-LoGS))))
+   :description 
+   (if +use-sql+ 
+       "follow the result of a database query"
+       "follow the result of a database query *DISABLED*"
+       ))
 
       (make-instance 'cli-opt
                   :name "--files"
