@@ -1,14 +1,14 @@
 \input texinfo   @c -*-texinfo-*-
 @setfilename LoGS.info
-@settitle LoGS 0.0.2
+@settitle LoGS 0.0.4
 @set AUTHOR James E. Prewett
-@set EDITION 0.0.2
-@set UPDATED April 27, 2005
+@set EDITION 0.0.4
+@set UPDATED September 12, 2005
 @set COPYRIGHT Copyright @copyright{} 2003--2005 James E. Prewett
 
 
 @copying
-This manual is for LoGS, version 0.0.2.
+This manual is for LoGS, version 0.0.4.
 
 Copyright @copyright{} 2003--2005 James E. Prewett.
 
@@ -61,42 +61,51 @@ last updated on @value{UPDATED}.
 
 @menu
 * LoGS Overview::               
+* LoGS Compile-time options::   
 * Running LoGS::                
 * LoGS Rules::                  
 * LoGS Rulesets::               
 * LoGS Contexts::               
 * LoGS Internals::              
+* CL-CLI Manual::               
 * Copying This Manual::         
 * Concept Index::               
 * Function Index::              
 * Variable Index::              
 @end menu
 
-@node LoGS Overview, Running LoGS, Top, Top
+@node LoGS Overview, LoGS Compile-time options, Top, Top
 @chapter LoGS Overview
 
 @cindex LoGS Overview 
 @cindex Overview, LoGS
 
-LoGS is a programmable log analysis engine.  LoGS aims to be
-easily extend-able, even while it is running.  LoGS also aims to be
-very flexible in terms of how interesting log messages are
-identified and what is done in response to finding one of these
-messages.
+LoGS is a programmable log analysis engine.  LoGS aims to be easily
+extend-able, even while the program is running.  LoGS also aims to be
+very flexible in terms of how interesting log messages are identified
+and what is done in response to finding one, or even a set of, these
+messages. 
 
-LoGS is written in common LISP@footnote{LoGS is currently only known
-to work with CMUCL.  It is our intention to port LoGS to a variety of
-LISP implementations.  LoGS will load (but fails some tests) under
-SBCL, OpenMCL, Lispworks and probably others.} and utilizes the Common
-LISP Object System (CLOS) and the Meta--Object Protocol (MOP).  Common
-LISP was chosen for its flexibility, for having an excellent (and
-fast!) regular expression engine@footnote{CL-PPCRE}, and because
-nesting data structures with CLOS is relatively simple@footnote{One of
-LoGS primary goals is to be able to easily write rules that modify
-themselves and/or modify the ruleset.  Rules that modify the ruleset
-create new rules; these new rules should also be able to create new
-rules (no matter how deeply nested within the originally specified
-rule) and the specification of this should not be overly complex.}. 
+LoGS is written in common LISP@footnote{LoGS is currently known to
+work with the following Lisp implementations:
+@itemize
+@item CMUCL
+@item SBCL
+@item Allegro
+@item OpenMCL
+@item CLISP
+@end itemize
+It is our intention to port LoGS to a wide variety of Lisp
+implementations.} and utilizes the Common LISP Object System (CLOS)
+and the Meta--Object Protocol (MOP).  Common LISP was chosen for its
+flexibility, for having an excellent (and fast!) regular expression
+engine@footnote{CL-PPCRE}, and because nesting data structures with
+CLOS is relatively simple@footnote{One of LoGS initial motivations was to be
+able to easily write rules that modify themselves and/or modify the
+ruleset.  Rules that modify the ruleset create new rules; these new
+rules should also be able to create new rules (no matter how deeply
+nested within the originally specified rule) and the specification of
+this should not be overly complex.}.
 
 Common LISP is the programming language used by LoGS to represent its
 rules and other important structures.  This is similar to how SEC uses
@@ -112,18 +121,19 @@ stage in LoGS' development, understanding how to create and manipulate
 CLOS objects in LISP will be very useful.  While LoGS strives not to
 push you into a particular mechanism to discover the ``interesting''
 log messages, regular expressions are probably the most common way of
-doing so in other log analysis applications.  LoGS currently uses the
-CL-PPCRE package to match regular expressions@footnote{There is no
-reason not to use other regular expression packages; however, regular
-expressions that work with CL-PPCRE will be presented in this
-manual.}.
+doing so in other log analysis applications.  Strictly speaking,
+regular expressions are not at all required to use LoGS.  That being
+said, LoGS uses the CL-PPCRE package to match regular
+expressions@footnote{There is no reason not to use other regular
+expression packages; however, regular expressions that work with
+CL-PPCRE will be presented in this manual.}. 
 
 @cindex LoGS programming language
 @cindex Common LISP
 
 @menu
 * LoGS Components::             
-* Messages::                    
+* Messages and Data-Sources::   
 * Rules::                       
 * Rulesets::                    
 * Actions::                     
@@ -132,18 +142,26 @@ manual.}.
 * How Messages are processed::  
 @end menu
 
-@node LoGS Components, Messages, LoGS Overview, LoGS Overview
+@node LoGS Components, Messages and Data-Sources, LoGS Overview, LoGS Overview
 @section LoGS Components
 
-Logs, as currently written@footnote{LoGS is currently evolving
-very quickly and is extend-able/modifiable by the user}, consists
-of five important components, Messages, Rules, Rulesets, Actions, and
-Contexts.  These components were chosen so as to mimic the
-behavior of the (excellent) Logsurfer program written by
-Wolfgang Ley and Ewe Ellerman. 
+Logs, as currently written@footnote{LoGS is currently evolving very
+quickly and is extend-able/modifiable by the user}, consists of six
+important components, Messages, Rules, Rulesets, Actions, Contexts,
+and Data-Sources.  These components were chosen so as to mimic the
+behavior of the (excellent) Logsurfer program written by Wolfgang Ley
+and Ewe Ellerman.   
+
+@cindex LoGS components
+@cindex Messages
+@cindex Rules
+@cindex Rulesets
+@cindex Actions
+@cindex Contexts
+@cindex Data-Sources
 
 An Object--Oriented approach has been taken with LoGS.  Each of the
-five major components, with the exception of actions, are implemented
+six major components, with the exception of actions, are implemented
 as CLOS classes and may be instantiated by calling the standard
 @code{make-instance} macro@footnote{Contexts should now be created
 using the ensure-context macro instead of make-instance whenever the
@@ -160,20 +178,26 @@ created by the user for specialized uses.
 @cindex Ewe Ellerman
 @cindex Ellerman, Ewe
 
-@node Messages, Rules, LoGS Components, LoGS Overview
-@section Messages
+
+@node Messages and Data-Sources, Rules, LoGS Components, LoGS Overview
+@section Messages and Data-Sources
 
 Messages are units of information coming into the LoGS system
-via a data source.  These messages are processed sequentially by
+via a Data-Source.  These messages are processed sequentially by
 LoGS.  Currently LoGS has facilities to handle arbitrary ASCII
 data separated by newlines such as a log file written by the
 system log daemon, syslogd via David Worth's @code{File-Follower} class.
 
 @cindex File-Follower
 @cindex messages
-@cindex data source
+@cindex message object
+@cindex Data-Source
+@cindex Data-Source object
 @cindex ASCII
 @cindex syslogd
+@cindex David Worth
+@cindex Worth, David
+@cindex D@@v3X0r
 
 Messages are encapsulated within objects of the Message class as
 they are read into the LoGS system.  Since, currently,
@@ -187,6 +211,14 @@ right thing with the right type of message.
 @cindex String-message class
 @cindex message object
 
+Data sources iterate, generally line by line, across the input from an
+input source and produce Message objects with this input.
+Data-Sources generally take a single input stream (read from a single
+file). However, multiple Data-Sources may be combined together using
+an object from the Multi-Follower class.  
+
+@cindex Data-Source
+@cindex Multi-Follower
 
 The only reason why other message formats are not supported is that
 there are currently no message source objects that produce anything
@@ -197,7 +229,7 @@ beyond String-Message objects.
 @cindex string-message object
 
 
-@node Rules, Rulesets, Messages, LoGS Overview
+@node Rules, Rulesets, Messages and Data-Sources, LoGS Overview
 @section Rules
 
 Rules are objects that associate Messages with a list of actions.  When a
@@ -217,6 +249,13 @@ returned by the match function override the bindings in the rule's environment).
 @cindex matches
 @cindex sub--matches
 
+@findex match, Rule slot accessor
+@findex Rule slot accessors - match slot
+@findex environment, Rule slot accessor
+@findex Rule slot accessors - environment slot
+@findex actions, Rule slot accessor
+@findex Rule slot accessors - actions slot
+
 A Rule object consists of these slots: match, no-match, delete-rule,
 no-delete-rule, timeout, continuep, actions, and environment. All of
 these slots have default values (in most cases, the default value is
@@ -224,6 +263,23 @@ NIL).  This allows for rule specifications to be rather short for very
 simple rules. However, it is generally useful to at least specify a
 function for the match slot (otherwise the rule can never match a
 message, see below). 
+
+@findex match, Rule slot accessor
+@findex Rule slot accessors - match slot
+@findex no-match, Rule slot accessor
+@findex Rule slot accessors - no-match slot
+@findex delete-rule, Rule slot accessor
+@findex Rule slot accessors - delete-rule slot
+@findex no-delete-rule, Rule slot accessor
+@findex Rule slot accessors - no-delete-rule slot
+@findex timeout, Rule slot accessor
+@findex Rule slot accessors - timeout slot
+@findex continuep, Rule slot accessor
+@findex Rule slot accessors - continuep slot
+@findex actions, Rule slot accessor
+@findex Rule slot accessors - actions slot
+@findex environment, Rule slot accessor
+@findex Rule slot accessors - environment slot
 
 @cindex Rule slots
 @cindex match slot (Rule object)
@@ -239,6 +295,8 @@ In order to determine if a Message is matched by the Rule, the
 function stored in the ``match'' slot of the Rule must return
 non-nil and the function stored in the ``no-match'' slot must
 return nil when called with the message as their argument.
+
+@cindex rules, matching messages
 
 Rules can delete themselves when they match a Message, and the
 function stored in the delete-rule slot of the Rule returns
@@ -265,6 +323,8 @@ Ruleset is found.
 
 @cindex ruleset
 @cindex ruleset processing
+
+@findex continuep
 
 In LoGS, Rules are dynamic in that they can be created by Actions
 at run--time in response to certain Messages.  They can be 
@@ -345,6 +405,8 @@ LoGS 0.0.0 had a bogus notion of contexts borrowed from
 Logsurfer. This poses a serious efficiency problem (as pointed out by
 John P. Rouillard in a private conversation; Thanks John!)! 
 
+@cindex John P. Rouillard
+
 In versions 0.0.0a and greater, messages can only be added to contexts
 by actions (associated with rules or other contexts).  In this way, we
 can leverage the short--circuit functionality available in LoGS rules
@@ -354,7 +416,8 @@ Contexts that may already exist should now be created with the
 ensure-context macro.  This macro will return the context if it
 already exists, and create the context if it does not exist.
 ensure-context takes the same arguments as @code{(make-instance
-'context ...)} would.
+'context ...)} would, but ensures that only one context with a given
+name exists.
 
 @node LoGS Efficiency, How Messages are processed, LoGS Contexts, LoGS Overview
 @section LoGS Efficiency
@@ -385,13 +448,87 @@ rules or contexts have exceeded their timeout limits and need to be destroyed.
 
 @cindex *root-ruleset*
 @cindex timeout
+@vindex *root-ruleset*
 
-@node Running LoGS, LoGS Rules, LoGS Overview, Top
+@node Acknowledgements
+@section Acknowledgements
+
+The authors would like to acknowledge the following people (in no
+particular order) for their help and/or support:
+
+@itemize
+@item Jeannette B. Zion
+@item Dr. Timothy Thomas
+@item Dr. Robert Ballance
+@item The Center for High Performance Computing at The University of
+New Mexico
+@item Ms. Colleen Feldman (Jim's 4th grade teacher)
+@item Mom and Dad
+@item The LoGS mailing list
+@item The loganalysis mailing list
+@item John P. Rouillard
+@item Jon Stearley
+@item everyone else we forgot...
+@end itemize
+
+@node LoGS Compile-time options, Running LoGS, LoGS Overview, Top
+@chapter LoGS Compile-time options
+
+Certain options within LoGS are only available as compile-time
+options.  These are often for efficiency reasons (so that the
+compiler may optimize away any checks).
+
+@cindex compile-time options
+
+@menu
+* +debug+::                     
+* +enable-rule-count+::         
+* +use-sql+::                   
+@end menu
+
+@node +debug+, +enable-rule-count+, LoGS Compile-time options, LoGS Compile-time options
+@section +debug+
+
+The +debug+ constant causes additional debugging information to be
+displayed while LoGS is running.  Currently, debbuging is either on
+or off (by default, it is off).  Since debugging code is splattered
+througout LoGS, it is important that this be a compile-time option so
+that the compiler may remove debugging statements when debugging is
+not needed.
+
+@vindex +debug+
+
+@node +enable-rule-count+, +use-sql+, +debug+, LoGS Compile-time options
+@section +enable-rule-count+
+
+The +enable-rule-count+ constant allows for counts to be kept when
+the *count-rules* variable is non-NIL.  Note that this constant
+allows for the counts to be kept, while the *count-rules* parameter
+causes those counts to be kept.  The default value of this constant
+is T.
+
+@vindex +enable-rule-count+
+@vindex *count-rules*
+
+@node +use-sql+,  , +enable-rule-count+, LoGS Compile-time options
+@section +use-sql+
+
+The +use-sql+ constant allows for the Buffered-SQL-Follower code to
+be built into LoGS.  By default, this constant is set to NIL.
+
+@vindex +use-sql+
+@cindex Buffered-SQL-Follower
+
+@node Running LoGS, LoGS Rules, LoGS Compile-time options, Top
 @chapter Running LoGS
 
 LoGS is currently invoked by calling your Lisp executeable with the
 right stuff to get it to load the ``core'' file.  With CMUCL, this
 would be something like @code{/usr/local/bin/lisp -core /path/to/LoGS.core}.
+
+@cindex Lisp ``core'' file
+@cindex invoking LoGS
+@cindex CMUCL
 
 @menu
 * Command Line Arguments::      
@@ -404,6 +541,18 @@ would be something like @code{/usr/local/bin/lisp -core /path/to/LoGS.core}.
 * Command Line Argument Summary::  
 * --no-internal-time::          
 * --file::                      
+* --files::                     
+* --PBS-file::                  
+* --spawn::                     
+* --ruleset::                   
+* --run-forever::               
+* --remember-file::             
+* --tag-messages::              
+* --count-rules::               
+* --expire-contexts-on-exit::   
+* --sleep-time::                
+* --mysql-follower::            
+* --help::                      
 @end menu
 
 @node Command Line Argument Summary, --no-internal-time, Command Line Arguments, Command Line Arguments
@@ -430,11 +579,6 @@ or may not be disabled in any particular build)
 @end multitable
 
 
-@menu
-* --no-internal-time::          
-* --file::                      
-@end menu
-
 @node --no-internal-time, --file, Command Line Argument Summary, Command Line Arguments
 @subsection @code{--no-internal-time}
 
@@ -445,10 +589,11 @@ current time.  This causes the variable
 variable needs to be updated with some other value, it is left to the
 user to ensure that that is done. 
 
-@cindex --no-internal-time
+@cindex @code{--no-internal-time}
 @vindex *use-internal-real-time*
+@vindex *now*
 
-@node --file,  , --no-internal-time, Command Line Arguments
+@node --file, --files, --no-internal-time, Command Line Arguments
 @subsection @code{--file}
 
 Specifying the @code{--file} option, a mandatory filename, and an
@@ -456,7 +601,147 @@ optional file position will cause that file to be opened as input to
 LoGS.  If the file position is not specified, the file is opened and
 read from the beginning.
 
-@cindex --file
+@cindex @code{--file}
+
+@node --files, --PBS-file, --file, Command Line Arguments
+@subsection @code{--files}
+
+The @code{--files} option allows for one or more files to be listed
+as arguments to this option.  All of these files will be followed.
+
+@cindex @code{--files}
+
+@node --PBS-file, --spawn, --files, Command Line Arguments
+@subsection @code{--PBS-file}
+
+The @code{--PBS-file} option causes LoGS to look for subsequent
+files, once the current file has been fully processed, according to
+the name that the PBS daemons (including OpenPBS, PBSPro, and Torque)
+would give to the ``next'' logfile.
+
+@cindex @code{--PBS-file}
+@cindex PBS logfiles
+@cindex OpenPBS logfiles
+@cindex PBSPro logfiles
+@cindex Torque logfiles
+
+@node --spawn, --ruleset, --PBS-file, Command Line Arguments
+@subsection @code{--spawn}
+
+The @code{--spawn} option and a mandatory command to
+spawn\footnote{This command should either be in your @code{PATH} or
+the full path to the command should be specified.} and any optional
+arguments.  The output of running this command will be treated, line
+by line, as input to LoGS.
+
+@cindex @code{--spawn}
+
+@node --ruleset, --run-forever, --spawn, Command Line Arguments
+@subsection @code{--ruleset}
+
+The @code{--ruleset} option and its mandatory argument indicate a
+ruleset to load.  This ruleset can be any file containing Lisp code
+to be evaluated at start-up.
+
+@cindex @code{--ruleset}
+
+@node --run-forever, --remember-file, --ruleset, Command Line Arguments
+@subsection @code{--run-forever}
+
+The @code{--run-forever} option specifies that LoGS should not exit
+when there is no more immediately available data to be processed.
+This is useful for when running LoGS to monitor a logfile in
+``real-time'' to achieve a @code{'tail -f'} like behavior.  This flag
+causes the *run-forever* parameter to be set to T whereas, by
+default, its value is set to NIL.
+
+@vindex *run-forever*
+@cindex @code{--run-forever}
+
+@node --remember-file, --tag-messages, --run-forever, Command Line Arguments
+@subsection @code{--remember-file}
+
+The @code{--remember-file} option specifies that LoGS should produce
+message objects in which the @code{from-file} slot is filled with the
+name of the file from which the message came.  This can be useful
+when you need to be able to distinguish between different files
+within a single running instance of LoGS.  This causes 
+the *remember-file* parameter to be set to T.
+
+@vindex *remember-file*
+@cindex @code{--remember-file}
+@cindex message, from-file slot
+@cindex from-file message slot
+
+@node --tag-messages, --count-rules, --remember-file, Command Line Arguments
+@subsection @code{--tag-message}
+
+The @code{--tag-messages} option sets the *tag-messages* variable to
+T and causes messages to be created with a tag.  This option is not
+yet well thought out.
+
+@cindex @code{--tag-messages}
+@vindex *tag-messages*
+@cindex message tags
+
+@node --count-rules, --expire-contexts-on-exit, --tag-messages, Command Line Arguments
+@subsection @code{--count-rules}
+
+The @code{--count-rules} option sets the *count-rules* variable to T
+and causes rules to maintain statistics about the number of messages
+matches were attempted for and the number of messages for which those
+matches succeeded.  This is intended to be useful when optimizing rulesets.
+
+@cindex @code{--count-rules}
+@vindex *count-rules*
+@cindex rule match counts
+@cindex ruleset optimization
+
+@node --expire-contexts-on-exit, --sleep-time, --count-rules, Command Line Arguments
+@subsection @code{--expire-contexts-on-exit}
+
+The @code{--expire-contexts-on-exit} option causes any contexts that
+are in existence when LoGS is ready to exit to be expired.  This
+(often) causes them to run their actions, etc.  
+
+@cindex @code{--expire-contexts-on-exit}
+@cindex contexts, expiring
+@cindex LoGS exit
+
+@node --sleep-time, --mysql-follower, --expire-contexts-on-exit, Command Line Arguments
+@subsection @code{--sleep-time}
+
+The @code{--sleep-time} option sets the amount of time (in seconds) that LoGS
+sleeps when there is no input immediately available.  This is stored
+in the *LoGS-sleep-time* variable.  The default value of this
+variable is .03; this value was chosen by a method involving voodoo.
+
+@cindex @code{--sleep-time}
+@cindex sleep time
+@vindex *LoGS-sleep-time*
+@cindex voodoo
+
+@node --mysql-follower, --help, --sleep-time, Command Line Arguments
+@subsection @code{--mysql-follower}
+
+The @code{--mysql-follower} option allows LoGS to view the results of
+an SQL query as input.  This is not yet well integrated into the LoGS
+structure and is currently awkward (at best) to enable and use.  The
+@code{+use-sql+} variable must be set to T and the proper SQL code
+must be loaded.  Its a mess... 
+
+@cindex @code{--mysql-follower}
+@vindex +use-sql+
+
+@node --help,  , --mysql-follower, Command Line Arguments
+@subsection @code{--help}
+
+The @code{--help} option causes information about the command line
+options and their arguments to be displayed and for LoGS to exit.
+This calls the CL-CLI::help function.
+
+@cindex @code{--help}
+@cindex help
 
 @node LoGS Rules, LoGS Rulesets, Running LoGS, Top
 @chapter LoGS Rules    
@@ -499,10 +784,19 @@ no-match function is tested; if, then, the no-match function returns
 non-nil, then it is determined that the rule does not match the
 message. 
 
+@cindex match function
+@cindex no-match function
+@findex match, Rule slot accessor
+@findex Rule slot accessors - match slot
+@findex no-match, Rule slot accessor
+@findex Rule slot accessors - no-match slot
+
 The environment returned by the match function allows for state to be
 saved between the match function and any action functions.  An
 environment is a list of lists of variable name and value pairs, for
 example: 
+
+@cindex environment returned by match function
 
 @code{
  ((foo 42) 
@@ -523,20 +817,40 @@ needs to be deleted (after running its actions).  Similarly to the
 no-match function, the no-delete-rule function specifies exceptions to
 the delete-rule function.
 
+@cindex delete-rule function
+@findex delete-rule, Rule slot accessor
+@findex Rule slot accessors - delete-rule slot
+@cindex no-delete-rule function
+@findex no-delete-rule, Rule slot accessor
+@findex Rule slot accessors - no-delete-rule slot
+
 The timeout is a value in seconds for when the rule should be
 deleted.  This value is the time in seconds such as that returned by
 get-universal-time.  Simularly, the relative-timeout value is the
-time in seconds that a rule is allowed to exist without matching a message.
+time in seconds that a rule is allowed to exist without matching a
+message.
+
+@cindex timeout value
+@findex timeout, Rule slot accessor
+@findex Rule slot accessors - timeout slot
 
 The continuep value specifies that, even if this rule matches a
 message that that message should also be checked against subsequent
 rules in the ruleset.  If this value is nil, then further processing
 of the ruleset will not take place.
 
+@cindex continuep value
+@findex continuep, Rule slot accessor
+@findex Rule slot accessors - continuep slot
+
 The actions list is a list of actions (which are functions, see the
 section on actions for more details) to run if the rule matches the
 message.  Actions in the actions list will be run in the order that
 they appear in that list.  There is no short-circuiting.
+
+@cindex actions list
+@findex actions, Rule slot accessor
+@findex Rule slot accessors - actions slot
 
 @node Using Rules to implement Artificial Ignorance, Rule Nesting, Rule components, LoGS Rules
 @section Using Rules to implement Artificial Ignorance
@@ -572,6 +886,8 @@ This rule matches the hourly cron messages and has no actions (it
 does nothing when it matches these messages).  Rules of this form
 allow us to easily filter out messages that are not interesting
 to us.
+
+@cindex filtering expected messages
 
 Since this sort of filtering is relatively common, the @code{filter}
 function has been added to LoGS.  @code{Filter} is responsible for
@@ -624,11 +940,20 @@ running TCL or Perl code!) that takes a single argument of a
 message object and returns non-nil when they match the message
 and nil when the do not.
 
+@cindex match function
+@cindex no-match function
+@findex match, Rule slot accessor
+@findex Rule slot accessors - match slot
+@findex no-match, Rule slot accessor
+@findex Rule slot accessors - no-match slot
+
 It is common to use regular expressions to specify the messages
 that match the rule.  This is how messages are matched in most
 other log analysis applications such as Logsurfer, SEC, Swatch,
 etc.  It has been pointed out that this
 may not always be the optimal way to match messages.  
+
+@cindex regular expressions
 
 A simple case in which using regular expressions is both
 counter--intuitive and inefficient is a catch--all sort of rule.
@@ -797,6 +1122,10 @@ message.  In this way, a given rule can cause multiple changes
 within the LoGS system without having to write larger functions
 to perform each individual task.
 
+@cindex actions list
+@findex actions, Rule slot accessor
+@findex Rule slot accessors - actions slot
+
 The above rule also points out how simple it is to have rules create
 other rules.  There is virtually no difference between specifying a
 simple rule that does not create other rules and specifying a rule
@@ -804,6 +1133,7 @@ that is created by another rule.  This rule uses the function
 @code{rule-before} to insert the newly created rule into the ruleset
 immediately before the rule that created it.
 
+@cindex dynamic rules
 @findex rule-before
 
 This rule gives a framework for limiting the frequency with which a
@@ -841,6 +1171,17 @@ non-NIL, or by exceeding the timeout for the rule.
 @cindex dynamic rule creation
 @cindex dynamic rule deletion
 
+@cindex timeout value
+@findex timeout, Rule slot accessor
+@findex Rule slot accessors - timeout slot
+@cindex actions list 
+@findex actions, Rule slot accessor
+@findex Rule slot accessors - actions slot
+@cindex delete-rule function 
+@findex delete-rule, Rule slot accessor
+@findex Rule slot accessors - delete-rule slot
+
+
 There are currently four primary ways to insert a new rule into a
 ruleset.  A rule can be inserted before the current rule by using the
 @code{rule-before} function.  A rule may be inserted after the current
@@ -861,6 +1202,10 @@ is stored in the @code{*ruleset*} parameter.
 @findex rule-after
 @findex rule-head
 @findex rule-tail
+
+@cindex dynamic rule
+@cindex rule creation
+@cindex rule insertion function
 
 @node Better than Ignorance, Rules can maintain state, Dynamic Rules, LoGS Rules
 @section Better than Ignorance
@@ -944,7 +1289,7 @@ Sequence-rules are really just LISP macros that write the correct rules to
 follow a sequence of events.  They greatly simplify the specification
 of a complex ruleset and I believe will eventually allow LoGS to be
 simple to use and still very powerful.  The last example expands into
-74 lines of LISP code which creates a rule that, when triggered
+74 lines (or so) of LISP code which creates a rule that, when triggered
 creates two rules, one looking for the next message in the sequence
 and the other looking for messages that are not in the sequence (via a
 generated regular expression).
@@ -1342,7 +1687,7 @@ NOTE:  This has become an active area of interest for me!  I hope to
 expand greatly on this section and do an even better job of finding the
 goodies.
 
-@node LoGS Internals, Copying This Manual, LoGS Contexts, Top
+@node LoGS Internals, CL-CLI Manual, LoGS Contexts, Top
 @chapter LoGS Internals
 
 @menu
@@ -1418,7 +1763,255 @@ allows for lazy removal of rules from rulesets and for rules to be
 entered into arbitrary rulesets without us having to keep track of
 which rulesets a particular rule is a part of.
 
-@node Copying This Manual, Concept Index, LoGS Internals, Top
+@node CL-CLI Manual, Copying This Manual, LoGS Internals, Top
+@appendix CL-CLI Manual
+
+CL-CLI is a Lisp package for processing command line arguments.  It
+is intended to be portable across Common Lisp implementations and to
+be simple to use.  While CL-CLI was initially developed for LoGS, it
+is hoped that it may be useful for other Free Software projects; the
+author has found it to be useful in other projects and hopes that
+others will find it to be simularly useful.  CL-CLI is /not/
+bullet-proof!  Be careful!
+
+@menu
+* CLI-OPT class::               
+* CLI-OPT name slot::           
+* CLI-OPT arguments slot::      
+* CLI-OPT action slot::         
+* CLI-OPT description slot::    
+* get-application-args function::  
+* process-options function::    
+* Example Option Specifications::  
+@end menu
+
+@node CLI-OPT class, CLI-OPT name slot, CL-CLI Manual, CL-CLI Manual
+@appendixsec CLI-OPT class
+
+In CL-CLI, options are represented by the cli-opt CLOS object class.
+These objects have slots for the name (the string the user specifies,
+eg. @code{--file}), the arguments that are accepted
+(eg. @code{'("<filename>" "[position]")}), the action to perform when
+this flag is seen (this can be any common lisp function; this
+function should accept the same number of arguments as were specified
+in the arguments slot), and finally, a description of the flag.  
+
+@cindex bullet-proof software, not
+@cindex CL-CLI options
+@cindex options, CL-CLI
+@cindex cli-opt class
+@cindex CL-CLI class, name slot in
+@cindex CL-CLI class, arguments slot in
+@cindex CL-CLI class, action slot in
+@cindex CL-CLI class, description slot in
+@cindex name slot, CL-CLI class
+@cindex arguments slot, CL-CLI class
+@cindex action slot, CL-CLI class
+@cindex description slot, CL-CLI class
+@cindex flag description, CL-CLI class
+
+In CL-CLI, it is expected that all of the @code{cli-opt} objects will
+be stored in a list.  This list, along with the command line options
+specified by the user are passed to the @code{process-options}
+function in the CL-CLI package. 
+
+@cindex options list
+@cindex process-options, CL-CLI function
+@findex process-options
+
+It is the authors hope that CL-CLI be considerably simpler to use than getopt()
+and just as (nearly as?) powerful.
+
+@node CLI-OPT name slot, CLI-OPT arguments slot, CLI-OPT class, CL-CLI Manual
+@appendixsec CLI-OPT name slot
+
+The name slot in the CLI-OPT class serves to hold the name of the
+option as the user would specify it on the command line.  So, for the
+``help'' option, this might be @code{"-h"} or @code{"--help"}.
+
+The name of the option MUST begin with a '-' character.
+
+@cindex CLI-OPT name slot
+@cindex name slot, CLI-OPT object
+
+@node CLI-OPT arguments slot, CLI-OPT action slot, CLI-OPT name slot, CL-CLI Manual
+@appendixsec CLI-OPT arguments slot
+
+The arguments slot of the CLI-OPT class specifies any arguments that
+the flag will accept.  Arguments should be specified with text strings
+and appear in a list.
+
+Arguments that are specified inside of ``<>'' characters, such as
+``<ruleset>'' are mandatory arguments.  Arguments inside of ``[]''
+characters, such as ``[file position]'' are optional arguments.
+Commands that take any number of additional, optional, arguments are
+specified by ``...''.
+
+@cindex CLI-OPT arguments slot
+@cindex arguments slot, CLI-OPT object
+@cindex command line arguments, optional
+@cindex command line arguments, mandatory
+@cindex command line arguments, any number
+
+@node CLI-OPT action slot, CLI-OPT description slot, CLI-OPT arguments slot, CL-CLI Manual
+@appendixsec CLI-OPT action slot
+
+This slot in the CLI-OPT class specifies a function that should be
+run when the argument is seen on the command line.  Note that this
+function's lambda list should match the arguments specified in the
+arguments slot of the CLI-OPT class in terms of mandatory, optional,
+and ``&rest'' type parameters.
+
+@cindex CLI-OPT action slot
+@cindex action slot, CLI-OPT object
+
+@node CLI-OPT description slot, get-application-args function, CLI-OPT action slot, CL-CLI Manual
+@appendixsec CLI-OPT description slot
+
+The description slot in the CLI-OPT object holds a text string that
+contains a breif description of what the argument does.  This
+description is printed, along with the name of the option and its
+arguments by the @code{CL-CLI:help} function.
+
+@findex CL-CLI:help
+@cindex help function
+@cindex CLI-OPT description slot
+@cindex description slot, CLI-OPT object
+
+@node get-application-args function, process-options function, CLI-OPT description slot, CL-CLI Manual
+@appendixsec get-application-args function
+
+The get-application-args function returns a list of options and
+arguments that were passed on the command line by the user.  The list
+returned by this function is suitable for passing, along with the
+list of CLI-OPT objects, to the process-options function.
+
+@cindex command-line arguments
+@findex get-application-args
+
+@node process-options function, Example Option Specifications, get-application-args function, CL-CLI Manual
+@appendixsec process-options function
+
+The process-options function, which takes as its arguments, a list of
+CLI-OPT objects and a list of the command-line arguments passed in by
+the user.  This list of command-line arguments can be generated using
+the get-application-args function.
+
+@findex process-options 
+@cindex process command-line arguments
+
+@node Example Option Specifications,  , process-options function, CL-CLI Manual
+@appendixsec Example Option Specifications
+
+This section contains examples of option specifications taken from
+LoGS.  These should help illustrate how to use the CL-CLI package
+within your program.
+
+@menu
+* Specifying an on/off switch::  
+* Specifying a required argument::  
+* Specifying an optional argument::  
+* Specifying ``rest'' type arguments::  
+@end menu
+
+@node Specifying an on/off switch, Specifying a required argument, Example Option Specifications, Example Option Specifications
+@appendixsubsec Specfying an on/off switch
+
+An on/off switch, such as the @code{--no-internal-time} switch
+in LoGS might be specified as such:
+
+@lisp
+(make-instance 'CLI-OPT
+               :name "--no-internal-time"
+               :arguments NIL
+               :action #'(lambda ()
+                           (setq
+                             *use-internal-real-time* ()))
+               :description "do not use internal time")
+@end lisp
+
+@node Specifying a required argument, Specifying an optional argument, Specifying an on/off switch, Example Option Specifications
+@appendixsubsec Specifying a required argument.
+arguments
+
+Required arguments are specified in the arguments list (stored in the
+arguments slot of the CLI-OPT object) are specified inside of ``<>''
+characters, as in ``<ruleset>'' below. An argument that takes a
+required argument, such as the @code{--ruleset} switch in LoGS would
+be specified like this:  
+
+@lisp
+(make-instance 'cli-opt
+                  :name "--ruleset"
+                  :arguments '("<ruleset>")
+                  :action
+                  #'(lambda (ruleset)
+                      (in-package :LoGS)
+                      (load (compile-file ruleset)))
+                  :description "name of the ruleset to load")
+@end lisp
+
+While this example has only a single, required, argument listed, you
+may specify as many required arguments as you would like for any
+option.  Note that required arguments must be specified before
+optional arguments which much be specified before ``&rest'' type
+arguments, just like in a Lisp function's lambda list.
+
+@node Specifying an optional argument, Specifying ``rest'' type arguments, Specifying a required argument, Example Option Specifications
+@appendixsubsec Specifying an optional argument
+
+Optional arguments, specified in the arguments list, are likewise
+specified inside of ``[]'' characters as in ``[position]'' below.  An
+argument that takes an optional argument, such as the @code{--file}
+switch in LoGS would be specified like this:
+
+@lisp
+(make-instance 'cli-opt
+                  :name "--file"
+                  :arguments '("<filename>" "[position]")
+                  :action #'(lambda (filename &optional position)
+                              (let ((ff (make-instance 'LoGS::File-Follower 
+                                                       :FileName 
+                                                       filename)))
+                                ;; if position is specified, start there
+                                (when position
+                                  (when (not ff) (error "no ff~%"))
+                                  (LoGS::set-file-follower-position
+                                   ff
+                                   (read-from-string position)))
+                                (push ff *file-list*)))
+                  :description "name of the file to process and optional position")
+@end lisp
+
+Optional parameters must be specified after required parameters in
+the arguments list and before rest arguments.
+
+@node Specifying ``rest'' type arguments,  , Specifying an optional argument, Example Option Specifications
+@appendixsubsec Specifying ``rest'' type arguments
+
+Options may take unlimited numbers of arguments, including zero.
+These arguments are specified by including ``...'' in the arguments
+list as in the option below:
+
+@lisp
+(make-instance 'cli-opt
+                     :name "--spawn" 
+                     :arguments '("<command>" "...")
+                     :action
+                     #'(lambda (command &rest args)
+                         (let ((spawn (make-instance 'spawn 
+                                                     :spawnprog command
+                                                     :spawnargs args)))
+                           
+                           (push spawn *file-list*)))
+                     :description
+                     "spawn the named command (with optional arguments) and use its output as an input source for LoGS")
+@end lisp
+
+``Rest'' style parameters must be specified as the last item in the
+arguments list.
+
+@node Copying This Manual, Concept Index, CL-CLI Manual, Top
 @appendix Copying This Manual
 
 @menu

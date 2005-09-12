@@ -62,7 +62,8 @@
   (:import-from :extensions #:quit #:RUN-PROGRAM)
   #+cmu
   (:shadowing-import-from :pcl #:standard-class #:built-in-class
-                          #:find-class #:class-name #:class-of))
+                          #:find-class #:class-name #:class-of)
+  (:export main))
 
 (in-package :LoGS)
 

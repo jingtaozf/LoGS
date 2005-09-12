@@ -11,6 +11,9 @@
 
 (in-package :cl-cli)
 
+;; current version of cl-cli
+(defconstant +cl-cli-version+ "0.0.2")
+
 #+cmu
 (setf EXTENSIONS::*COMPLAIN-ABOUT-ILLEGAL-SWITCHES* ())
 

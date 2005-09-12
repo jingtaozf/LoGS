@@ -138,18 +138,18 @@
                          filenames)))
                   :description "names of files to process and optional position (separated by colons eg. logfile:42)")
 
-   (make-instance 'cli-opt
-                  :name "--spawn" 
-                  :arguments '("<command>" "...")
-                  :action
-                  #'(lambda (command &rest args)
-                      (let ((spawn (make-instance 'spawn 
-                                                  :spawnprog command
-                                                  :spawnargs args)))
-                                                  
-                      (push spawn *file-list*)))
-                  :description
-                  "spawn the named command (with optional arguments) and use its output as an input source for LoGS")
+      (make-instance 'cli-opt
+                     :name "--spawn" 
+                     :arguments '("<command>" "...")
+                     :action
+                     #'(lambda (command &rest args)
+                         (let ((spawn (make-instance 'spawn 
+                                                     :spawnprog command
+                                                     :spawnargs args)))
+                           
+                           (push spawn *file-list*)))
+                     :description
+                     "spawn the named command (with optional arguments) and use its output as an input source for LoGS")
                       
    (make-instance 'cli-opt
                   :name "--ruleset"
