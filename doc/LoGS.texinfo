@@ -393,29 +393,70 @@ LoGS is currently invoked by calling your Lisp executeable with the
 right stuff to get it to load the ``core'' file.  With CMUCL, this
 would be something like @code{/usr/local/bin/lisp -core /path/to/LoGS.core}.
 
-@node Command Line Arguments
+@menu
+* Command Line Arguments::      
+@end menu
+
+@node Command Line Arguments,  , Running LoGS, Running LoGS
 @section Command Line Arguments
+
+@menu
+* Command Line Argument Summary::  
+* --no-internal-time::          
+* --file::                      
+@end menu
+
+@node Command Line Argument Summary, --no-internal-time, Command Line Arguments, Command Line Arguments
+@subsection Command Line Argument Summary
 
 @multitable @columnfractions .2 .30 .5
 @item Flag @tab Arguments @tab Description
-@item --no-internal-time @tab @tab do not use internal time
-@item --file @tab <filename> [position] @tab name of the file to process and optional position
-@item --PBS-file @tab <filename> @tab follow a sequence of PBS log files starting with the named file
-@item --mysql-follower @tab <host> <database> <username> <password>
+@item @code{--no-internal-time} @tab @tab do not use internal time
+@item @code{--file} @tab <filename> [position] @tab name of the file to process and optional position
+@item @code{--PBS-file} @tab <filename> @tab follow a sequence of PBS log files starting with the named file
+@item @code{--mysql-follower} @tab <host> <database> <username> <password>
 <query> [buffer-size] @tab follow the result of a database query (may
 or may not be disabled in any particular build)
-@item --files @tab <filename> ... @tab names of files to process and optional position (separated by colons eg. logfile:42)
-@item --spawn @tab <command> ... @tab spawn the named command (with optional arguments) and use its output as an input source for LoGS
-@item --ruleset @tab <ruleset> @tab name of the ruleset to load
-@item --run-forever @tab @tab don't exit when there is no more immediately available input
-@item --remember-file @tab @tab store the name of the file that a given message came from in the from-file slot of the message if set
-@item --tag-messages  @tab @tab allow messages to be given tags
-@item --count-rules  @tab @tab count the number of times a rule is matched/attempted
-@item --expire-contexts-on-exit @tab @tab expire all remaining contexts before exiting LoGS
-@item --sleep-time @tab <seconds> @tab how long to sleep when there are no messages to process
-@item --help  @tab  @tab display this help text
+@item @code{--files} @tab <filename> ... @tab names of files to process and optional position (separated by colons eg. logfile:42)
+@item @code{--spawn} @tab <command> ... @tab spawn the named command (with optional arguments) and use its output as an input source for LoGS
+@item @code{--ruleset} @tab <ruleset> @tab name of the ruleset to load
+@item @code{--run-forever} @tab @tab don't exit when there is no more immediately available input
+@item @code{--remember-file} @tab @tab store the name of the file that a given message came from in the from-file slot of the message if set
+@item @code{--tag-messages} @tab @tab allow messages to be given tags
+@item @code{--count-rules}  @tab @tab count the number of times a rule is matched/attempted
+@item @code{--expire-contexts-on-exit} @tab @tab expire all remaining contexts before exiting LoGS
+@item @code{--sleep-time} @tab <seconds> @tab how long to sleep when there are no messages to process
+@item @code{--help}  @tab  @tab display this help text
 @end multitable
 
+
+@menu
+* --no-internal-time::          
+* --file::                      
+@end menu
+
+@node --no-internal-time, --file, Command Line Argument Summary, Command Line Arguments
+@subsection @code{--no-internal-time}
+
+Specifying the @code{--no-internal-time} option indicates that LoGS
+should not update the value of the @code{*now*} variable to the
+current time.  This causes the variable
+@code{*use-internal-real-time*} to be set to NIL.  If the @code{*now*}
+variable needs to be updated with some other value, it is left to the
+user to ensure that that is done. 
+
+@cindex --no-internal-time
+@vindex *use-internal-real-time*
+
+@node --file,  , --no-internal-time, Command Line Arguments
+@subsection @code{--file}
+
+Specifying the @code{--file} option, a mandatory filename, and an
+optional file position will cause that file to be opened as input to
+LoGS.  If the file position is not specified, the file is opened and
+read from the beginning.
+
+@cindex --file
 
 @node LoGS Rules, LoGS Rulesets, Running LoGS, Top
 @chapter LoGS Rules    

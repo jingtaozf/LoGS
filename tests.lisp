@@ -47,14 +47,14 @@
 (defvar *do-error* t)
 
 (defun remove-file (filename)
-         #+cmu
-          (unix:unix-unlink filename)
-          #+sbcl
-          (sb-posix:unlink filename)
-          #+openmcl
-          (#_unlink (ccl::make-cstring filename))
-          #+clisp
-          (delete-file filename))
+  #+cmu
+  (unix:unix-unlink filename)
+  #+sbcl
+  (sb-posix:unlink filename)
+  #+openmcl
+  (#_unlink (ccl::make-cstring filename))
+  #+clisp
+  (delete-file filename))
 
 (defun assert-equal (a b &key test)
        (not 
@@ -625,7 +625,7 @@
 (deftest "new file-follower gets a line"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfile")
+    (let* ((testfile "testfile-new-ff")
            (ff ()))
       ;; open the file the first time. overwrite it if it exists.
       (with-open-file (output-stream testfile :direction :output 
@@ -639,12 +639,8 @@
 
       (let ((line (get-line ff)))
         ;; kill of the temp file
-        #+cmu
-        (unix:unix-unlink testfile)
-        #+sbcl
-        (sb-posix:unlink testfile)
-        #+openmcl
-        (#_unlink (ccl::make-cstring testfile))
+        (close (filestream ff))
+        (remove-file testfile)
         (assert-non-nil line)))))
 
 (deftest "file follower returns nil with no input"
@@ -656,7 +652,7 @@
 (deftest "file follower addition works"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfile")
+    (let* ((testfile "testfile-ff-addition")
            (ff ()))
       ;; open the file the first time. overwrite it if it exists.
       (with-open-file (output-stream testfile :direction :output 
@@ -676,18 +672,14 @@
         (not (format output-stream "here is another~%")))
 
       (let ((line (get-line ff)))
-        #+cmu
-        (unix:unix-unlink testfile)
-        #+sbcl
-        (sb-posix:unlink testfile)
-        #+openmcl
-        (#_unlink (ccl::make-cstring testfile))
+        (close (filestream ff))
+        (remove-file testfile)
         (assert-non-nil line)))))
 
 (deftest "file-follower inode rollover works"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfile4")
+    (let* ((testfile "testfile-inode-rollover")
            (testfile-rollover ()))
       (with-open-file (output-stream testfile :direction :output 
                                      :if-exists :overwrite
@@ -759,7 +751,7 @@
 (deftest "file follower makes correct series of messages"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfile2")
+    (let* ((testfile "testfile-correct-series")
            (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
       (with-open-file (output-stream testfile :direction :output 
                                      :if-exists :SUPERSEDE
@@ -780,12 +772,8 @@
                     (or q (return ()))
                   finally
                     (return t))))
-          #+cmu
-          (unix:unix-unlink testfile)
-          #+sbcl
-          (sb-posix:unlink testfile)
-          #+openmcl
-          (#_unlink (ccl::make-cstring testfile))
+          (close (filestream ff))
+          (remove-file testfile)
           (assert-non-nil result))))))
 
 (deftest "get-rule returns the rule"
@@ -1868,7 +1856,7 @@
     :test-fn
   (lambda ()
     (let* ((*file-list* ())
-           (testfile "testfile3")
+           (testfile "testfile-position-test")
            (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
       (declare (special *file-list*))
       (with-open-file (output-stream testfile :direction :output 
@@ -1888,11 +1876,11 @@
 (deftest "spawn works"
     :test-fn
   (lambda ()
-    (let* ((testfile "testfile2")
+    (let* ((testfile "testfile-spawn")
            (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
       
       ;; write the file
-      (with-open-file (output-stream "testfile2" :direction :output 
+      (with-open-file (output-stream testfile :direction :output 
                                      :if-exists :SUPERSEDE
                                      :if-does-not-exist :create)
         (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
@@ -1912,6 +1900,7 @@
              (or (equal (message message) x)
                  (setq testval ()))))
          file-lines)
+        (remove-file testfile)
         (assert-non-nil testval)))))
 
 
