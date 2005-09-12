@@ -18,11 +18,12 @@
 (in-package :LoGS)
 
 
-
+#-asdf
 (when +use-sql+
+    (error "ASDF package is not loaded!... bailing!~%"))
 
-  #-asdf
-  (error "ASDF package is not loaded!... bailing!~%")
+#+asdf
+(when +use-sql+
 
   (use-package :asdf)
 
