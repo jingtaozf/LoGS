@@ -17,73 +17,82 @@
 
 (in-package :LoGS)
 
-;; fix this!
 
-(load "/Users/dl/asdf/asdf-install/asdf.lisp")
-(push "/Users/dl/project-fw/clsql-3.2.1/" asdf:*central-registry*)
-(push "/Users/dl/project-fw/uffi-1.5.1/" asdf:*central-registry*)
-(asdf:operate 'asdf:load-op :clsql)
 
-(defclass buffered-sql-Follower (Data-Source)
-  ((message-list :accessor message-list 
-                 :initarg :message-list
-                 :initform ())
-   (buffer-size :accessor buffer-size
-                :initarg :buffer-size
-                :initform 1024)
-   (current-row :accessor current-row
-                :initarg :current-row
-                :initform 1)
-   (username :accessor username
-             :initarg :username)
-   (password :accessor password
-             :initarg :password)
-   (host :accessor host
-         :initarg :host)
-   (database :accessor database
-             :initarg :database)
-   (thequery :accessor thequery
-          :initarg :thequery)))
+(when +use-sql+
 
-(defmethod initialize-instance :after ((buffered-sql-follower buffered-sql-follower) &rest rest)
-  (when (not clsql::*default-database*)
-  (clsql::connect `( 
-                    ,(host buffered-sql-follower)
-                    ,(database buffered-sql-follower)
-                    ,(username buffered-sql-follower)
-                    ,(password buffered-sql-follower)))))
+  #-asdf
+  (error "ASDF package is not loaded!... bailing!~%")
 
-(defmethod get-next-chunk ((buffered-sql-follower buffered-sql-follower))
-  (progn
-    (setf (message-list buffered-sql-follower)
-          (clsql::query (format () "~A where id >= ~A and id < ~A" 
-                                 (thequery buffered-sql-follower)
-                                 (current-row buffered-sql-follower)
-                                 (+ (current-row buffered-sql-follower) 
-                                    (buffer-size buffered-sql-follower)))))
-    (setf (current-row buffered-sql-follower) 
-          (+ (current-row buffered-sql-follower) (buffer-size buffered-sql-follower)))))
+  (use-package :asdf)
 
-(defmethod print-thequery ((buffered-sql-follower buffered-sql-follower))
-  (format () "~A where id >= ~A and id < ~A" 
-                                 (thequery buffered-sql-follower)
-                                 (current-row buffered-sql-follower)
-                                 (+ (current-row buffered-sql-follower) 
-                                    (buffer-size buffered-sql-follower))))
+  (push "/Users/dl/project-fw/clsql-3.2.1/" asdf:*central-registry*)
+  (push "/Users/dl/project-fw/uffi-1.5.1/" asdf:*central-registry*)
+  (asdf:operate 'asdf:load-op :clsql)
 
-(defmethod get-line ((Buffered-Sql-Follower Buffered-Sql-Follower))
-  (progn
-    (when
-        (not (message-list buffered-sql-follower))
-      (get-next-chunk buffered-sql-follower))
+  (use-package :clsql)
+
+  (defclass buffered-sql-Follower (Data-Source)
+    ((message-list :accessor message-list 
+                   :initarg :message-list
+                   :initform ())
+     (buffer-size :accessor buffer-size
+                  :initarg :buffer-size
+                  :initform 1024)
+     (current-row :accessor current-row
+                  :initarg :current-row
+                  :initform 1)
+     (username :accessor username
+               :initarg :username)
+     (password :accessor password
+               :initarg :password)
+     (host :accessor host
+           :initarg :host)
+     (database :accessor database
+               :initarg :database)
+     (thequery :accessor thequery
+               :initarg :thequery)))
+  
+  (defmethod initialize-instance :after ((buffered-sql-follower buffered-sql-follower) &rest rest)
+    (when (not *default-database*)
+      (connect `( 
+                        ,(host buffered-sql-follower)
+                        ,(database buffered-sql-follower)
+                        ,(username buffered-sql-follower)
+                        ,(password buffered-sql-follower)))))
+
+  (defmethod get-next-chunk ((buffered-sql-follower buffered-sql-follower))
+    (progn
+      (setf (message-list buffered-sql-follower)
+            (query (format () "~A where id >= ~A and id < ~A" 
+                                  (thequery buffered-sql-follower)
+                                  (current-row buffered-sql-follower)
+                                  (+ (current-row buffered-sql-follower) 
+                                     (buffer-size buffered-sql-follower)))))
+      (setf (current-row buffered-sql-follower) 
+            (+ (current-row buffered-sql-follower) (buffer-size buffered-sql-follower)))))
+
+  (defmethod print-thequery ((buffered-sql-follower buffered-sql-follower))
+    (format () "~A where id >= ~A and id < ~A" 
+            (thequery buffered-sql-follower)
+            (current-row buffered-sql-follower)
+            (+ (current-row buffered-sql-follower) 
+               (buffer-size buffered-sql-follower))))
+
+  (defmethod get-line ((Buffered-Sql-Follower Buffered-Sql-Follower))
+    (progn
+      (when
+          (not (message-list buffered-sql-follower))
+        (get-next-chunk buffered-sql-follower))
     
-    (let ((first-message (car (message-list Buffered-Sql-Follower))))
-      (setf (message-list Buffered-Sql-Follower)
-            (cdr (message-list Buffered-Sql-Follower)))
-      first-message)))
+      (let ((first-message (car (message-list Buffered-Sql-Follower))))
+        (setf (message-list Buffered-Sql-Follower)
+              (cdr (message-list Buffered-Sql-Follower)))
+        first-message)))
        
 
-(defmethod get-logline ((Buffered-Sql-Follower Buffered-Sql-Follower))
-  (let ((line (get-line Buffered-Sql-Follower)))
-    (when line
-      (make-instance 'message :message line))))
+  (defmethod get-logline ((Buffered-Sql-Follower Buffered-Sql-Follower))
+    (let ((line (get-line Buffered-Sql-Follower)))
+      (when line
+        (make-instance 'message :message line))))
+  )

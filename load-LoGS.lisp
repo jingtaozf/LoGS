@@ -57,7 +57,8 @@
                "File-Follower_CLISP.low"
                
                "Data-Source" "List-Follower" "File-Follower" "PBS-File-Follower"
-               "Spawn" "STDIN-Follower" "Multi-Follower"))
+               "Spawn" "STDIN-Follower" "Multi-Follower"
+               "Buffered-SQL-Follower"))
           '(()
             ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line"))
           ))
