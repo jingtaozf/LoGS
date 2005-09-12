@@ -184,5 +184,6 @@ both matches and continuep is nil."))
          do
          (return t))))
          
-
-       
+;; so that initializing these can be moved out of LoGS.lisp
+(setf *root-ruleset* (make-instance 'ruleset :name 'root-ruleset))
+(setf *ruleset* *root-ruleset*) 

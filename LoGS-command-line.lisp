@@ -17,6 +17,20 @@
 
 (in-package :LoGS)
 
+(defun process-command-line (opts args)
+  (let ((*file-list* ()))
+    (declare (special *file-list*))
+    (progn
+      (when +debug+
+        (format t "processing options~%"))
+      (PROCESS-OPTIONS opts args)
+      (let ((len (length *file-list*)))
+        (cond ((eq 1 len) (setf *messages* (car *file-list*)))
+              ((eq 0 len) (setf *messages* (make-instance 'STDIN-follower)))
+              (t (progn
+                   (setf *messages* (make-instance 'LoGS::multi-follower))
+                   (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*))))))))
+
 (defvar *opts*
   (list
    (make-instance 'cli-opt
@@ -133,7 +147,9 @@
                                                   :spawnprog command
                                                   :spawnargs args)))
                                                   
-                      (push spawn *file-list*))))
+                      (push spawn *file-list*)))
+                  :description
+                  "spawn the named command (with optional arguments) and use its output as an input source for LoGS")
                       
    (make-instance 'cli-opt
                   :name "--ruleset"

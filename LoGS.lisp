@@ -99,82 +99,16 @@
 (defparameter *count-rules* t
   "should we keep track of rule counts?")
 
-(defun load-LoGS-file (filename &key directory)
-  "load the named file"
-  (progn
-    (format t "loading ~A~%" filename)
-    (load 
-     (compile-file
-      (make-pathname :name filename
-                     :type "lisp"
-                     :version ()
-                     :directory directory)))))
-
-;;;; XXX CLEAN THIS SECTION UP XXX!
-;; load fundamental data structures
-(load-LoGS-file "doubly-linked-list" :directory '(:relative "data_structures"))
-(load-LoGS-file "priority-queue" :directory '(:relative "data_structures"))
-
-;; load LoGS data structures
-(load-LoGS-file "message")
-(load-LoGS-file "named-object")
-(load-LoGS-file "timeout-object")
-(load-LoGS-file "relative-timeout-object")
-(load-LoGS-file "killable-item")
-(load-LoGS-file "collection")
-(load-LoGS-file "limited-collection")
-(load-LoGS-file "context")
-(load-LoGS-file "window")
-
-;; load low-level file stuff
-#+cmu
-(load-LoGS-file "File-Follower_CMUCL.low" :directory '(:relative "Data_Sources"))
-#+sbcl
-(load-LoGS-file "File-Follower_SBCL.low" :directory '(:relative "Data_Sources"))
-#+openmcl
-(load-LoGS-file "File-Follower_OpenMCL.low" :directory '(:relative "Data_Sources"))
-#+allegro
-(load-LoGS-file "File-Follower_Allegro.low" :directory '(:relative "Data_Sources"))
-#+clisp
-(load-LoGS-file "File-Follower_CLISP.low" :directory '(:relative "Data_Sources"))
-
-;; load message producers
-(load-LoGS-file "Data-Source" :directory '(:relative "Data_Sources"))
-
-(load-LoGS-file "List-Follower" :directory '(:relative "Data_Sources"))
-(load-LoGS-file "File-Follower" :directory '(:relative "Data_Sources"))
-(load-LoGS-file "PBS-File-Follower" :directory '(:relative "Data_Sources"))
-(load-LoGS-file "Spawn" :directory '(:relative "Data_Sources"))
-(load-LoGS-file "STDIN-Follower" :directory '(:relative "Data_Sources"))
-
-(when +use-sql+
-  (load-LoGS-file "Buffered-SQL-Follower" :directory '(:relative "Data_Sources")))
-(load-LoGS-file "Multi-Follower" :directory '(:relative "Data_Sources"))
-
-
-
-;; load rules
-(load-LoGS-file "rule")
-(load-LoGS-file "ruleset")
-(load-LoGS-file "actions")
-
-(load-LoGS-file "Parlance")
-
-
-;; command line options
-(load-LoGS-file "LoGS-command-line")
-
+;; load up all subordinate files
+;(load "load-LoGS.lisp")
 
 ;; XXX This is where the loser stars go XXX
 (defvar *messages* ()
   "The current message source.")
-(declaim (type (or nil Data-Source) *messages*))
-(defvar *root-ruleset* (make-instance 'ruleset :name 'root-ruleset)
+(defvar *root-ruleset* ()
   "The top-most ruleset; kinda like / in the filesystem")
-(declaim (type (or nil Ruleset) *root-ruleset*))
 (defvar *ruleset* *root-ruleset*
   "The current ruleset.  It may be nested within another ruleset")
-(declaim (type (or nil Ruleset) *ruleset*))
 (defvar *message* ()
   "The message currently being considered.")
 (defvar *matches* ()
@@ -190,8 +124,6 @@
 (defvar *run-before-exit* ()
   "a list of functions to call when LoGS is done running (before exiting).")
 
-;; none of this belongs here!
-
 (defgeneric check-limits (thing)
   (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
@@ -201,36 +133,6 @@
   (exit)
   #-allegro
   (quit))
-
-;; signal processing
-;; someday we should have some!
-;; these are just here till I get to it... 
-#+cmu
-(defun sigint-handler (signal code scp)
-  (declare (ignore signal code scp))
-  (with-interrupts
-    (break "someone hit ctrl-c" t)))
-
-#+cmu
-(defun sighup-handler (signal code scp)
-  (declare (ignore signal code scp))
-  (with-interrupts
-      (break "someone sent us a hup" t)))
-
-
-(defun process-command-line (opts args)
-  (let ((*file-list* ()))
-    (declare (special *file-list*))
-    (progn
-      (when +debug+
-        (format t "processing options~%"))
-      (PROCESS-OPTIONS opts args)
-      (let ((len (length *file-list*)))
-        (cond ((eq 1 len) (setf *messages* (car *file-list*)))
-              ((eq 0 len) (setf *messages* (make-instance 'STDIN-follower)))
-              (t (progn
-                   (setf *messages* (make-instance 'LoGS::multi-follower))
-                   (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*))))))))
 
 (defun main ()
   (progn
@@ -271,10 +173,10 @@
      when t
      do
        (when (and *message* (head *root-ruleset*))
-         (LoGS::check-rules *message* *root-ruleset*))
+         (check-rules *message* *root-ruleset*))
        
-       (when (head LoGS::*timeout-object-timeout-queue*)
-         (LoGS::check-limits LoGS::*timeout-object-timeout-queue*))
+       (when (head *timeout-object-timeout-queue*)
+         (check-limits *timeout-object-timeout-queue*))
        
-       (when (head LoGS::*relative-timeout-object-timeout-queue*)
-         (LoGS::check-limits LoGS::*relative-timeout-object-timeout-queue*))))
+       (when (head *relative-timeout-object-timeout-queue*)
+         (check-limits *relative-timeout-object-timeout-queue*))))

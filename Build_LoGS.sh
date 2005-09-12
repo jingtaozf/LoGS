@@ -19,7 +19,7 @@
 
 
 CL_PPCRE="cl-ppcre-1.2.11/load.lisp"
-LOGS="LoGS"
+LOGS="load-LoGS"
 CL_CLI="cl-cli/cl-cli.lisp"
 LOGS_CORE="LoGS.core"
 

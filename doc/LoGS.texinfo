@@ -61,6 +61,7 @@ last updated on @value{UPDATED}.
 
 @menu
 * LoGS Overview::               
+* Running LoGS::                
 * LoGS Rules::                  
 * LoGS Rulesets::               
 * LoGS Contexts::               
@@ -71,7 +72,7 @@ last updated on @value{UPDATED}.
 * Variable Index::              
 @end menu
 
-@node LoGS Overview, LoGS Rules, Top, Top
+@node LoGS Overview, Running LoGS, Top, Top
 @chapter LoGS Overview
 
 @cindex LoGS Overview 
@@ -385,7 +386,38 @@ rules or contexts have exceeded their timeout limits and need to be destroyed.
 @cindex *root-ruleset*
 @cindex timeout
 
-@node LoGS Rules, LoGS Rulesets, LoGS Overview, Top
+@node Running LoGS, LoGS Rules, LoGS Overview, Top
+@chapter Running LoGS
+
+LoGS is currently invoked by calling your Lisp executeable with the
+right stuff to get it to load the ``core'' file.  With CMUCL, this
+would be something like @code{/usr/local/bin/lisp -core /path/to/LoGS.core}.
+
+@node Command Line Arguments
+@section Command Line Arguments
+
+@multitable @columnfractions .2 .30 .5
+@item Flag @tab Arguments @tab Description
+@item --no-internal-time @tab @tab do not use internal time
+@item --file @tab <filename> [position] @tab name of the file to process and optional position
+@item --PBS-file @tab <filename> @tab follow a sequence of PBS log files starting with the named file
+@item --mysql-follower @tab <host> <database> <username> <password>
+<query> [buffer-size] @tab follow the result of a database query (may
+or may not be disabled in any particular build)
+@item --files @tab <filename> ... @tab names of files to process and optional position (separated by colons eg. logfile:42)
+@item --spawn @tab <command> ... @tab spawn the named command (with optional arguments) and use its output as an input source for LoGS
+@item --ruleset @tab <ruleset> @tab name of the ruleset to load
+@item --run-forever @tab @tab don't exit when there is no more immediately available input
+@item --remember-file @tab @tab store the name of the file that a given message came from in the from-file slot of the message if set
+@item --tag-messages  @tab @tab allow messages to be given tags
+@item --count-rules  @tab @tab count the number of times a rule is matched/attempted
+@item --expire-contexts-on-exit @tab @tab expire all remaining contexts before exiting LoGS
+@item --sleep-time @tab <seconds> @tab how long to sleep when there are no messages to process
+@item --help  @tab  @tab display this help text
+@end multitable
+
+
+@node LoGS Rules, LoGS Rulesets, Running LoGS, Top
 @chapter LoGS Rules    
 
 Rules are one type of glue that LoGS uses to associate messages

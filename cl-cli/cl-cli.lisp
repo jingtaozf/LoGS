@@ -66,23 +66,6 @@
           (when (action opt)
             (apply (action opt) list)))))))
         
-
-;; determine minumum and maximum number of arguments for this flag
-;; used to determine if we have the right number of args to the flag
-;; (defmacro nextarg (args)
-;;   (let ((seenflag (gensym))
-;;         (arglist (gensym)))
-;;     `(let ((,seenflag ()) 
-;;            (,arglist ())) 
-;;       (dolist (x ,args ,arglist) 
-;;         (cond 
-;;           ((and (not ,seenflag) (equal "-" (subseq x 0 1)))
-;;            (progn
-;;              (setq ,arglist (append ,arglist (list (pop ,args))))
-;;              (setq ,seenflag t)))
-;;           ((equal "-" (subseq x 0 1)) (return ,arglist)) 
-;;           (t (setq ,arglist (append ,arglist (list (pop ,args))))))))))
-
 ;; pull the next flag & its args off the args list
 (defun option-lengths (option)
   (let ((min 0)
