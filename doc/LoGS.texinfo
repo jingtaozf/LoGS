@@ -3,6 +3,7 @@
 @settitle LoGS 0.0.4
 @set AUTHOR James E. Prewett
 @set EDITION 0.0.4
+@set TITLE LoGS Manual
 @set UPDATED September 12, 2005
 @set COPYRIGHT Copyright @copyright{} 2003--2005 James E. Prewett
 
@@ -137,9 +138,10 @@ CL-PPCRE will be presented in this manual.}.
 * Rules::                       
 * Rulesets::                    
 * Actions::                     
-* LoGS Contexts::               
+* LoGS Contexts Overview::      
 * LoGS Efficiency::             
 * How Messages are processed::  
+* Acknowledgements::            
 @end menu
 
 @node LoGS Components, Messages and Data-Sources, LoGS Overview, LoGS Overview
@@ -360,7 +362,7 @@ to mimic the behavior of Logsurfer.
 @cindex continue
 @cindex short-circuit ruleset evaluation
 
-@node Actions, LoGS Contexts, Rulesets, LoGS Overview
+@node Actions, LoGS Contexts Overview, Rulesets, LoGS Overview
 @section Actions
 
 Actions are functions or methods that take a single argument, the
@@ -386,8 +388,8 @@ context exceeds one of its limits.
 @cindex context limits
 @cindex context actions
 
-@node LoGS Contexts, LoGS Efficiency, Actions, LoGS Overview
-@section LoGS Contexts
+@node LoGS Contexts Overview, LoGS Efficiency, Actions, LoGS Overview
+@section LoGS Contexts Overview
 
 Contexts are passive objects that store messages for later use.  Contexts can
 be used for any number of messages (a context with zero messages can
@@ -419,7 +421,7 @@ ensure-context takes the same arguments as @code{(make-instance
 'context ...)} would, but ensures that only one context with a given
 name exists.
 
-@node LoGS Efficiency, How Messages are processed, LoGS Contexts, LoGS Overview
+@node LoGS Efficiency, How Messages are processed, LoGS Contexts Overview, LoGS Overview
 @section LoGS Efficiency
 
 It is very difficult to talk about the efficiency of LoGS as it really
@@ -438,7 +440,7 @@ can be more efficient than those that only match regular expressions.
 
 @cindex context 
 
-@node How Messages are processed,  , LoGS Efficiency, LoGS Overview
+@node How Messages are processed, Acknowledgements, LoGS Efficiency, LoGS Overview
 @section How Messages are processed
 
 The current LoGS mainline takes the following steps for an incoming
@@ -450,7 +452,7 @@ rules or contexts have exceeded their timeout limits and need to be destroyed.
 @cindex timeout
 @vindex *root-ruleset*
 
-@node Acknowledgements
+@node Acknowledgements,  , How Messages are processed, LoGS Overview
 @section Acknowledgements
 
 The authors would like to acknowledge the following people (in no
@@ -629,7 +631,7 @@ would give to the ``next'' logfile.
 @subsection @code{--spawn}
 
 The @code{--spawn} option and a mandatory command to
-spawn\footnote{This command should either be in your @code{PATH} or
+spawn@footnote{This command should either be in your @code{PATH} or
 the full path to the command should be specified.} and any optional
 arguments.  The output of running this command will be treated, line
 by line, as input to LoGS.
@@ -1323,11 +1325,11 @@ environment slot, or can maintain state between the match function
 and the action functions by returning an environment along with the
 truth value indicating a match.
 
-@cindex{environtment}
-@cindex{environment slot (Rule)}
-@cindex{Rule's environment slot}
-@cindex{state, maintaining}
-@cindex{maintaining state}
+@cindex environtment
+@cindex environment slot (Rule)
+@cindex Rule's environment slot
+@cindex state, maintaining
+@cindex maintaining state
 
 @node Extending LoGS to facilitate rule creation,  , Rules can maintain state, LoGS Rules
 @section Extending LoGS to facilitate rule creation
@@ -1460,15 +1462,15 @@ They may also be added to the current ruleset (stored in the
 to add the rule to the head of the ruleset, the tail of the ruleset,
 before the current rule, or after the current rule respectively.
 
-@findex{enqueue}
-@findex{rule-head}
-@findex{rule-tail}
-@findex{rule-before}
-@findex{rule-after}
+@findex enqueue
+@findex rule-head
+@findex rule-tail
+@findex rule-before
+@findex rule-after
 
-@cindex{*ruleset*}
-@cindex{Rulesets, inserting rules into}
-@cindex{inserting rules into rulesets}
+@cindex *ruleset*
+@cindex Rulesets, inserting rules into
+@cindex inserting rules into rulesets
 
 
 @menu
