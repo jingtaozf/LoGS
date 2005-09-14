@@ -68,8 +68,7 @@
 (in-package :LoGS)
 
 ;; this is a constant so we can optimize out the checks for production runs
-(defconstant +debug+ NIL "should debugging information be displayed?")
-(declaim (type (or t nil) +debug+))
+(defconstant +debug+ NIL "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defparameter *use-internal-real-time* t 
   "should LoGS use the internal-real-time?")
@@ -93,15 +92,12 @@
   "should we allow messages to be tagged?")
 
 ;; this is a constant so we can optimize out the checks for production runs
-(defconstant +enable-rule-count+ t "will we allow rules/rulesets to be counted?")
+(defconstant +enable-rule-count+ t "The +enable-rule-count+ constant allows for counts to be kept when the *count-rules* variable is non-NIL. Note that this constant allows for the counts to be kept, while the *count-rules* parameter causes those counts to be kept.")
 
-(defconstant +use-sql+ () "should we build in the buffered-sql-follower?")
+(defconstant +use-sql+ () "The +use-sql+ constant allows for the Buffered-SQL-Follower and related SQL code to be built into LoGS")
 
 (defparameter *count-rules* t
   "should we keep track of rule counts?")
-
-;; load up all subordinate files
-;(load "load-LoGS.lisp")
 
 ;; XXX This is where the loser stars go XXX
 (defvar *messages* ()
@@ -119,7 +115,7 @@
 (defvar *current-rule* () 
   "The rule currently being compared to the message.")
 (defvar *run-forever* ()
-  "Should we keep going once we've reached the end of the file?")
+  "Setting this variable to non-NIL causes LoGS to not exit when there is no more input immediately available.")
 
 ;; does nothing... yet.
 (defvar *run-before-exit* ()
@@ -129,6 +125,8 @@
   (:method-combination OR)
   (:documentation "Check to see if the object has exceeded one or more of its limits"))
 
+;; this function is here so that we can have a single function to 
+;; call to exit LoGS/Lisp
 (defun quit-LoGS ()
   #+allegro
   (exit)

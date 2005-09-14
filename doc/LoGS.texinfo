@@ -464,7 +464,7 @@ particular order) for their help and/or support:
 @item Dr. Robert Ballance
 @item The Center for High Performance Computing at The University of
 New Mexico
-@item Ms. Colleen Feldman (Jim's 4th grade teacher)
+@item Ms. Koleen Feldman (Jim's 4th grade teacher)
 @item Mom and Dad
 @item The LoGS mailing list
 @item The loganalysis mailing list
@@ -515,8 +515,9 @@ is T.
 @node +use-sql+,  , +enable-rule-count+, LoGS Compile-time options
 @section +use-sql+
 
-The +use-sql+ constant allows for the Buffered-SQL-Follower code to
-be built into LoGS.  By default, this constant is set to NIL.
+The +use-sql+ constant allows for the Buffered-SQL-Follower code and
+related SQL code to be built into LoGS.  By default, this constant is
+set to NIL and the SQL code is not built in. 
 
 @vindex +use-sql+
 @cindex Buffered-SQL-Follower
@@ -642,8 +643,9 @@ by line, as input to LoGS.
 @subsection @code{--ruleset}
 
 The @code{--ruleset} option and its mandatory argument indicate a
-ruleset to load.  This ruleset can be any file containing Lisp code
-to be evaluated at start-up.
+ruleset to load.  While intended to hold ruleset and rule definitions,
+this ruleset can be any file containing Lisp code to be evaluated at
+start-up. 
 
 @cindex @code{--ruleset}
 
