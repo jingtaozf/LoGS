@@ -12,7 +12,10 @@
 (in-package :cl-cli)
 
 ;; current version of cl-cli
-(defconstant +cl-cli-version+ "0.0.2")
+; this is now inside of the eval-when so that SBCL won't puke because
+; its being overly pedantic
+(eval-when (:compile-toplevel)
+  (defconstant +cl-cli-version+ "0.0.2"))
 
 #+cmu
 (setf EXTENSIONS::*COMPLAIN-ABOUT-ILLEGAL-SWITCHES* ())

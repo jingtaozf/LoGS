@@ -220,9 +220,6 @@
                   #'(lambda ()
                       (progn
                         (cl-cli::help LoGS::*opts*)
-                        #+allegro
-                        (exit)
-                        #-allegro
-                        (quit)))
+                        (quit-LoGS)))
                   :description "display this help text")
    ))

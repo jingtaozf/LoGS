@@ -58,6 +58,8 @@
   (:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly)
   #+sbcl
   (:import-from :sb-sys #:make-fd-stream)
+  #+openmcl
+  (:import-from :ccl #:make-fd-stream)
   #+cmu
   (:import-from :extensions #:quit #:RUN-PROGRAM)
   #+cmu
@@ -129,9 +131,9 @@
 ;; call to exit LoGS/Lisp
 (defun quit-LoGS ()
   #+allegro
-  (exit)
+  (excl::exit)
   #-allegro
-  (quit))
+  (cl-user::quit))
 
 (defun main ()
   (progn

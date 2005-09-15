@@ -23,4 +23,4 @@ LOGS="load-LoGS.lisp"
 CL_CLI="cl-cli/cl-cli.lisp"
 LOGS_CORE="LoGS-sbcl.core"
 
-sbcl --eval "(and (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\")) (load \"$LOGS\") (load \"$LOGS\")(in-package :LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"
+sbcl --eval "(and (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\")) (load \"$LOGS\")(in-package :LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"
