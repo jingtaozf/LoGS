@@ -213,6 +213,16 @@
                       (setf *LoGS-sleep-time* (read-from-string seconds)))
                   :description
                   "how long to sleep when there are no messages to process")
+   
+   (make-instance 'cli-opt
+                  :name "--pid"
+                  :arguments '("<pidfile>")
+                  :action 
+                  #'(lambda (pidfile)
+                      (setf *write-pid-to-file* pidfile))
+                  :description
+                  "the name of the file to write LoGS' PID to")
+                            
    (make-instance 'cli-opt
                   :name "--help"
                   :arguments ()

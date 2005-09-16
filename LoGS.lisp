@@ -101,6 +101,9 @@
 (defparameter *count-rules* t
   "should we keep track of rule counts?")
 
+(defvar *write-pid-to-file* ()
+  "should we write the PID of LoGS to a file?")
+
 ;; XXX This is where the loser stars go XXX
 (defvar *messages* ()
   "The current message source.")
@@ -142,6 +145,23 @@
       (format t "processing options~%"))
     (let ((args (get-application-args)))
       (process-command-line *opts* args))
+    
+    ;; write out PID if necessary
+    (if *write-pid-to-file*
+        (progn
+          (when +debug+ 
+            (format t "writing PID to file: ~A~%" *write-pid-to-file*))
+          (let ((PID 
+                 #+cmu
+                  (unix:unix-getpid)))
+            (with-open-file
+                (file *write-pid-to-file*
+                      :direction :output
+                      :if-exists :overwrite
+                      :if-does-not-exist :create)
+              (format file "~A~%" PID))))
+        (format t "not writing PID to any file~%"))
+    
     ;; process any files
     (process-files)
     (mapcar
