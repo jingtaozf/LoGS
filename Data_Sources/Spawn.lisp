@@ -40,10 +40,15 @@
   #+allegro
   (excl:run-shell-command 
    (format () "~A ~{ ~A~}" program args)
-           :output :stream :wait ())
+   :output :stream :wait ())
 
   #+clisp
   (ext:run-program program :arguments args :output :stream :wait ())
+
+  #+lispworks
+  (sys::open-pipe 
+   (format () "~A ~{ ~A~}" program args)
+   :direction :input)
   )
 
 (defgeneric start-spawn (spawn)

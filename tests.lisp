@@ -22,12 +22,12 @@
 (use-package :ORG.ANCAR.CLUNIT)
 
 ;; UGH!
-#+(or allegro clisp)
+#+(or allegro clisp lispworks)
 (set-dispatch-macro-character #\# #\$
                               (lambda(s c n)
                                 (let ((thing (read s nil (values) t))) ())))
 
-#+(or allegro clisp)
+#+(or allegro clisp lispworks)
 (set-dispatch-macro-character #\# #\_
                               (lambda(s c n)
                                 (let ((thing (read s nil (values) t))) ())))
@@ -40,7 +40,7 @@
     (when
         #+cmu
       (unix:unix-rename filename newname)
-      #+(or clisp sbcl allegro openmcl)
+      #+(or clisp sbcl allegro openmcl lispworks)
       (rename-file filename newname)
       newname)))
 
@@ -53,7 +53,7 @@
   (sb-posix:unlink filename)
   #+openmcl
   (#_unlink (ccl::make-cstring filename))
-  #+clisp
+  #+(or clisp lispworks)
   (delete-file filename))
 
 (defun assert-equal (a b &key test)

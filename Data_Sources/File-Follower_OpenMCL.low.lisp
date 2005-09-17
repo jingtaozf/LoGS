@@ -20,6 +20,7 @@
 (in-package :LoGS)
 
 (defun fifo-p (filename)
+  "is the named file a fifo?"
   (< 0 
      (logand 4096 
              (nth-value 1 (ccl::%stat filename)))))
@@ -30,6 +31,7 @@
   (nth-value 2 (ccl::%stat filename)))
 
 (defun open-fifo (filename)
+  "open the fifo with the given filename"
   (let ((fifofd 
          (fd-open
           (filename ff)

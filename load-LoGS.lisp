@@ -43,22 +43,25 @@
            "killable-item" "collection" "limited-collection" "context"
              "window"))
           
-          (list "Data_Sources"
-                (list
-                 #+cmu 
-                 "File-Follower_CMUCL.low"
-                 #+sbcl
-               "File-Follower_SBCL.low"
-               #+openmcl
-               "File-Follower_OpenMCL.low"
-               #+allegro
-               "File-Follower_Allegro.low"
-               #+clisp
-               "File-Follower_CLISP.low"
-               
-               "Data-Source" "List-Follower" "File-Follower" "PBS-File-Follower"
-               "Spawn" "STDIN-Follower" "Multi-Follower"
-               "Buffered-SQL-Follower"))
+          (list 
+           "Data_Sources"
+           (list
+            #+cmu 
+            "File-Follower_CMUCL.low"
+            #+sbcl
+            "File-Follower_SBCL.low"
+            #+openmcl
+            "File-Follower_OpenMCL.low"
+            #+allegro
+            "File-Follower_Allegro.low"
+            #+clisp
+            "File-Follower_CLISP.low"
+            #+lispworks
+            "File-Follower_LispWorks.low"
+            
+            "Data-Source" "List-Follower" "File-Follower" "PBS-File-Follower"
+            "Spawn" "STDIN-Follower" "Multi-Follower"
+            "Buffered-SQL-Follower"))
           '(()
             ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line"))
           ))

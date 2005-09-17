@@ -165,7 +165,10 @@
     (if
      (lives-after-timeout context)
      (update-relative-timeout context)
-     (delete-context context))))
+     (progn
+       (when +debug+
+         (format t "deleteing context: ~A" context))
+       (delete-context context)))))
 
 (defmethod initialize-instance
     :around
@@ -205,12 +208,6 @@
            (expire-context context)
            (dll-delete *contexts* context))
          ret)))
-
-;; (defmethod destroy-context-if-exceeded-limit ((context context))
-;;   (let ((ret (check-limits context)))
-;;     (when ret
-;;       (expire-context context))
-;;     ret))
 
 (defmethod destroy-context-if-exceeded-limit ((context context))
   (check-limits context))
