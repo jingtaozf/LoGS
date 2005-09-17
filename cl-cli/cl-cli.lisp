@@ -134,6 +134,10 @@
     #+cmu (cdr lisp::lisp-command-line-list)
 
     ;; FIXME: openmcl version missing
+
+    ;; FIXME: LispWorks version missing
+    #+lispworks
+    (cdr SYSTEM:*LINE-ARGUMENTS-LIST*)
 )
 
 ;; display option help
