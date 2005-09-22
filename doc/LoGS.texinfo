@@ -1,21 +1,32 @@
 \input texinfo   @c -*-texinfo-*-
+
 @setfilename LoGS.info
-@settitle LoGS 0.0.4
+
+@macro logsversion{}
+@include ../version
+@end macro
+
+@macro clcliver{}
+@include ../cl-cli/cl-cli-version
+@end macro
+
+
+@settitle LoGS @logsversion 
 @set AUTHOR James E. Prewett
-@set EDITION 0.0.4
+@set EDITION @logsversion 
 @set TITLE LoGS Manual
 @set UPDATED September 12, 2005
 @set COPYRIGHT Copyright @copyright{} 2003--2005 James E. Prewett
 
 
 @copying
-This manual is for LoGS, version 0.0.4.
+This manual is for LoGS, version @logsversion{} and CL-CLI, version @clcliver{}.
 
 Copyright @copyright{} 2003--2005 James E. Prewett.
 
 
 @smallexample
-@group
+@group 
   Copyright (C)  2003-2005 James E. Prewett
   Permission is granted to copy, distribute and/or modify this document
   under the terms of the GNU Free Documentation License, Version 1.2
@@ -555,6 +566,7 @@ would be something like @code{/usr/local/bin/lisp -core /path/to/LoGS.core}.
 * --expire-contexts-on-exit::   
 * --sleep-time::                
 * --mysql-follower::            
+* --LoGS-version::              
 * --help::                      
 @end menu
 
@@ -578,6 +590,7 @@ or may not be disabled in any particular build)
 @item @code{--count-rules}  @tab @tab count the number of times a rule is matched/attempted
 @item @code{--expire-contexts-on-exit} @tab @tab expire all remaining contexts before exiting LoGS
 @item @code{--sleep-time} @tab <seconds> @tab how long to sleep when there are no messages to process
+@item @code{--LoGS-version} @tab @tab print version and Copyright information for the program
 @item @code{--help}  @tab  @tab display this help text
 @end multitable
 
@@ -725,7 +738,7 @@ variable is .03; this value was chosen by a method involving voodoo.
 @vindex *LoGS-sleep-time*
 @cindex voodoo
 
-@node --mysql-follower, --help, --sleep-time, Command Line Arguments
+@node --mysql-follower, --LoGS-version, --sleep-time, Command Line Arguments
 @subsection @code{--mysql-follower}
 
 The @code{--mysql-follower} option allows LoGS to view the results of
@@ -737,7 +750,22 @@ must be loaded.  Its a mess...
 @cindex @code{--mysql-follower}
 @vindex +use-sql+
 
-@node --help,  , --mysql-follower, Command Line Arguments
+@node --LoGS-version, --help, --mysql-follower, Command Line Arguments
+@subsection @code{--LoGS-version}
+
+The @code{--LoGS-version} option causes LoGS to print version
+information as stored in the +LoGS-version+ constant and
+Copyright information then exit.
+
+@cindex @code{--LoGS-version}
+@cindex version information
+@cindex Copyright information, displaying
+@cindex displaying Copyright information
+@cindex displaying version information
+
+@vindex +LoGS-version+
+
+@node --help,  , --LoGS-version, Command Line Arguments
 @subsection @code{--help}
 
 The @code{--help} option causes information about the command line
@@ -1769,6 +1797,8 @@ which rulesets a particular rule is a part of.
 
 @node CL-CLI Manual, Copying This Manual, LoGS Internals, Top
 @appendix CL-CLI Manual
+
+This appendix covers CL-CLI version:  xxx @logsversion{} xxx.
 
 CL-CLI is a Lisp package for processing command line arguments.  It
 is intended to be portable across Common Lisp implementations and to
