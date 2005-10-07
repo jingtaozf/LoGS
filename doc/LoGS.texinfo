@@ -1798,7 +1798,7 @@ which rulesets a particular rule is a part of.
 @node CL-CLI Manual, Copying This Manual, LoGS Internals, Top
 @appendix CL-CLI Manual
 
-This appendix covers CL-CLI version:  xxx @logsversion{} xxx.
+This appendix covers CL-CLI version @clcliver{}.
 
 CL-CLI is a Lisp package for processing command line arguments.  It
 is intended to be portable across Common Lisp implementations and to

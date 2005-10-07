@@ -57,6 +57,31 @@
                                    (read-from-string position)))
                                 (push ff *file-list*)))
                   :description "name of the file to process and optional position")
+
+   (make-instance 'cli-opt
+                  :name "--bfile"
+                  :arguments '("<filename>" "[position]")
+                  ;; XXX needs to change, get rid of *messages*
+                  :action #'(lambda (filename &optional position)
+                              (let ((ff (make-instance 'LoGS::Buffered-File-Follower 
+                                                       :FileName 
+                                                       filename)))
+                                ;; if position is specified, start there
+                                (when position
+                                  (when (not ff) (error "no ff~%"))
+                                  (LoGS::set-file-follower-position
+                                   ff
+                                   (read-from-string position)))
+                                (push ff *file-list*)))
+                  :description "name of the file to process and optional position"
+                  )
+   (make-instance 'cli-opt
+                  :name "--bufsize"
+                  :arguments '("<size>")
+                  ;; XXX needs to change, get rid of *messages*
+                  :action #'(lambda (size)
+                              (setf *default-ff-buffer-size* (read-from-string size)))
+                  :description "name of the file to process and optional position")
    
    (make-instance 'cli-opt
                   :name "--PBS-file"
@@ -105,13 +130,13 @@
                           (progn
                             (format t "SQL support does not exist in this build of LoGS... exiting~%")
                             (quit-LoGS))))
-   :description 
-   (if +use-sql+ 
-       "follow the result of a database query"
-       "follow the result of a database query *DISABLED*"
-       ))
+                  :description 
+                  (if +use-sql+ 
+                      "follow the result of a database query"
+                      "follow the result of a database query *DISABLED*"
+                      ))
 
-      (make-instance 'cli-opt
+   (make-instance 'cli-opt
                   :name "--files"
                   :arguments '("<filename>" "...")
                   :action 
@@ -138,18 +163,18 @@
                          filenames)))
                   :description "names of files to process and optional position (separated by colons eg. logfile:42)")
 
-      (make-instance 'cli-opt
-                     :name "--spawn" 
-                     :arguments '("<command>" "...")
-                     :action
-                     #'(lambda (command &rest args)
-                         (let ((spawn (make-instance 'spawn 
-                                                     :spawnprog command
-                                                     :spawnargs args)))
+   (make-instance 'cli-opt
+                  :name "--spawn" 
+                  :arguments '("<command>" "...")
+                  :action
+                  #'(lambda (command &rest args)
+                      (let ((spawn (make-instance 'spawn 
+                                                  :spawnprog command
+                                                  :spawnargs args)))
                            
-                           (push spawn *file-list*)))
-                     :description
-                     "spawn the named command (with optional arguments) and use its output as an input source for LoGS")
+                        (push spawn *file-list*)))
+                  :description
+                  "spawn the named command (with optional arguments) and use its output as an input source for LoGS")
                       
    (make-instance 'cli-opt
                   :name "--ruleset"
@@ -167,7 +192,13 @@
                   #'(lambda ()
                       (setq LoGS::*run-forever* t))
                   :description "don't exit when there is no more immediately available input")
-       
+   (make-instance 'cli-opt
+                  :name "--tail"
+                  :arguments ()
+                  :action
+                  #'(lambda ()
+                      (setq LoGS::*run-forever* t))
+                  :description "an alias for --run-forever")
    (make-instance 'cli-opt
                   :name "--remember-file"
                   :arguments ()
@@ -222,6 +253,18 @@
                       (setf *write-pid-to-file* pidfile))
                   :description
                   "the name of the file to write LoGS' PID to")
+
+   (make-instance 'cli-opt
+                  :name "--LoGS-version"
+                  :arguments ()
+                  :action
+                  #'(lambda ()
+                      (progn
+                        (format t "This is LoGS version ~A~%" +LoGS-version+)
+                        (format t "Copyright (C) 2004 James E. Prewett~%This is free software; see the source for copying conditions.  There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.~%")
+                        (quit-LoGS)))
+                  :description
+                  "print version and Copyright information for the program")
                             
    (make-instance 'cli-opt
                   :name "--help"

@@ -17,6 +17,11 @@
 
 ;; borrowed heavily from Edi's load.lisp
 
+;; make sure that CLISP is a new enough version or bomb
+#+clisp
+(unless (>= (car (system::version)) 20050505)
+  (error "CLISP version 2.35 or greater is required for LoGS~%"))
+
 (defun load-LoGS-file (filename)
   (let ((compiled-filename (compile-file-pathname filename)))
     (when (or 
@@ -61,9 +66,9 @@
             
             "Data-Source" "List-Follower" "File-Follower" "PBS-File-Follower"
             "Spawn" "STDIN-Follower" "Multi-Follower"
-            "Buffered-SQL-Follower"))
+            "Buffered-SQL-Follower" "Buffered-File-Follower"))
           '(()
-            ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line"))
+            ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line" "language"))
           ))
         (LoGS-home (make-pathname :name () :type () :defaults (parse-namestring *load-truename*))))
     (mapcar 
