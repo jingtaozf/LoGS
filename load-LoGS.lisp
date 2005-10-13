@@ -68,7 +68,7 @@
             "Spawn" "STDIN-Follower" "Multi-Follower"
             "Buffered-SQL-Follower"))
           '(()
-            ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line" "language2"))
+            ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line"))
           ))
         (LoGS-home (make-pathname :name () :type () :defaults (parse-namestring *load-truename*))))
     (mapcar 
