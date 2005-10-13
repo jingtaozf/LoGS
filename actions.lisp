@@ -132,3 +132,4 @@
   (if subject
       (pipe message *mail-program* "-s" subject recipient)
       (pipe message *mail-program* recipient)))
+

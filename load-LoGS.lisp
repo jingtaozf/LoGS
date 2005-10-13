@@ -66,9 +66,9 @@
             
             "Data-Source" "List-Follower" "File-Follower" "PBS-File-Follower"
             "Spawn" "STDIN-Follower" "Multi-Follower"
-            "Buffered-SQL-Follower" "Buffered-File-Follower"))
+            "Buffered-SQL-Follower"))
           '(()
-            ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line" "language"))
+            ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line" "language2"))
           ))
         (LoGS-home (make-pathname :name () :type () :defaults (parse-namestring *load-truename*))))
     (mapcar 

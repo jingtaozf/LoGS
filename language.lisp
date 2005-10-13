@@ -26,12 +26,26 @@
              ,body)))
 
 (let ((ht (make-hash-table :test #'equal))
-      (seen-vars ()))
+      (seen-vars ())
+      (stack ()))
   (defun set-rule-value (var value)
     (pushnew var seen-vars)
     (setf (gethash var ht) value))
+  (defun set-rule-attribute (var value)
+    (setf (gethash var ht) value))
   (defun get-rule-value (var)
     (gethash var ht))
+  (defun get-rule-attribute (var)
+    (gethash var ht))
+  (defun push-rule ()
+    (push (list ht seen-vars) stack)
+    (setf ht (make-hash-table :test #'equal)
+          seen-vars ()))
+  (defun pop-rule ()
+    (destructuring-bind (hash seen)
+        (pop stack)
+      (setf ht hash
+            seen-vars seen)))
   (defun reset-rule ()
     (setf seen-vars ())
     (setf ht (make-hash-table :test #'equal)))
@@ -42,7 +56,7 @@
   (do ((remaining list
                   (let ((what (car remaining))
                         (rest (cdr remaining)))
-                    (let ((func (get what 'foo-fn)))
+                    (let ((func (get what 'fo-fn)))
                       (if func
                           (funcall func rest)
                           (error "unknown keyword: ~A~%" what))))))
@@ -50,29 +64,37 @@
   t)
 
 (defmacro build-rule (rule-parts)
-  (let ((var (gensym))
-        (parts (gensym)))
-  `(let ((,parts ',(expand-rule-parts)))
-     (format t "creating rule with args: ~A~%"
-             ,parts)
-     (eval `(make-instance 'rule ,@,parts)))))
-
-
-(defmacro build-rule (rule-parts)
   `(progn 
-    (format t "creating rule with args: ~A~%" ,rule-parts)
-    (eval `(make-instance 'rule ,@,rule-parts))))
+     (eval `(make-instance 'rule ,@,rule-parts))))
 
 (defun expand-rule-parts ()
-  (loop as var in (seen-rule-vars)
+  (Loop as var in (seen-rule-vars)
        nconcing (list var (get-rule-value var))))
   
 (defmacro create (what &rest list)
-  `(cond ((equal ',what 'rule)
-          (progn
-            (reset-rule)
-            (parse-rule-statements ',list)
-            (build-rule (expand-rule-parts))))))
+  (let ((where (gensym)))
+    `(cond ((equal ',what 'rule)
+            (progn
+              (push-rule)
+              (parse-rule-statements ',list)
+              (let ((rule (build-rule (expand-rule-parts)))
+                    (how (get-rule-value :insert-how))
+                    (,where (get-rule-value :insert-where)))
+                
+                (cond ((and (equal how 'before)
+                            ,where)
+                       (progn
+                         (dll-insert *ruleset* (get-rule *ruleset* `(name ,,where)) rule :direction :before)
+                         )))
+                (pop-rule)
+                rule))))))
+
+;; create rule ... 
+;; (rule named ... )
+(defun parse-rule (list)
+  (values (cdr list) (car list)))
+
+(defsyntax 'rule #'parse-rule)
 
 (defun parse-name (list)
   (let ((name (car list))
@@ -86,21 +108,13 @@
 
 (defsyntax 'named #'parse-name)
 
-(defsyntax 'create
-    (lambda (list)
-      (let ((type (car list))
-            (rest (cdr list)))
-        (cond (type
-               (progn
-                 (set-rule-value :type type)
-                 (values rest type)))
-              (t
-               (error "no type specified~%"))))))
+(defmacro creating (&body body)
+  `(lambda (message)
+     (create ,@body)))
 
 (defun grab-vars (list)
   (let ((var (car list))
         (and? (equal 'and (cadr list))))
-    (format t "var: ~A and? ~A~%" var and?)
     (if and?
 
         (multiple-value-bind (parsed-stuff rest)
@@ -130,14 +144,83 @@
                   (mapcar
                    (lambda (,var) (list ,var (aref ,sub-matches (incf ,count))))
                    ,vars)
-                  (error "different number of vars: ~A and vals ~A in ~A and ~A" (length ,sub-matches) (length ,vars) ,sub-matches ,vars)))))))))
+                  (error "different number of vars: ~A and vals ~A in ~A and ~A" (length ,vars) (length ,sub-matches) ,vars ,sub-matches)))))))))
 
 (defmacro match-regexp-func (regexp)
   (let ((message (gensym)))
     `(lambda (,message)
-       (format t "looking for regexp: ~A in message: ~A~%" 
-               ,regexp (message ,message))
        (cl-ppcre::scan ,regexp (message ,message)))))
+
+
+(defun parse-delete-func (list)
+  (let ((type (car list))
+        (rest (cdr list)))
+    (cond 
+      ((and (equal type 'function) rest)
+       (progn
+         (let ((deletefunc (eval (car rest))))
+           (set-rule-value :delete-rule deletefunc)
+           (values (cdr rest) deletefunc))))
+      
+      ((and (equal type 'regexp) 
+            (equal (cadr rest) 'binding))
+       (let ((regexp (eval (car rest))))
+         (multiple-value-bind (vars left)
+             (grab-vars (cddr rest))
+           (let ((deletefunc (match-regexp-binding-vars regexp vars)))
+             (set-rule-value :delete-rule deletefunc)
+             (values 
+              left deletefunc)))))
+
+      ((and (equal type 'regexp) rest)
+       (let* ((regexp (eval (car rest)))
+              (deletefunc (match-regexp-func regexp)))
+         (set-rule-value :delete-rule deletefunc)
+         (values (cdr rest) deletefunc)))
+
+      ((equal type 'regexp)
+       (error "no regular expression specified~%"))
+      ((equal type 'function)
+       (error "no delete function specified~%"))
+      (t
+       (error "unknown delete specified: ~A ~%" type)))))
+
+(defsyntax 'delete-when #'parse-delete-func)
+
+(defun parse-no-delete-func (list)
+  (let ((type (car list))
+        (rest (cdr list)))
+    (cond 
+      ((and (equal type 'function) rest)
+       (progn
+         (let ((no-deletefunc (eval (car rest))))
+           (set-rule-value :no-delete-rule no-deletefunc)
+           (values (cdr rest) no-deletefunc))))
+      
+      ((and (equal type 'regexp) 
+            (equal (cadr rest) 'binding))
+       (let ((regexp (eval (car rest))))
+         (multiple-value-bind (vars left)
+             (grab-vars (cddr rest))
+           (let ((no-deletefunc (match-regexp-binding-vars regexp vars)))
+             (set-rule-value :no-delete-rule no-deletefunc)
+             (values 
+              left no-deletefunc)))))
+
+      ((and (equal type 'regexp) rest)
+       (let* ((regexp (eval (car rest)))
+              (no-deletefunc (match-regexp-func regexp)))
+         (set-rule-value :no-delete-rule no-deletefunc)
+         (values (cdr rest) no-deletefunc)))
+
+      ((equal type 'regexp)
+       (error "no regular expression specified~%"))
+      ((equal type 'function)
+       (error "no no-delete function specified~%"))
+      (t
+       (error "unknown no-delete specified: ~A ~%" type)))))
+
+(defsyntax 'no-delete-when #'parse-no-delete-func)
 
 (defun parse-match-func (list)
   (let ((type (car list))
@@ -145,22 +228,22 @@
     (cond 
       ((and (equal type 'function) rest)
        (progn
-         (set-rule-value :match (eval (car rest)))
-         (values (cdr rest) (eval (car rest)))))
+         (let ((matchfunc (eval (car rest))))
+           (set-rule-value :match matchfunc)
+           (values (cdr rest) matchfunc))))
       
       ((and (equal type 'regexp) 
             (equal (cadr rest) 'binding))
-       (let ((regexp (car rest)))
+       (let ((regexp (eval (car rest))))
          (multiple-value-bind (vars left)
              (grab-vars (cddr rest))
-           (format t "got vars: ~A and left: ~A~%" vars left)
            (let ((matchfunc (match-regexp-binding-vars regexp vars)))
              (set-rule-value :match matchfunc)
              (values 
               left matchfunc)))))
 
       ((and (equal type 'regexp) rest)
-       (let* ((regexp (car rest))
+       (let* ((regexp (eval (car rest)))
               (matchfunc (match-regexp-func regexp)))
          (set-rule-value :match matchfunc)
          (values (cdr rest) matchfunc)))
@@ -174,6 +257,41 @@
    
 (defsyntax 'matching #'parse-match-func)
 
+(defun parse-no-match-func (list)
+  (let ((type (car list))
+        (rest (cdr list)))
+    (cond 
+      ((and (equal type 'function) rest)
+       (progn
+         (let ((nomatchfunc (eval (car rest))))
+           (set-rule-value :no-match nomatchfunc)
+           (values (cdr rest) nomatchfunc))))
+      
+      ((and (equal type 'regexp) 
+            (equal (cadr rest) 'binding))
+       (let ((regexp (eval (car rest))))
+         (multiple-value-bind (vars left)
+             (grab-vars (cddr rest))
+           (let ((nomatchfunc (match-regexp-binding-vars regexp vars)))
+             (set-rule-value :no-match nomatchfunc)
+             (values 
+              left nomatchfunc)))))
+
+      ((and (equal type 'regexp) rest)
+       (let* ((regexp (eval (car rest)))
+              (nomatchfunc (match-regexp-func regexp)))
+         (set-rule-value :no-match nomatchfunc)
+         (values (cdr rest) nomatchfunc)))
+
+      ((equal type 'regexp)
+       (error "no regular expression specified~%"))
+      ((equal type 'function)
+       (error "no match function specified~%"))
+      (t
+       (error "unknown match specified: ~A ~%" type)))))
+
+(defsyntax 'not-matching #'parse-no-match-func)
+
 (defun parse-doing (list)
   (multiple-value-bind (funcs left)
       (grab-vars list)
@@ -181,3 +299,36 @@
     (values left funcs)))
 
 (defsyntax 'doing #'parse-doing)
+
+(defun parse-continuing (list)
+  (set-rule-value :continuep t)
+  (values list t))
+
+(defsyntax 'continuing #'parse-continuing)
+
+;; before *current-rule*
+(defun parse-insert (list)
+  (destructuring-bind 
+        (how where &rest rest)
+      list
+    (cond ((equal 'before how)
+           (progn
+             (set-rule-attribute :insert-how 'before)
+             (set-rule-attribute :insert-where where)
+             rest))
+          (t
+           (error "bad insert: ~A~%" how)))))
+
+(defsyntax 'inserted #'parse-insert)
+
+(defun parse-environment (list)
+  (let ((environment (car list))
+        (rest (cdr list)))
+    (cond (environment
+           (progn
+             (set-rule-value :environment environment)
+             (values rest environment)))
+          (t
+           (error "no environment specified~%")))))
+
+(defsyntax 'with-environment #'parse-environment)

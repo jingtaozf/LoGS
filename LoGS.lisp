@@ -16,8 +16,8 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-;(declaim (optimize (speed 0) (debug 3) (safety 3)))
+;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+(declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
@@ -32,8 +32,8 @@
 
 ; set this to something *BIG* 
 ;; this is 1/2 of my physical memory; that seems to work well; YMMV
-#+cmu
-(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 65712128)
+;#+cmu
+;(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 65712128)
 
 #+sbcl
 (setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 65712128)
@@ -79,7 +79,7 @@
        :direction :input) (read file)))
 
 ;; this is a constant so we can optimize out the checks for production runs
-(defconstant +debug+ NIL "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
+(defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defparameter *use-internal-real-time* t 
   "should LoGS use the internal-real-time?")
