@@ -29,12 +29,8 @@
               :documentation "An artificial limit on the number of lines this context can hold")))
 
 (defmethod check-limits OR ((limited-collection limited-collection))
-           (if +debug+
-               (let ((ret (with-slots (ecount max-lines) limited-collection
-                            (when (and max-lines ecount)
-                              (> ecount max-lines)))))
-               (format t "checking limited-collection limits. ret: ~A~%" ret)
-               ret)
-               (with-slots (ecount max-lines) limited-collection
-                 (when (and max-lines ecount)
-                   (> ecount max-lines)))))
+           (let ((ret (with-slots (ecount max-lines) limited-collection
+                        (when (and max-lines ecount)
+                          (> ecount max-lines)))))
+             (LoGS-debug "checking limited-collection limits. ret: ~A~%" ret)
+             ret))

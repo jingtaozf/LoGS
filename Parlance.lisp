@@ -42,8 +42,7 @@
 ;; filter out matching messages
 (defun filter (match-func &key name environment continuep)
   "create a rule that causes messages that match to be ignored"
-  (make-instance 
-   'rule
+  (rule
    :name name
    :continuep continuep
    :environment environment
@@ -53,8 +52,7 @@
 ;; how is this different from throttling?  Shouldn't this be called throttling?
 (defun suppress (match-func timeout &key name environment continuep)
   "create a rule that causes messages that match to be ignore for a certain period of time from *now*"
-  (make-instance
-   'rule
+  (rule
    :name name
    :continuep continuep
    :environment environment
@@ -63,24 +61,22 @@
 
 ;; suppress messages matching match1 until match2 is seen
 (defun suppress-until (match1 match2 &key name environment continuep)
-  (make-instance 'rule
-                 :name name
-                 :continuep continuep
-                 :environment environment
-                 :match
-                 (lambda (message)
-                   (or
-                    (funcall match1 message)
-                    (funcall match2 message)))
-                 :delete-rule
-                 match2))
-                    
+  (rule
+   :name name
+   :continuep continuep
+   :environment environment
+   :match
+   (lambda (message)
+     (or
+      (funcall match1 message)
+      (funcall match2 message)))
+   :delete-rule
+   match2))
 
 ;; I DO NOT LIKE THIS NAME!
 (defun single (match-func actions-list &key name environment continuep)
   "create a rule that triggers the functions in the actions list as a result of a match"
-  (make-instance 
-   'rule
+  (rule
    :name name
    :continuep continuep
    :environment environment
@@ -90,8 +86,7 @@
 ;; single with throttle?
 (defun single-with-suppress (match-func actions-list time &key name environment continuep)
   "run the actions in the actions list in response to a match, then add a rule before this one to ignore this message for a while"
-  (make-instance 
-   'rule
+  (rule
    :name name
    :continuep continuep
    :environment environment
@@ -104,24 +99,23 @@
 ;; do something at a particular time
 (defun timed-event (actions-list time &key name)
   "cause something to happen at a particular time"
-  (make-instance 'context
-                 :name name
-                 :actions actions-list
-                 :timeout time))
+  (context
+   :name name
+   :actions actions-list
+   :timeout time))
 
 ;; do something every time seconds
 (defun periodic-event (actions-list time &key name)
   "cause something to happen periodically"
-  (make-instance 'context
-                 :name name
-                 :actions actions-list
-                 :relative-timeout time
-                 :lives-after-timeout t))
+  (context
+   :name name
+   :actions actions-list
+   :relative-timeout time
+   :lives-after-timeout t))
 
 (defun pair (match1 actions1 match2 actions2 &key continuep environment)
   "like SEC pair rule"
-  (make-instance 
-   'rule
+  (rule
    :match match1
    :continuep continuep
    :environment environment
@@ -129,14 +123,14 @@
    (append
     (list
      (lambda (message)
-       (let ((ign-match1 (make-instance 'rule
-                                        :match match1))
-             (find-match2 (make-instance 'rule
-                                         :match
-                                         match2
-                                         :environment
-                                         env
-                                         :actions actions2)))
+       (declare (ignore message))
+       (let ((ign-match1 (rule :match match1))
+             (find-match2 (rule
+                           :match
+                           match2
+                           :environment
+                           env
+                           :actions actions2)))
          (rule-before find-match2)
          (rule-before ign-match1))))
     actions1)))
@@ -148,42 +142,43 @@
   (let* ((timeout (+ *now* (* window INTERNAL-TIME-UNITS-PER-SECOND)))
          (match1-rule-name (or name1 (gensym)))
          (match2-rule-name (or name2 (gensym)))
-         (context (make-instance 'context
-                                 :timeout timeout
-                                 :actions 
-                                 ;; XXX add stuff to delete rules to actions list
-                                 (append
-                                  (list
-                                   (lambda (context)
-                                     (declare (ignore context))
-                                     (progn
-                                       ;(kill (get-rule *ruleset* match1-rule-name))
-                                       (kill (get-rule *ruleset* match2-rule-name)))))
-                                  missing-actions))))
+         (context (context
+                   :timeout timeout
+                   :actions 
+                   ;; XXX add stuff to delete rules to actions list
+                   (append
+                    (list
+                     (lambda (context)
+                       (declare (ignore context))
+                       (kill (get-rule *ruleset* match2-rule-name))))
+                    missing-actions))))
     ;; rule to match first message and create rule to match second message
-  (make-instance 'rule
-                 :name match1-rule-name ; does this need a name?
-                 :continuep continuep
-                 :environment environment
-                 :match match1
-                 ;:timeout timeout
-                 :actions
-                 (append
-                  (list
-                   ;; make a rule to ignore match1 until match2 is seen
-                   (lambda (message)
-                     (rule-before
-                      (suppress-until match1 match2)))
-                   ;; make a rule to trigger actions2 when match2 is seen
-                   (lambda (message)
-                     (rule-before
-                      (make-instance 'rule
-                                     :name match2-rule-name
-                                     :match match2
-                                     :timeout timeout
-                                     :delete-rule (lambda (message) t)
-                                     :actions actions2))))
-                  actions1))))
+    (rule
+     :name match1-rule-name ; does this need a name?
+     :continuep continuep
+     :environment environment
+     :match match1
+     :actions
+     (append
+      (list
+       ;; make a rule to ignore match1 until match2 is seen
+       (lambda (message)
+         (declare (ignore message))
+         (rule-before
+          (suppress-until match1 match2)))
+       ;; make a rule to trigger actions2 when match2 is seen
+       (lambda (message)
+         (declare (ignore message))
+         (rule-before
+          (rule
+           :name match2-rule-name
+           :match match2
+           :timeout timeout
+           :delete-rule (lambda (message) 
+                          (declare (ignore message))
+                          t)
+           :actions actions2))))
+      actions1))))
 
 ;; XXX don't like this!
 (defun long-message (long actions-list &key name environment continuep)
@@ -208,17 +203,17 @@
 
 (defmethod gather-into (match (context context) &key name environment continuep)
   "gather messages matching match into the given context"
-  (make-instance 'rule
-                 :name name
-                 :match match
-                 ;; the rule should die when the context does
-                 :timeout (timeout context)
-                 :environment environment
-                 :continuep continuep
-                 :actions
-                 (list
-                  (lambda (message)
-                    (add-to-context context message)))))
+  (rule
+   :name name
+   :match match
+   ;; the rule should die when the context does
+   :timeout (timeout context)
+   :environment environment
+   :continuep continuep
+   :actions
+   (list
+    (lambda (message)
+      (add-to-context context message)))))
                  
 (defmethod gather-into (match context &key name environment continuep)
   "gather messages matching match into the named context"
@@ -238,8 +233,7 @@
 
 (defun gather-related (matchlist timeout actions &key names environment continuep)
   "gather messages matching one of the functions in the match list into a context.  When the timeout is exceeded, run the context actions provided."
-  (let ((context (make-instance
-                  'context
+  (let ((context (context
                   :timeout (+ *now* (* timeout INTERNAL-TIME-UNITS-PER-SECOND))
                   :actions actions)))
     (if names
@@ -263,12 +257,10 @@
 ;; throttle action.
 (defmacro throttle (timeout &key name continuep environment)
   "filter out messages that match the match function of this rule until the timeout is exceeded"
-  (let ((a (gensym))
-        (b (gensym))
-        (c (gensym)))
-    `(lambda (,a ,b ,c)
+  (let ((message (gensym)))
+    `(lambda (,message)
       (rule-before
-       (make-instance 'rule
+       (rule
         :name ,name
         :continuep ,continuep
         :environment ,environment

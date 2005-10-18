@@ -26,9 +26,7 @@
 (when +debug+
   (defmethod (setf dead-p) :after (new-value (killable-item killable-item))
     (declare (ignore new-value))
-    (when
-        +debug+
-      (format t "killing item: ~A~%" killable-item))))
+    (LoGS-debug "killing item: ~A~%" killable-item)))
 
 ;; so we can "kill" NIL
 (defmethod (setf dead-p) (new-value (killable-item list)) 
@@ -36,7 +34,3 @@
 
 (defmethod kill ((killable-item killable-item))
   (setf (dead-p killable-item) t))
-
-;; what in the heck does this do? 
-;(defmethod kill (item)
-;  (setf (dead-p item) t))

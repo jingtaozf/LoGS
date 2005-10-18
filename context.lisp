@@ -17,81 +17,65 @@
 
 (in-package :LoGS)
 
+(defclass context (limited-collection timeout-object relative-timeout-object killable-item)
+  ((actions 
+    :initarg :actions
+    :initform ()
+    :accessor actions
+    :documentation "A list of functions to call when the context dies")
+   (max-lines 
+    :initarg :max-lines
+    :initform ()
+    :accessor max-lines
+    :documentation 
+    "An artificial limit on the number of lines this context can hold")
+   (min-lines 
+    :initarg :min-lines
+    :initform ()
+    :accessor min-lines
+    :documentation 
+    "The minumum number of lines in the context for it to run its actions.")
+   (lives-after-timeout 
+    :initarg :lives-after-timeout
+    :initform ()
+    :accessor lives-after-timeout))
+  (:documentation "A data structure that stores messages."))
+
+;;; context name/alias related stuff
 (defvar *contexts-hash* (make-hash-table :test #'equal)
   "a hash to hold all of their contexts so that we can find them by name.")
 
 (defvar *contexts-alias-hash* (make-hash-table :test #'equal))
 
-(defvar *contexts* (make-instance 'doubly-linked-list)
-  "The current set of contexts.")
+;; context name hash manipulation stuff
+(defmethod context-hash-name ((context context))
+  (gethash (name context) *contexts-hash*))
 
-(defclass context (limited-collection timeout-object relative-timeout-object killable-item)
-  ((actions :initarg :actions
-                  :initform ()
-                  :accessor actions
-                  :documentation "A list of functions to call when the context dies")
-   (max-lines :initarg :max-lines
-              :initform ()
-              :accessor max-lines
-              :documentation "An artificial limit on the number of lines this context can hold")
+(defmethod context-hash-name (context)
+  (gethash context *contexts-hash*))
 
-   (min-lines :initarg :min-lines
-              :initform ()
-              :accessor min-lines
-              :documentation "The minumum number of lines in the context for it to run its actions.")
+(defmethod set-context-hash-name ((context1 context) (context2 context))
+  (setf (gethash (name context1) *contexts-hash*) context2))
 
-   (lives-after-timeout :initarg :lives-after-timeout
-                        :initform ()
-                        :accessor lives-after-timeout))
-  (:documentation "A data structure that stores messages."))
+(defmethod set-context-hash-name (context1 (context2 context))
+  (setf (gethash context1 *contexts-hash*) context2))
+   
+(defsetf context-hash-name set-context-hash-name)
 
-;; when createing an instance of a context,
-;; if a context with the same name already exists, return it
-;; else, return a new instance with that name
-(defmethod make-instance :around ((instance (eql 'CONTEXT)) &rest rest &key name &allow-other-keys)
-  (declare (ignore rest))
-  (progn
-    (when +debug+ 
-      (if (and name (get-context name))
-          (format t "a context named ~A already exists~%" name)))
-    (or
-     (when name
-       (get-context name))
-     (let ((inst (call-next-method)))
-       (setf (gethash (name inst) *contexts-hash*) inst)))))
+;; context alias hash manipulation stuff
+(defmethod context-hash-alias ((context context))
+  (gethash (name context) *contexts-alias-hash*))
 
-;; after we initialize the context, put it into the contexts collection
-(defmethod initialize-instance :after ((instance context) &rest rest)
-  (declare (ignore rest))
-  (progn
-    (enqueue *contexts* instance)
-    (setf (gethash (name instance) *contexts-hash*) instance)))
+(defmethod context-hash-alias (context)
+  (gethash context *contexts-alias-hash*))
 
-(defgeneric delete-context (context)
-  (:documentation "remove a context from the namehash."))
+(defmethod set-context-hash-alias ((context1 context) (context2 context))
+  (setf (gethash (name context1) *contexts-alias-hash*) context2))
 
-(defmethod delete-context ((context context))
-  (delete-context (name context)))
+(defmethod set-context-hash-alias (context1 (context2 context))
+  (setf (gethash context1 *contexts-alias-hash*) context2))
 
-(defmethod delete-real-context ((context t))
-  (when context
-    (when +debug+ (format t "deleting context: ~A~%" context))
-    (let ((c (gethash context *contexts-hash*)))
-      (when c
-        (kill c)
-        (dll-delete *contexts* c)
-        (remhash context *contexts-hash*)
-        (dll-delete *timeout-object-timeout-queue* c)
-        (dll-delete *relative-timeout-object-timeout-queue* c)))))
-
-; delete a context by name
-;; if its in the alias, remove that
-;; else, remove the actual context (assuming that exists)
-(defmethod delete-context ((context t))
-  (when context
-    (if (gethash context *contexts-alias-hash*)
-        (remhash context *contexts-alias-hash*)
-        (delete-real-context context))))
+(defsetf context-hash-alias set-context-hash-alias)
 
 (defgeneric alias-context (context alias)
   (:documentation "give a context an alias"))
@@ -102,6 +86,62 @@
 (defmethod alias-context (context alias)
   (setf (gethash alias *contexts-alias-hash*) 
         (get-context context)))
+
+(defvar *contexts* (make-instance 'doubly-linked-list)
+  "The current set of contexts.")
+
+;; reset things
+
+(defun reset-contexts-hash () (setf *contexts-hash* (make-hash-table :test #'equal)))
+
+(defun reset-contexts-alias-hash () (setf *contexts-alias-hash* (make-hash-table :test #'equal)))
+
+(defun reset-contexts () (setf *contexts* (make-instance 'doubly-linked-list)))
+
+(defun clear-contexts ()
+  "remove all contexts"
+  (progn
+    (reset-contexts-hash)
+    (reset-contexts-alias-hash)
+    (reset-contexts)))
+
+;; after we initialize the context, put it into the contexts collection
+(defmethod initialize-instance :after ((instance context) &rest rest)
+  (declare (ignore rest))
+  (register-context instance))
+
+(defmethod register-context ((context context))
+  (enqueue *contexts* context)
+  (setf (context-hash-name context) context))
+
+(defmethod unregister-context ((context context))
+  (dll-delete *contexts* context)
+  (remhash (name context) *contexts-hash*))
+
+(defgeneric delete-context (context)
+  (:documentation "remove a context from the namehash."))
+
+(defmethod delete-context ((context context))
+  (delete-context (name context)))
+
+(defmethod delete-real-context ((context t))
+  (when context
+    (LoGS-debug "deleting context: ~A~%" context)
+    (let ((c (context-hash-name context)))
+      (when c
+        (kill c)
+        (unregister-context c)
+        (dll-delete *timeout-object-timeout-queue* c)
+        (dll-delete *relative-timeout-object-timeout-queue* c)))))
+
+; delete a context by name
+;; if its in the alias, remove that
+;; else, remove the actual context (assuming that exists)
+(defmethod delete-context ((context t))
+  (when context
+    (if (context-hash-alias context)
+        (remhash context *contexts-alias-hash*)
+        (delete-real-context context))))
 
 (defgeneric remove-context-if-stale (context time)
   (:documentation "remove a context if it is stale."))
@@ -116,8 +156,8 @@
 
 (defmethod get-context (name)
   (or
-   (gethash name *contexts-alias-hash*)
-   (gethash name *contexts-hash*)))
+   (context-hash-alias name)
+   (context-hash-name name)))
 
 (defgeneric add-to-context (name message)
   (:documentation "Add a message to a context with the given name."))
@@ -131,20 +171,17 @@
 (defmethod add-to-context ((context context) (message message))
   (add-item context message))
 
-;; what about adding a context to a context?
-
 (defmethod add-to-context ((context context) (add-context context))
   (progn
-    (when +debug+
-      (format t "adding context: ~A to context: ~A~%" add-context context))
+    (LoGS-debug "adding context: ~A to context: ~A~%" add-context context)
     (loop for i from 0 below (ecount add-context) 
        do
          (add-to-context context (aref (data add-context) i)))))
 
 (defmethod add-item :after ((context context) item &rest rest)
   (declare (ignore rest))
-  (let ((max-lines (max-lines context)))
-    (when (and max-lines (> (ecount context) max-lines))
+  (with-slots (max-lines ecount) context
+    (when (and max-lines (> ecount max-lines))
       (expire-context context))))
 
 ;; run a context's actions then delete it.
@@ -152,38 +189,21 @@
   (:documentation "cause a context to run its actions, then be deleted"))
 
 (defmethod expire-context ((context context))
-  (let ((min-lines (min-lines context)))
-  
-    (when +debug+ (format t "expiring context: ~A named: ~A~%" 
-                          context (name context)))
+  (with-slots (min-lines ecount) context
+    
+    (LoGS-debug "expiring context: ~A named: ~A~%" context (name context))
   
     (when (or 
            (not min-lines)
-           (> (ecount context) min-lines))
+           (> ecount min-lines))
       (run-context-actions context))
            
     (if
      (lives-after-timeout context)
      (update-relative-timeout context)
      (progn
-       (when +debug+
-         (format t "deleteing context: ~A" context))
+       (LoGS-debug "deleteing context: ~A" context)
        (delete-context context)))))
-
-(defmethod initialize-instance
-    :around
-    ((c context)
-     &rest args
-     &key name
-     &allow-other-keys)
-    (declare (ignore args))
-    (if (gethash name *contexts-hash*) ; name exits
-        (call-next-method)
-        (progn
-          (enqueue *contexts* c)
-          (call-next-method)
-          (setf (gethash name *contexts-hash*)
-                c))))
 
 (defgeneric run-context-actions (context)
   (:documentation
@@ -191,22 +211,20 @@
 
 (defmethod run-context-actions ((context context))
   "Run the actions associated with a context."
-  (progn
-    (when +debug+
-      (format t "running context actions~%"))
-    (when (actions context)
+  (LoGS-debug "running context actions~%")
+  (with-slots (actions) context
+    (when actions
       (mapcar 
        (lambda (x) 
          (declare (function x))
          (funcall x context))
-       (actions context)))))
+       actions))))
 
  (defmethod check-limits :around ((context context))
    (or (dead-p context)
        (let ((ret (call-next-method)))
          (when ret 
-           (expire-context context)
-           (dll-delete *contexts* context))
+           (expire-context context))
          ret)))
 
 (defmethod destroy-context-if-exceeded-limit ((context context))
@@ -232,43 +250,25 @@
 ;; apparently the standard frowns upon not returning a *NEW* instance from
 ;; make-instance.  Sometimes compilers are too smart and cause a new instance
 ;; to always be returned. 
+
 (defmacro ensure-context (&rest rest &key name &allow-other-keys)
-  `(progn
-    (when +debug+ 
-      (if (and ,name (get-context ,name))
-          (format t "a context named ~A already exists at~%" ,name (get-context ,name))))
-    (or
-     (when ,name
-       (get-context ,name))
-     (make-instance 'context
-      ,@rest))))
+  (let ((context-name (gensym)))
+    `(let ((,context-name (get-context ,name)))
+       (LoGS-debug "a context named ~A already exists at~%" 
+                   ,name ,context-name)
+       (or ,context-name
+           (make-instance 'context ,@rest)))))
 
 ;; expire all remaining contexts
 
 (defun expire-all-contexts ()
     (let ((context (head *contexts*)))
       (loop 
-
          when context
          do
            (let ((next (rlink context)))
              (expire-context (data context))
              (setq context next))
-                        
          when (not context)
          do
            (return t))))
-
-(defun reset-contexts-hash () (setf *contexts-hash* (make-hash-table :test #'equal)))
-
-(defun reset-contexts-alias-hash () (setf *contexts-alias-hash* (make-hash-table :test #'equal)))
-
-(defun reset-contexts () (setf *contexts* (make-instance 'doubly-linked-list)))
-
-(defun clear-contexts ()
-  "remove all contexts"
-  (progn
-    (reset-contexts-hash)
-    (reset-contexts-alias-hash)
-    (reset-contexts)))
-

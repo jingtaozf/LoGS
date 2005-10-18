@@ -26,11 +26,6 @@
              :documentation "a hash table to hold all of the rules in this ruleset"))
   (:documentation "A class to store rules."))
 
-(defmethod enqueue :around ((ruleset ruleset) (rule rule))
-  (progn
-    (setf (gethash (name rule) (elements ruleset)) rule)
-    (call-next-method)))
-
 (defmethod dll-insert :around ((ruleset ruleset)
                                neighbor-item 
                                (insert-item rule) &key direction)
@@ -42,9 +37,9 @@
 ;; find a rule in the ruleset by its name
 (defmethod get-rule ((ruleset ruleset) (name t))
   (let ((rule (gethash name (elements ruleset))))
-    (if +debug+
-        (or rule (format t "can't find rule named: ~A in ruleset: ~A~%" name ruleset))
-        rule)))
+    (unless rule
+      (LoGS-debug "can't find rule named: ~A in ruleset: ~A~%" name ruleset))
+    rule))
 
 ;; check rule for when the rule itself is a ruleset!
 (defmethod check-rule ((ruleset ruleset) (message message))
@@ -59,24 +54,25 @@
         (if (functionp match)
             (funcall match message)
             match)
+        (declare (ignore sub-matches))
 
-      (when delete-rule 
-        (and
-         (funcall delete-rule message)
-         (if no-delete-rule
-             (funcall no-delete-rule message)
-             t)
-         (setf (dead-p ruleset) t)
-         (dll-delete *ruleset* ruleset)))
-
-      (when matches
-        (when +enable-rule-count+
-          (when *count-rules*
-            (incf (match-count ruleset))))
-        (if (or (not (functionp no-match))
-                (not (funcall no-match message)))
-            (let ((*ruleset* ruleset))
-              (check-rules message *ruleset*)))))))
+        (when delete-rule 
+          (and
+           (funcall delete-rule message)
+           (if no-delete-rule
+               (funcall no-delete-rule message)
+               t)
+           (setf (dead-p ruleset) t)
+           (dll-delete *ruleset* ruleset)))
+        
+        (when matches
+          (when +enable-rule-count+
+            (when *count-rules*
+              (incf (match-count ruleset))))
+          (if (or (not (functionp no-match))
+                  (not (funcall no-match message)))
+              (let ((*ruleset* ruleset))
+                (check-rules message *ruleset*)))))))
 
 (defgeneric check-rules (message ruleset)
   (:documentation
@@ -87,15 +83,7 @@ both matches and continuep is nil."))
 (defmethod check-rules ((message message) (ruleset ruleset))
   (let ((head (head ruleset))
         (*ruleset* ruleset))
-    (when
-        +debug+
-      (format t "checking rules: ~A ~A~%" (name ruleset) (message message)))
-
-    ;; (when +enable-rule-count+
-;;       (when *count-rules*
-;;         (incf (match-try ruleset))))
-
-    
+    (LoGS-debug "checking rules: ~A ~A~%" (name ruleset) (message message))
     (let 
         ((didmatch
           
@@ -109,14 +97,13 @@ both matches and continuep is nil."))
                  (if (dead-p data)
                      (dll-delete ruleset *current-rule*)
                      (progn
-                       (when +debug+ (format t "checking rule~%"))
+                       (LoGS-debug "checking rule~%")
                        (and 
                         (multiple-value-bind
                               (matchp bind-list)
                             (check-rule data message)
                           (declare (ignore bind-list))
-                          (when +debug+
-                            (format t "match is: ~A~%" matchp))
+                          (LoGS-debug "match is: ~A~%" matchp)
                           (setq found matchp))
                         
                         (unless (continuep data)
@@ -126,13 +113,10 @@ both matches and continuep is nil."))
              ;; there are no (more) rules in this ruleset
              when (not *current-rule*)
              do
-               (when +debug+
-                 (format t "no more rules~%"))
+               (LoGS-debug "no more rules~%")
                (return found))))
       (when didmatch
-        (when +debug+
-          (format t "updating ruleset's relative timeout~%"))
-        
+        (LoGS-debug "updating ruleset's relative timeout~%")
         (update-relative-timeout ruleset))
       didmatch)))
 

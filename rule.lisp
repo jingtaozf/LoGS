@@ -57,14 +57,8 @@
   (:documentation "see if the given rule has exceeded one of its limits (currently only timeout)"))
 
 (defmethod rule-exceeded-limit-p ((rule rule) time)
-  (when (timeout rule)
-    (> time (timeout rule))))
-
-;; check-rule should return 2 values, whether the rule matched
-;; and whether the you should continue.
-
-(defgeneric check-rule (rule message)
-  (:documentation "see if the given message matches the rule, if so, run the rule's actions."))
+  (with-slots (timeout) rule
+    (> time timeout)))
 
 (defmethod rule-matches-p ((rule rule) (message message))
   (with-slots (match no-match)
@@ -73,13 +67,13 @@
     ;; do bookkeeping
     (when +enable-rule-count+
       (when *count-rules*
-        (when +debug+ (format t "incrementing rule try count~%"))
+        (LoGS-debug "incrementing rule try count~%")
         (incf (match-try rule))))
 
-    ;; is this code right? XXX check me XXX  (sub-matches?)
     (multiple-value-bind (matches sub-matches)
         (cond ((functionp match) (funcall match message))
               (t match))
+        (declare (ignore sub-matches))
 
       (and matches
            (not (cond ((functionp no-match) (funcall no-match message))
@@ -88,7 +82,7 @@
            (or
             (when +enable-rule-count+
               (when *count-rules*
-                (when +debug+ (format t "incrmenting rule match count~%"))
+                (LoGS-debug "incrmenting rule match count~%")
                 (incf (match-count rule))))
               t)
            (values matches sub-matches)))))
@@ -110,11 +104,16 @@
                 (t
                  ,body-result)))))))
 
+;; check-rule should return 2 values, whether the rule matched
+;; and whether the you should continue.
+(defgeneric check-rule (rule message)
+  (:documentation "see if the given message matches the rule, if so, run the rule's actions."))
+
 (defmethod check-rule ((rule rule) (message message))
   (unless (dead-p rule)
 
-    (when +debug+ 
-        (format t "checking rule: ~A~%against message: ~A~%" (name rule) (message message)))
+    (LoGS-debug "checking rule: ~A~%against message: ~A~%" 
+                (name rule) (message message))
 
     (with-slots (environment) rule
       (in-given-environment 
@@ -152,11 +151,10 @@
          (declare (function action))
          
          (progn
-           (when +debug+
-             (format t "running action ~A in env ~A with args: ~A~%"
+           (LoGS-debug "running action ~A in env ~A with args: ~A~%"
                      action 
                      environment
-                     message))
+                     message)
 
            (if (listp environment)
                (in-given-environment
@@ -168,8 +166,7 @@
                 action
                 message))
 
-           (when +debug+ 
-             (format t "ran action~%"))))
+           (LoGS-debug "ran action~%")))
        actions))))
 
 (defmethod check-limits :around ((rule rule))
@@ -177,12 +174,9 @@
     (when ret
       (setf (dead-p rule) t))))
 
-;  (and (rule-exceeded-limit-p rule *now*)
-;       (setf (dead-p rule) t)))
-
 (defmethod (setf dead-p) :after (new-value (rule rule))
-  (when (and +debug+ (eq new-value t))
-    (format t "killing rule: ~A name: ~A~%" rule (name rule))))
+  (when (eq new-value t)
+    (LoGS-debug "killing rule: ~A name: ~A~%" rule (name rule))))
 
 (defmethod display-count ((rule rule) stream)
   (format stream "~A ~A ~A~%" (name rule) (match-count rule) (match-try rule)))

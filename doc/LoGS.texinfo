@@ -481,6 +481,7 @@ New Mexico
 @item The loganalysis mailing list
 @item John P. Rouillard
 @item Jon Stearley
+@item Aron Warren
 @item everyone else we forgot...
 @end itemize
 

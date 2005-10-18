@@ -28,7 +28,7 @@
 
 (defmethod update-relative-timeout ((relative-timeout-object relative-timeout-object))
   (with-slots (relative-timeout) relative-timeout-object
-    (when +debug+ (format t "updating relative timeout for object: ~A~%" relative-timeout-object))
+    (LoGS-debug "updating relative timeout for object: ~A~%" relative-timeout-object)
     (when relative-timeout
       (setf (next-timeout relative-timeout-object)
             (+ *now* (* INTERNAL-TIME-UNITS-PER-SECOND 
@@ -56,20 +56,18 @@
     (setf (next-timeout relative-timeout-object)
           (+ *now* (* INTERNAL-TIME-UNITS-PER-SECOND 
                       (relative-timeout relative-timeout-object))))
-    (when +debug+ (format t "adding object: ~A to relative queue~%"
-                          relative-timeout-object))
+    (LoGS-debug "adding object: ~A to relative queue~%"
+                          relative-timeout-object)
     (enqueue *relative-timeout-object-timeout-queue*
-             relative-timeout-object)
-    ))
+             relative-timeout-object)))
 
 
 (defmethod (setf next-timeout) :after (new-value (relative-timeout-object relative-timeout-object))
   (progn
-    (when +debug+ (format t "removing object: ~A from relative queue~%"
-                          relative-timeout-object))
+    (LoGS-debug "removing object: ~A from relative queue~%"
+                          relative-timeout-object)
     (dll-delete *relative-timeout-object-timeout-queue* relative-timeout-object)
-    (when +debug+ (format t "adding object: ~A to relative queue~%"
-                          relative-timeout-object))
+    (LoGS-debug "adding object: ~A to relative queue~%" relative-timeout-object)
     (enqueue *relative-timeout-object-timeout-queue* relative-timeout-object)))
 
 (defmethod exceeded-relative-timeout-p ((relative-timeout-object relative-timeout-object) time)
@@ -79,11 +77,7 @@
       (> time next-timeout))))
 
 (defmethod check-limits OR ((relative-timeout-object relative-timeout-object))
-           
-           (if +debug+
-               (let ((ret (exceeded-relative-timeout-p relative-timeout-object *now*)))
-                 (format t "checking relative-timeout-object limits. ret: ~A~%"
-                         ret)
-                 ret)
-           (exceeded-relative-timeout-p relative-timeout-object *now*)))
+           (let ((ret (exceeded-relative-timeout-p relative-timeout-object *now*)))
+             (LoGS-debug "checking relative-timeout-object limits. ret: ~A~%" ret)
+             ret))
 

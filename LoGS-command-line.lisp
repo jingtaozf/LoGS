@@ -21,8 +21,7 @@
   (let ((*file-list* ()))
     (declare (special *file-list*))
     (progn
-      (when +debug+
-        (format t "processing options~%"))
+      (LoGS-debug "processing options~%")
       (PROCESS-OPTIONS opts args)
       (let ((len (length *file-list*)))
         (cond ((eq 1 len) (setf *messages* (car *file-list*)))

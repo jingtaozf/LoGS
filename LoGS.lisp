@@ -35,8 +35,8 @@
 ;#+cmu
 ;(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 65712128)
 
-#+sbcl
-(setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 65712128)
+;#+sbcl
+;(setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 65712128)
 
 ; Turn off gc messages
 #+cmu
@@ -69,7 +69,6 @@
 
 (in-package :LoGS)
 
-
 (defconstant +LoGS-version+ 
   (with-open-file 
       (file 
@@ -80,6 +79,10 @@
 
 ;; this is a constant so we can optimize out the checks for production runs
 (defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
+
+(defmacro LoGS-debug (message &rest rest)
+  `(when +debug+
+     (format t ,message ,@rest)))
 
 (defparameter *use-internal-real-time* t 
   "should LoGS use the internal-real-time?")
@@ -130,8 +133,6 @@
   "The rule currently being compared to the message.")
 (defvar *run-forever* ()
   "Setting this variable to non-NIL causes LoGS to not exit when there is no more input immediately available.")
-
-;; does nothing... yet.
 (defvar *run-before-exit* ()
   "a list of functions to call when LoGS is done running (before exiting).")
 
@@ -150,16 +151,14 @@
 (defun main ()
   (progn
     ;; process any command line options
-    (when +debug+
-      (format t "processing options~%"))
+    (LoGS-debug "processing options~%")
     (let ((args (get-application-args)))
       (process-command-line *opts* args))
     
     ;; write out PID if necessary
     (if *write-pid-to-file*
         (progn
-          (when +debug+ 
-            (format t "writing PID to file: ~A~%" *write-pid-to-file*))
+          (LoGS-debug "writing PID to file: ~A~%" *write-pid-to-file*)
           (let ((PID 
                  #+cmu
                   (unix:unix-getpid)))
@@ -173,10 +172,15 @@
     
     ;; process any files
     (process-files)
+    ;; call any exit functions
     (mapcar
      (lambda (function)
        (funcall function))
-     *run-before-exit*)))
+     *run-before-exit*)
+    ;; exit LoGS
+    (quit-LoGS)
+    ))
+
 
 ;; pretty much the former mainline
 ;; adding the option processing to the mainline made testing more difficult

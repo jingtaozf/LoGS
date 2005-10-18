@@ -55,8 +55,7 @@
       (cond
         ((equal direction :before)
          (progn
-           (when +debug+ 
-             (format t "inserting ~A into ~A before ~A~%" insert-item doubly-linked-list neighbor-item))
+           (LoGS-debug "inserting ~A into ~A before ~A~%" insert-item doubly-linked-list neighbor-item)
            (when (llink neighbor-item)
              (setf (rlink (llink neighbor-item)) insert-item))
            (setf (rlink insert-item) neighbor-item)
@@ -67,8 +66,8 @@
              (setf (head doubly-linked-list) insert-item))))
         ((equal direction :after)
          (progn
-           (when +debug+
-             (format t "inserting ~A into ~A after ~A~%" insert-item doubly-linked-list neighbor-item))
+           (LoGS-debug "inserting ~A into ~A after ~A~%" 
+                       insert-item doubly-linked-list neighbor-item)
            (when (rlink neighbor-item)
              (setf (llink (rlink neighbor-item)) insert-item))
            (setf (llink insert-item) neighbor-item)
@@ -104,8 +103,8 @@
            (list-entries doubly-linked-list))
     (cond ((equal direction :before)
            (progn
-             (when +debug+
-               (format t "inserting item ~A into ~A before nil~%" insert-item doubly-linked-list))
+             (LoGS-debug "inserting item ~A into ~A before nil~%" 
+                         insert-item doubly-linked-list)
              (if (head doubly-linked-list)
                  (dll-insert doubly-linked-list (head doubly-linked-list) insert-item :direction direction)
                  (progn
@@ -113,8 +112,7 @@
                    (setf (tail doubly-linked-list) insert-item)))))
           ((equal direction :after)
            (progn
-             (when +debug+
-               (format t "inserting item ~A into ~A after nil~%" insert-item doubly-linked-list))
+             (LoGS-debug "inserting item ~A into ~A after nil~%" insert-item doubly-linked-list)
              (if (tail doubly-linked-list)
                  (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item :direction direction)
                  (progn

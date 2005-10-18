@@ -56,9 +56,8 @@
                (decode-universal-time newtime)
              (declare (ignore x xx xxx))
              (let ((ret (format () "~D~2,'0D~2,'0D" year month date)))
-               (when +debug+
-                 (format t "incrementing filename: ~A to filename: ~A~%"
-                         filename ret))
+               (LoGS-debug "incrementing filename: ~A to filename: ~A~%"
+                         filename ret)
                ret))))))))
 
 (defmethod get-line ((ff pbs-file-follower))
@@ -67,15 +66,13 @@ have reached end of the file, we check to see if there is a new inode
 associated with our filename. if there is, we start following that filename."
   (progn
     (when (not (filestream ff))
-      (when +debug+
-        (format t "starting file follower~%"))
+      (LoGS-debug "starting file follower~%")
       (start-file-follower ff))
     (if (peek-char nil (filestream ff) ())
         (read-line (filestream ff) nil)
         (let* ((next-filename (increment-filename (filename ff)))
                (next-inode (get-inode-from-filename next-filename)))
           (when next-inode
-            (when +debug+
-              (format t "opening next filename: ~A~%" next-filename))
+            (LoGS-debug "opening next filename: ~A~%" next-filename)
             (setf (filename ff) next-filename)
             (read-line (start-file-follower ff) ()))))))
