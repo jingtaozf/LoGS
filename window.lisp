@@ -57,8 +57,8 @@
     (call-next-method)))
 
 (defmethod add-item :before ((window window) item &rest rest)
-  (declare (ignore rest)
-  (remove-old window)))
+  (declare (ignore rest))
+  (remove-old window))
 
 (defmethod write-context ((window window) stream)
   (let ((current (head (data window))))

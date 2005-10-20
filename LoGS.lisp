@@ -135,6 +135,8 @@
   "Setting this variable to non-NIL causes LoGS to not exit when there is no more input immediately available.")
 (defvar *run-before-exit* ()
   "a list of functions to call when LoGS is done running (before exiting).")
+(defvar *opts* ()
+  "a list of command-line options that LoGS understands")
 
 (defgeneric check-limits (thing)
   (:method-combination OR)

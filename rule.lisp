@@ -73,8 +73,6 @@
     (multiple-value-bind (matches sub-matches)
         (cond ((functionp match) (funcall match message))
               (t match))
-        (declare (ignore sub-matches))
-
       (and matches
            (not (cond ((functionp no-match) (funcall no-match message))
                       (t no-match)))
@@ -156,23 +154,17 @@
                      environment
                      message)
 
-           (if (listp environment)
-               (in-given-environment
+           (in-given-environment
                 environment
                 action
                 message)
-               (in-given-environment
-                ()
-                action
-                message))
 
            (LoGS-debug "ran action~%")))
        actions))))
 
 (defmethod check-limits :around ((rule rule))
-  (let ((ret (call-next-method)))
-    (when ret
-      (setf (dead-p rule) t))))
+  (when (call-next-method)
+    (setf (dead-p rule) t)))
 
 (defmethod (setf dead-p) :after (new-value (rule rule))
   (when (eq new-value t)

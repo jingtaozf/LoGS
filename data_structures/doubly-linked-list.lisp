@@ -143,18 +143,25 @@
          (list-entries doubly-linked-list)) 
         insert-item))
 
- (defgeneric enqueue (data-structure item))
+ (defgeneric enqueue (data-structure item)
+   (:documentation "add the given item to the data structure (queue)"))
 
 (defmethod enqueue ((doubly-linked-list doubly-linked-list)
                     insert-item)
   (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item 
               :direction :after))
 
+(defgeneric dll-delete (doubly-linked-list item-to-delete)
+  (:documentation "remove the given item from the data structure (queue)"))
+
 (defmethod dll-delete ((doubly-linked-list doubly-linked-list)
                        item-to-delete)
   (let ((lookup (gethash item-to-delete (list-entries doubly-linked-list))))
     (when lookup
       (dll-delete doubly-linked-list lookup))))
+
+(defgeneric remove-item (remove-tiem)
+  (:documentation "unlink a dlli from its neighbors; cut it  out of the list"))
 
 (defmethod remove-item ((remove-item doubly-linked-list-item))
   (let ((before (llink remove-item))

@@ -48,10 +48,6 @@
                    (return (dll-insert pq x item :direction :after))))
                 (t (setf x (rlink x)))))))
 
-(defgeneric check-limits (thing)
-  (:method-combination OR)
-  (:documentation "Check to see if the object has exceeded one or more of its limits"))
-
 (defmethod check-limits OR ((pq priority-queue))
   (loop as dlli = (head pq)
         when t

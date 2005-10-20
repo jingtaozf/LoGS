@@ -295,9 +295,25 @@
 (defun match-regexp (regexp)
   "create a function that will match the given regular expression"
   (lambda (message)
-    (cl-ppcre::scan-to-strings
+    (cl-ppcre::scan
      regexp
      (message message))))
+
+(defun match-regexp-binding-list (regexp binding-list)
+  "create a function that will match the given regexp and return a match value and a list of bindings"
+  (lambda (message)
+    (multiple-value-bind (matches sub-matches)
+        (cl-ppcre::scan-to-strings regexp (message message))
+      (when matches
+        (unless (eql (length sub-matches) (length binding-list))
+          (error "binding and match length mis-match~%"))
+        (let ((count -1))
+          (mapcar
+           (lambda (var)
+             (incf count)
+             (list var (aref sub-matches count)))
+           binding-list))))))
+
 
 (defmacro match-regexp2 (regexp string &optional bind-list)
   (let ((thing (cons 'list 
@@ -310,4 +326,7 @@
       (,regexp ,string)
       (values
        t
-       ,thing))))  
+       ,thing))))
+
+(defmacro script-return-value-with-arglist (scriptname args)
+  `(script-return-value ,scriptname ,@args))

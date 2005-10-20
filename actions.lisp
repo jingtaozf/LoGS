@@ -32,6 +32,16 @@
     (excl:run-shell-command (format () "~A ~{ ~A~}" ,program ,args))
     ))
 
+;; like exec, but wait and return the return code from the program
+;; for when the exec is useful /for/ the return value
+(defmacro exec-returning-value (program &rest args)
+  `(lambda (messages) 
+    (declare (ignore messages))
+    #+cmu
+    (extensions:process-exit-code (extensions:run-program ,program ',args :wait t :output t))
+    #-cmu
+    (error "unimplemented~%")
+    ))
 
 ;; these allow us to abstract writing things to files.
 ;; this should simplify our rulesets considerably

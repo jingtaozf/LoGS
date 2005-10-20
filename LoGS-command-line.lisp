@@ -17,9 +17,9 @@
 
 (in-package :LoGS)
 
+(defvar *file-list* ())
+
 (defun process-command-line (opts args)
-  (let ((*file-list* ()))
-    (declare (special *file-list*))
     (progn
       (LoGS-debug "processing options~%")
       (PROCESS-OPTIONS opts args)
@@ -30,7 +30,7 @@
                    (setf *messages* (make-instance 'LoGS::multi-follower))
                    (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*))))))))
 
-(defvar *opts*
+(setf *opts*
   (list
    (make-instance 'cli-opt
                   :name "--no-internal-time"
@@ -56,33 +56,7 @@
                                    (read-from-string position)))
                                 (push ff *file-list*)))
                   :description "name of the file to process and optional position")
-
-   (make-instance 'cli-opt
-                  :name "--bfile"
-                  :arguments '("<filename>" "[position]")
-                  ;; XXX needs to change, get rid of *messages*
-                  :action #'(lambda (filename &optional position)
-                              (let ((ff (make-instance 'LoGS::Buffered-File-Follower 
-                                                       :FileName 
-                                                       filename)))
-                                ;; if position is specified, start there
-                                (when position
-                                  (when (not ff) (error "no ff~%"))
-                                  (LoGS::set-file-follower-position
-                                   ff
-                                   (read-from-string position)))
-                                (push ff *file-list*)))
-                  :description "name of the file to process and optional position"
-                  )
-   (make-instance 'cli-opt
-                  :name "--bufsize"
-                  :arguments '("<size>")
-                  ;; XXX needs to change, get rid of *messages*
-                  :action #'(lambda (size)
-                              (setf *default-ff-buffer-size* (read-from-string size)))
-                  :description "name of the file to process and optional position")
-   
-   (make-instance 'cli-opt
+      (make-instance 'cli-opt
                   :name "--PBS-file"
                   :arguments '("<filename>")
                   :action #'(lambda (filename &optional position)
