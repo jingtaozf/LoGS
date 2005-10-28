@@ -1,23 +1,23 @@
-; Logs extensible (common-lisp based) log/event analysis engine/language
-; Copyright (C) 2003-2005 James Earl Prewett
+;;;; Logs extensible (common-lisp based) log/event analysis engine/language
+;;;; Copyright (C) 2003-2005 James Earl Prewett
 
-; This program is free software; you can redistribute it and/or
-; modify it under the terms of the GNU General Public License
-; as published by the Free Software Foundation; either version 2
-; of the License, or (at your option) any later version.
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+;;;; This program is free software; you can redistribute it and/or
+;;;; modify it under the terms of the GNU General Public License
+;;;; as published by the Free Software Foundation; either version 2
+;;;; of the License, or (at your option) any later version.
+;;;;
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;;
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-(declaim (optimize (speed 0) (debug 3) (safety 3)))
+(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+;; (declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
