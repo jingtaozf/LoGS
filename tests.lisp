@@ -2065,6 +2065,31 @@
         (add-item window (make-instance 'message))
         (assert-non-nil (check-limits window)))))
 
+(deftest "parse-function returns function"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (lambda (message) 
+                                        (declare (ignore message))
+                                        t)))
+             (fn (parse-function parse-list))
+            (message (make-instance 'message :message "some message")))
+        (and (functionp fn)
+             (funcall fn message)))))
+
+(deftest "parse-function returns remaining"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let ((parse-list (list (lambda (message)
+                               (declare (ignore message))
+                               t)
+                         'a 'b 'c)))
+        (multiple-value-bind (fn rest)
+            (parse-function parse-list)
+          (equal '(a b c) rest)))))
+
+
 ;; a little slicker way of running all of the tests
 (defmacro run-categories (&rest rest)
   (let ((category (gensym))
@@ -2097,5 +2122,6 @@
  priority-queue-tests
  file-follower-tests
  window-tests
- cli-tests)
+ cli-tests
+ logic-tests)
 
