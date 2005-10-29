@@ -26,6 +26,9 @@
              :documentation "a hash table to hold all of the rules in this ruleset"))
   (:documentation "A class to store rules."))
 
+(defmacro ruleset (&rest rest)
+  `(make-instance 'ruleset ,@rest))
+
 (defmethod dll-insert :around ((ruleset ruleset)
                                neighbor-item 
                                (insert-item rule) &key direction)

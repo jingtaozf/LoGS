@@ -41,6 +41,9 @@
     :accessor lives-after-timeout))
   (:documentation "A data structure that stores messages."))
 
+(defmacro context (&rest rest)
+  `(ensure-context ,@rest))
+
 ;;; context name/alias related stuff
 (defvar *contexts-hash* (make-hash-table :test #'equal)
   "a hash to hold all of their contexts so that we can find them by name.")

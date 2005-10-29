@@ -17,25 +17,8 @@
 
 (in-package :LoGS)
 
-;;; i'm stealing lots of stuff from SEC here.
-;;; Risto did a good job!
-
 ;;; Basically, this file is here to make things a little higher-level
 ;;; than the LoGS core provides by itself.
-
-;; wrappers to call make-instance
-
-(defmacro rule (&rest rest)
-  `(make-instance 'rule ,@rest))
-
-(defmacro context (&rest rest)
-  `(ensure-context ,@rest))
-
-(defmacro ruleset (&rest rest)
-  `(make-instance 'ruleset ,@rest))
-
-(defmacro window (&rest rest)
-  `(make-instance 'window ,@rest))
 
 ;;; ways to ignore things
 

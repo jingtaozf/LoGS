@@ -53,6 +53,9 @@
                 :type integer))
   (:documentation "Rules associate messages with actions."))
 
+(defmacro rule (&rest rest)
+  `(make-instance 'rule ,@rest))
+
 (defgeneric rule-exceeded-limit-p (rule time)
   (:documentation "see if the given rule has exceeded one of its limits (currently only timeout)"))
 

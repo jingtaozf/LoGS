@@ -69,6 +69,10 @@
             "Buffered-SQL-Follower"))
           '(()
             ("rule" "ruleset" "actions" "Parlance" "LoGS-command-line"))
+          (list 
+           "Language"
+           (list
+            "Logic"))
           ))
         (LoGS-home (make-pathname :name () :type () :defaults (parse-namestring *load-truename*))))
     (mapcar 
