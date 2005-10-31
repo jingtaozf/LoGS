@@ -2161,6 +2161,42 @@
          (eql match-fn the-function)
          (funcall match-fn message)
          t))))
+
+(deftest "parse-match script returns matching script"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list 'script "true"))
+             (message  (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
+
+(deftest "false script returns nil"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list 'script "false"))
+             (message  (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (not (funcall match-fn message))
+         t))))
+
+(deftest "true script returns t"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list 'script "true"))
+             (message  (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
                     
 ;; a little slicker way of running all of the tests
 (defun run-categories (&rest rest)
