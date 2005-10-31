@@ -2089,6 +2089,52 @@
             (parse-function parse-list)
           (equal '(a b c) rest)))))
 
+(deftest "parse-regexp returns matching function"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list "the cat ran"))
+             (fn (parse-regexp parse-list))
+             (message (make-instance 'message :message "the cat ran")))
+        (and (functionp fn)
+             (and
+              (funcall fn message)
+              t)))))
+
+(deftest "parse-script returns matching function"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list "true"))
+             (fn (parse-script parse-list))
+             (message (make-instance 'message :message "doesn't matter")))
+        (and (functionp fn)
+             (funcall fn message)
+             t))))
+
+(deftest "parse-script returns remaining"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let ((parse-list (list "true"
+                         'a 'b 'c)))
+        (multiple-value-bind (fn rest)
+            (parse-script parse-list)
+          (and (functionp fn)
+               (equal '(a b c) rest))))))
+
+(deftest "parse-regexp returns remaining"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let ((parse-list (list "the cat ran"
+                         'a 'b 'c)))
+        (multiple-value-bind (fn rest)
+            (parse-regexp parse-list)
+          (and (functionp fn)
+               (equal '(a b c) rest))))))
+
+
 
 ;; a little slicker way of running all of the tests
 (defmacro run-categories (&rest rest)

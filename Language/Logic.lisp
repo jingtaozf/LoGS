@@ -128,9 +128,11 @@
    (lambda (message)
      (equal 0
             (if (listp (car list))
-                (funcall (script-return-value-with-arglist (caar list) (cadr list)) message)
-                (funcall (script-return-value (car list)) message))))
-     (cdr list)))
+                (funcall (exec-returning-value (caar list) (cadr list)) message)
+                (funcall (exec-returning-value (car list)) message))))
+   (cdr list)))
+
+
 
 
 (defun parse-regexp (list)

@@ -311,5 +311,10 @@
        t
        ,thing))))
 
+(defun script-return-value (scriptname &rest args)
+  (let ((fn (exec-returning-value scriptname args)))
+    (lambda (message)
+      (funcall fn message))))
+
 (defmacro script-return-value-with-arglist (scriptname args)
   `(script-return-value ,scriptname ,@args))
