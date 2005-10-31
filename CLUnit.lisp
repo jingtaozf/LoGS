@@ -201,6 +201,14 @@
 		(not (string-equal category (category test))))
 		*all-tests*))
 
+(defun list-test-categories ()
+  "return a list of all test categories"
+  (let (foo) 
+    (mapcar 
+     (lambda (test) (pushnew (org.ancar.clunit::category test) foo))
+     org.ancar.clunit::*all-tests*) 
+    foo))
+
 (defun run-category (category)
 	"Run all the tests in a given category."
 	(run-tests (filter-tests category)))
@@ -214,6 +222,7 @@
 	Will be used when we add input-form and output-form parameters to
 	deftest."
 	`#'(lambda () ,form))
+
 
 (defmacro deftest (description &key	category
 					test-fn

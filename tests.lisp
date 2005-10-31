@@ -2134,40 +2134,52 @@
           (and (functionp fn)
                (equal '(a b c) rest))))))
 
+(deftest "parse-match regexp returns matching function"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list 'regexp "the cat ran"))
+             (match-fn (parse-match parse-list))
+             (message (make-instance 'message :message "the cat ran")))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
 
-
+(deftest "parse-match function returns matching function"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((the-function (lambda (message)
+                                           (declare (ignore message))
+                                           t))
+             (parse-list (list 'function the-function))
+             (message  (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (eql match-fn the-function)
+         (funcall match-fn message)
+         t))))
+                    
 ;; a little slicker way of running all of the tests
-(defmacro run-categories (&rest rest)
-  (let ((category (gensym))
-        (passcount (gensym))
-        (failcount (gensym))
-        (passed (gensym))
-        (failed (gensym))
-        (all-passed (gensym)))
-    `(let ((,passcount 0)
-           (,failcount 0))
-       (mapcar
-        (lambda (,category)
-          (progn
-            (format t "running test category: ~A~%" ,category)
-            (multiple-value-bind (,all-passed ,failed ,passed)
-                (run-category ,category)
-              (declare (ignore ,all-passed))
-              (incf ,passcount ,passed)
-              (incf ,failcount ,failed))))
-        ',rest)
-       (format t "TOTALS: ~A tests run; ~A test passed; ~A test failed.~%"
-               (+ ,passcount ,failcount) ,passcount ,failcount))))
-  
-(run-categories 
- dummy-test
- linked-list-tests
- rule-tests
- context-tests
- ruleset-tests
- priority-queue-tests
- file-follower-tests
- window-tests
- cli-tests
- logic-tests)
+(defun run-categories (&rest rest)
+  (let ((passcount 0)
+         (failcount 0))
+     (mapcar
+      (lambda (category)
+        (progn
+          (format t "running test category: ~A~%" category)
+          (multiple-value-bind (all-passed failed passed)
+              (run-category category)
+            (declare (ignore all-passed))
+            (incf passcount passed)
+            (incf failcount failed))))
+      rest)
+     (format t "TOTALS: ~A tests run; ~A test passed; ~A test failed.~%"
+             (+ passcount failcount) passcount failcount)))
 
+(defun run-all-categories ()
+  (apply #'run-categories (org.ancar.clunit::list-test-categories)))
+
+(run-all-categories)
