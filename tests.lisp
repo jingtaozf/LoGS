@@ -2197,7 +2197,150 @@
          (functionp match-fn)
          (funcall match-fn message)
          t))))
-                    
+
+
+(defun true-func (message)
+  (declare (ignore message))
+  t)
+
+(defun false-func (message)
+  (declare (ignore message))
+  ())
+
+(deftest "true function returns t"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list 'function #'true-func))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
+
+(deftest "false function returns ()"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list 'function #'false-func))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (not (funcall match-fn message))
+         t))))
+
+(deftest "not of true function returns NIL"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'not 'function #'true-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (not (funcall match-fn message))
+         t))))
+
+(deftest "not of false function returns t"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'not 'function #'false-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
+
+(deftest "or of 2 falses is false"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'or 
+                                     'function #'false-func 
+                                     'function #'false-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (not (funcall match-fn message))
+         t))))
+
+(deftest "or of 2 trues is true"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'or 
+                                     'function #'true-func 
+                                     'function #'true-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
+
+(deftest "or of false and true is true"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'or 
+                                     'function #'false-func 
+                                     'function #'true-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
+
+(deftest "and of 2 trues is true"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'and
+                                     'function #'true-func 
+                                     'function #'true-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (funcall match-fn message)
+         t))))
+
+(deftest "and of true and false is false"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'and
+                                     'function #'true-func 
+                                     'function #'false-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (not (funcall match-fn message))
+         t))))
+
+(deftest "and of 2 falses is false"
+    :category 'logic-tests
+    :test-fn
+    (lambda ()
+      (let* ((parse-list (list (list 'and
+                                     'function #'false-func 
+                                     'function #'false-func)))
+             (message (make-instance 'message))
+             (match-fn (parse-match parse-list)))
+        (and
+         (functionp match-fn)
+         (not (funcall match-fn message))
+         t))))
+
+
+
 ;; a little slicker way of running all of the tests
 (defun run-categories (&rest rest)
   (let ((passcount 0)
