@@ -17,15 +17,24 @@
 
 (in-package :LoGS)
 
-(defun parse-rule-substatement (list)
-  (let ((head (car list))
-        (tail (cdr list)))
-    (cond ((eql head 'matching)
-           (parse-match tail))
-          ((eql head 'named)
-           (parse-name tail))
-          (t
-           (error "unknown sub-statement ~A~%" head)))))
+(defun parse-continuing (list)
+  (values
+   t
+   list))
+
+(defun parse-rule-stuff (list)
+  (apply #'make-instance 'rule
+         (loop while list 
+            nconcing
+              (destructuring-bind (head &rest tail)
+                  list
+                (let ((parse-func (get-parse-func head)))
+                  (if parse-func
+                      (multiple-value-bind (result left)
+                          (funcall parse-func tail)
+                        (setf list left)
+                        (list (car (get-affected-slots head)) result))
+                      (error "unknown sub-statement ~A~%" head)))))))
 
 ;; bogus utility funcs
 (defun true1 (message)
@@ -52,6 +61,7 @@
 ;; that returns the OR of calling the functions
 ;; with the given message
 (defun or-funcs (list)
+  "given a list of functions, produce a function that returns the logical OR of calling the functions with the given message"
   (lambda (message)
     (loop as function in list
          
@@ -63,6 +73,7 @@
          (return ()))))
   
 (defun and-funcs (list)
+  "given a list of functions, produce a function that returns the logical AND of calling the functions with the given message"
   (lambda (message)
     (loop as function in list
          
@@ -111,8 +122,8 @@
      left)))
 
 (defun parse-name (list)
-  (let ((head (car list))
-        (tail (cdr list)))
+  (destructuring-bind (head &rest tail)
+      list
     (if head 
         (values
          head tail)
@@ -131,9 +142,6 @@
                 (funcall (exec-returning-value (caar list) (cadr list)) message)
                 (funcall (exec-returning-value (car list)) message))))
    (cdr list)))
-
-
-
 
 (defun parse-regexp (list)
   (let ((regexp (car list))
@@ -178,3 +186,61 @@
               (cdr list))))
           (t
            (error "unknown match type: ~A~%" match-type)))))
+
+
+;;; set the keyword in a table
+;;; to a function, taking args evaluating body
+
+(defparameter *LoGS-statements* (make-hash-table))
+(defparameter *LoGS-statement-slot* (make-hash-table))
+
+(defmacro get-statement-func (statement)
+  `(gethash ,statement ,*LoGS-statements*))
+
+(defmacro get-statement-slot (statement)
+  `(gethash ,statement ,*LoGS-statement-slot*))
+
+(defmacro defstatement (key args slot &body body)
+  `(progn
+     (setf
+      (get-statement-slot ,key)
+      ,slot)
+     (setf
+      (get-statement-func ,key)
+      (lambda (,@args)
+        ,@body))))
+
+(defun parse-statement (name &rest rest)
+  (let ((func (get-statement-func name)))
+    (apply func rest)))
+
+;; (defstatement 'named (name &rest rest) :name
+;;   (values
+;;    name
+;;    rest))
+
+;; (defstatement 'matching (match-type &rest rest) :match
+;;   (if (listp match-type)
+;;       (values
+;;        (parse-match-list match-type)
+;;        rest)
+;;       (cond ((eql 'function match-type)
+;;              (values 
+;;               (car rest)
+;;               (cdr rest)))
+;;             (t
+;;             (error "unimplemented match type: ~A~%" match-type)))))
+
+
+;; (defstatement 'rule (&rest rest) ()
+;;   (apply #'make-instance
+;;          (nconc 
+;;           '(rule)
+;;           (loop while rest 
+;;              nconcing
+;;                (multiple-value-bind (statement-val remaining)
+;;                    (apply #'parse-statement rest)
+;;                  (let ((thing (car rest)))
+;;                    (setf rest remaining)
+;;                    (list (get-statement-slot thing)
+;;                          statement-val)))))))

@@ -17,6 +17,8 @@
 
 (in-package :LoGS)
 
+(declaim (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 3)))
+
 ;;; a message class.
 (defclass message () 
   ((message :initarg :message :accessor message :initform ())

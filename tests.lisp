@@ -24,12 +24,12 @@
 ;; UGH!
 #+(or allegro clisp lispworks)
 (set-dispatch-macro-character #\# #\$
-                              (lambda(s c n)
+                              (lambda (s c n)
                                 (let ((thing (read s nil (values) t))) ())))
 
 #+(or allegro clisp lispworks)
 (set-dispatch-macro-character #\# #\_
-                              (lambda(s c n)
+                              (lambda (s c n)
                                 (let ((thing (read s nil (values) t))) ())))
 
 ;; this is /brain-dead/ 
@@ -42,6 +42,8 @@
       (unix:unix-rename filename newname)
       #+(or clisp sbcl allegro openmcl lispworks)
       (rename-file filename newname)
+      #-(or cmu clisp sbcl allegro openmcl lispworks)
+      (error "unimplemented with this Lisp~%")
       newname)))
 
 (defvar *do-error* t)
@@ -55,6 +57,27 @@
   (#_unlink (ccl::make-cstring filename))
   #+(or clisp lispworks)
   (delete-file filename))
+
+(defmacro with-temporary-file (stream filename open-forms closed-forms)
+  `(unwind-protect
+        (progn
+          (with-open-file (,stream ,filename :direction :output 
+                                   :if-exists :overwrite
+                                   :if-does-not-exist :create)
+            (progn
+              ,@open-forms))
+          (progn
+            ,@closed-forms))
+     (remove-file ,filename)))
+
+(defmacro print-to-file (filename format &rest args)
+  `(with-open-file (,stream ,filename :direction :output
+                            :if-exists :overwrite
+                            :if-does-not-exist :create)
+     (format t "filename: ~A~%" ,FILENAME)
+     (format t ,format ,@args)))
+
+
 
 (defun assert-equal (a b &key test)
   (not 
@@ -107,7 +130,6 @@
 (deftest "foo"
     :category 'dummy-test
     :test-fn (lambda () t))
-
 ;; linked list tests
 
 (deftest "item inserted into a linked list with after and () neighbor is tail"
@@ -465,8 +487,10 @@
     :test-fn
     (lambda ()
       (let ((ruleset (make-instance 'ruleset :match #'match-all))
-            (message (make-instance 'message :message "test message")))
-        (not (check-rule ruleset message)))))
+            (message (make-instance 'message :message "test message"))
+            (retval ()))
+        (setf retval (not (check-rule ruleset message)))
+        retval)))
 
 (deftest "matching ruleset with non-matching rules does not match"
     :category 'ruleset-tests
@@ -561,7 +585,15 @@
             (rule (make-instance 'rule :match #'match-none))
             (message (make-instance 'message :message "test message")))
         (enqueue ruleset rule)
-        (not (check-rules message ruleset)))))
+        ;; simulate process-files2
+        (let ((retval ()))
+          (tagbody
+             (setf retval (not (check-rules message ruleset)))
+           next-message
+             (format t "done~%"))
+
+          retval
+             ))))
 
 (deftest "check-rules finds match in second rule"
     :category 'rule-tests
@@ -673,29 +705,18 @@
             (and (gethash r1 (list-entries ruleset))
                  (gethash r3 (list-entries ruleset)))))))))
 
-
-;;; XXX FIXME XXX
 (deftest "new file-follower gets a line"
     :category 'file-follower-tests
     :test-fn
     (lambda ()
       (let* ((testfile "testfile-new-ff")
-             (ff ()))
-        ;; open the file the first time. overwrite it if it exists.
-        (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :overwrite
-                                       :if-does-not-exist :create)
-          ;; put a line into it.
-          (format output-stream "this is a line~%"))
-
-        ;; open the filefollower for input
-        (setf ff (make-instance 'file-follower :filename testfile))
-
-        (let ((line (get-line ff)))
-          ;; kill of the temp file
-          (close (filestream ff))
-          (remove-file testfile)
-          (assert-non-nil line)))))
+             ff)
+        (with-temporary-file output-stream testfile
+          ((format output-stream "this is a line~%"))
+          ((setf ff (make-instance 'file-follower :filename testfile))
+           (let ((line (get-line ff)))
+             (close (filestream ff))
+             (assert-non-nil line)))))))
 
 (deftest "file follower returns nil with no input"
     :category 'file-follower-tests
@@ -812,28 +833,26 @@
     (lambda ()
       (let* ((testfile "testfile-correct-series")
              (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
-        (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :SUPERSEDE
-                                       :if-does-not-exist :create)
-          (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
-        (let* ((ff (make-instance 'file-follower :filename testfile))
-               (messages 
-                (mapcar 
-                 (lambda (x) 
-                   (declare (ignore x))
-                   (get-logline ff)) 
-                 file-lines)))
-          (let ((result
-                 (loop as q in 
-                      (mapcar (lambda (x y) (equal X (message Y)))
-                              file-lines messages)
-                      do
-                      (or q (return ()))
-                      finally
-                      (return t))))
-            (close (filestream ff))
-            (remove-file testfile)
-            (assert-non-nil result))))))
+        (with-temporary-file 
+            output-stream testfile 
+            ((mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
+            ((let* ((ff (make-instance 'file-follower :filename testfile))
+                    (messages 
+                     (mapcar 
+                      (lambda (x) 
+                        (declare (ignore x))
+                        (get-logline ff)) 
+                      file-lines)))
+               (let ((result
+                      (loop as q in 
+                           (mapcar (lambda (x y) (equal X (message Y)))
+                                   file-lines messages)
+                         do
+                           (or q (return ()))
+                         finally
+                           (return t))))
+                 (close (filestream ff))
+            (assert-non-nil result))))))))
 
 (deftest "get-rule returns the rule"
     :category 'rule-tests
@@ -859,8 +878,10 @@
     (lambda ()
       (let* ((*now* 48)
              (context (ensure-context :relative-timeout 1)))
-        (context-exceeded-limit-p context (+ *now* 1
-                                             (* INTERNAL-TIME-UNITS-PER-SECOND 1))))))
+        (context-exceeded-limit-p 
+         context 
+         (+ *now* 1
+            (* INTERNAL-TIME-UNITS-PER-SECOND 1))))))
 
 (deftest "contexts that don't have timeouts don't exceed limits"
     :category 'context-tests
@@ -2006,28 +2027,27 @@
              (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
       
         ;; write the file
-        (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :SUPERSEDE
-                                       :if-does-not-exist :create)
-          (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
-      
-        (let ((*messages* 
-               (make-instance 'spawn
-                              :spawnprog "/bin/cat"
-                              :spawnargs (list
-                                          testfile)))
-              (testval t))
-        
-          ;; check to see that the output of the cat process
-          ;; matches the stuff we wrote to the file
-          (mapcar 
-           (lambda (x) 
-             (let ((message (get-logline *messages*)))
-               (or (equal (message message) x)
-                   (setq testval ()))))
-           file-lines)
-          (remove-file testfile)
-          (assert-non-nil testval)))))
+        (with-temporary-file output-stream testfile 
+                             ((mapcar 
+                               (lambda (x) 
+                                 (format output-stream "~A~%" x)) 
+                               file-lines))
+                             ((let ((*messages* 
+                                     (make-instance 'spawn
+                                                    :spawnprog "/bin/cat"
+                                                    :spawnargs (list
+                                                                testfile)))
+                                    (testval t))
+                                ;; check to see that the output of the cat 
+                                ;; process matches the stuff we wrote to the 
+                                ;; file
+                                (mapcar 
+                                 (lambda (x) 
+                                   (let ((message (get-logline *messages*)))
+                                     (or (equal (message message) x)
+                                         (setq testval ()))))
+                                 file-lines)
+                                (assert-non-nil testval)))))))
 
 
 (deftest "old items are removed from window"
@@ -2087,6 +2107,7 @@
                          'a 'b 'c)))
         (multiple-value-bind (fn rest)
             (parse-function parse-list)
+          (declare (ignore fn))
           (equal '(a b c) rest)))))
 
 (deftest "parse-regexp returns matching function"
@@ -2355,8 +2376,8 @@
             (incf passcount passed)
             (incf failcount failed))))
       rest)
-     (format t "TOTALS: ~A tests run; ~A test passed; ~A test failed.~%"
-             (+ passcount failcount) passcount failcount)))
+     (format t "TOTALS: ~A ~[tests~;test~:;tests~] run; ~A ~[tests~;test~:;tests~] passed; ~A ~[tests~;test~:;tests~] failed.~%"
+             (+ passcount failcount) (+ passcount failcount) passcount passcount failcount failcount)))
 
 (defun run-all-categories ()
   (apply #'run-categories (org.ancar.clunit::list-test-categories)))

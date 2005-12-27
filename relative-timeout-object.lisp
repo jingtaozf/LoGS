@@ -26,6 +26,11 @@
                  :initform ()
                  :type (or null integer))))
 
+
+
+(defgeneric update-relative-timeout ( relative-timeout-object)
+  (:documentation "update an object's relative timeout"))
+
 (defmethod update-relative-timeout ((relative-timeout-object relative-timeout-object))
   (with-slots (relative-timeout) relative-timeout-object
     (LoGS-debug "updating relative timeout for object: ~A~%" relative-timeout-object)

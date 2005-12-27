@@ -81,8 +81,8 @@
 (defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defmacro LoGS-debug (message &rest rest)
-  `(when +debug+
-     (format t ,message ,@rest)))
+  (when +debug+
+    `(format t ,message ,@rest)))
 
 (defparameter *use-internal-real-time* t 
   "should LoGS use the internal-real-time?")
@@ -173,7 +173,7 @@
         )
     
     ;; process any files
-    (process-files)
+    (process-files2)
     ;; call any exit functions
     (mapcar
      (lambda (function)
@@ -216,3 +216,32 @@
        
        (when (head *relative-timeout-object-timeout-queue*)
          (check-limits *relative-timeout-object-timeout-queue*))))
+
+(defun process-files2 ()
+  (declare (OPTIMIZE (SPEED 0) (debug 3) (SAFETY 3)))
+  (let ((*message* ()))
+    (tagbody
+     next-message
+       (setf *message* (get-logline *messages*))
+     process-message
+       (when (and *message* (head *root-ruleset*))
+         (check-rules *message* *root-ruleset*))
+       (when (head *relative-timeout-object-timeout-queue*)
+         (check-limits *relative-timeout-object-timeout-queue*))
+       (when (head *timeout-object-timeout-queue*)
+         (check-limits *timeout-object-timeout-queue*))
+       (unless *message* 
+         (go no-message))
+       (go next-message)
+     no-message
+       (when
+           (and *run-forever* (not *message*))
+         (go do-sleep))
+       (when
+           (and (not *run-forever*) (not *message*))
+         (go done))
+     do-sleep
+       (sleep *LoGS-sleep-time*)
+       (go next-message)
+     done
+       )))
