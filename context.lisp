@@ -265,13 +265,14 @@
 ;; expire all remaining contexts
 
 (defun expire-all-contexts ()
-    (let ((context (head *contexts*)))
-      (loop 
-         when context
-         do
-           (let ((next (rlink context)))
-             (expire-context (data context))
-             (setq context next))
-         else
-         do
-           (return t))))
+  (loop
+     for context = (head *contexts*) then next
+     as next = (rlink context)
+     when context
+     do
+       (expire-context (data context))
+       (setq context next)
+     else
+     do
+       (return t)))
+

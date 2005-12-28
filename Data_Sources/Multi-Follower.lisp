@@ -27,28 +27,24 @@
 
 (defmethod get-logline ((Mf Multi-Follower))
   (when (> (Ecount Mf) 0)
-    (let ((starting-follower (current-follower Mf)))
-      (loop with current-follower = starting-follower
-            do
-            (let ((line (get-logline (aref (data Mf) current-follower))))
-              (setf (current-follower Mf)
-                    (mod (1+ (current-follower Mf)) 
-                         (Ecount Mf)))
-              (when line
-                (return line)))
-            
-            when ;; if we've already tried them all, return NIL
-            (equal starting-follower
-                   (mod (current-follower Mf)
-                        (ecount Mf)))
-            do
-            (return NIL)
-            
-            when t
-            do
-            (setf current-follower 
-                  (mod (1+ current-follower) 
-                       (Ecount Mf)))))))
+    (loop
+       with starting-follower = (current-follower Mf)
+       for current-follower = starting-follower then (mod (1+ current-follower) 
+                                                           (Ecount Mf))
+       for line = (get-logline (aref (data Mf) current-follower))
+       do
+         (setf (current-follower Mf)
+               current-follower)
+       when line
+       do
+         (return line)
+       when ;; if we've already tried them all, return NIL
+         (equal starting-follower
+                (mod (current-follower Mf)
+                     (ecount Mf)))
+       do
+         (return NIL)
+         )))
 
     
     

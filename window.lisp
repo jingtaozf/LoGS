@@ -43,16 +43,15 @@
                 item)))
 
 (defmethod remove-old ((window window))
-  (let ((current-item (head (data window)))
-        (mintime (- *now* (* (window-length window) 
-                             INTERNAL-TIME-UNITS-PER-SECOND))))
-    (loop 
-         while current-item
-         do
-         (if (< (car (data current-item)) mintime)
-             (remove-window-entry window current-item)
-             (return t))
-         (setf current-item (rlink current-item)))))
+  (loop 
+     for current-item = (head (data window)) then (rlink current-item)
+     with mintime = (- *now* (* (window-length window) 
+                                  INTERNAL-TIME-UNITS-PER-SECOND))
+     while current-item
+     do
+       (if (< (car (data current-item)) mintime)
+           (remove-window-entry window current-item)
+           (return t))))
 
 (defmethod check-limits :around ((window window))
   (progn
@@ -64,13 +63,12 @@
   (remove-old window))
 
 (defmethod write-context ((window window) stream)
-  (let ((current (head (data window))))
-    (loop for i from 0 below (ecount window) 
-       while current
-       do
-         (format stream "~A~%" 
-                 (message (cadr (data current))))
-         (setf current (rlink current)))))
+  (loop for i from 0 below (ecount window) 
+     for current = (head (data window)) then (rlink current)
+     while current
+     do
+       (format stream "~A~%" 
+               (message (cadr (data current))))))
 
 (defmacro ensure-window (&rest rest &key name &allow-other-keys)
   (let ((named-context (gensym)))

@@ -29,24 +29,6 @@
    (elements :initform (make-hash-table :test #'equal) :accessor elements)))
 
 ;; add an item to the priority queue
-;; (defmethod enqueue ((pq priority-queue) item)
-;;   (let ((x ()))
-
-;;     (LoGS-debug "inserting item: ~A into priority queue ~A~%" item pq)
-;;     ;; find the right place to insert the item
-;;     (loop initially (setf x (head pq))
-;;           do
-;;           (cond ((or (not x)
-;;                      (not
-;;                       (funcall (comparison-function pq) item (data x))))
-;;                  (progn
-;;                    (LoGS-debug "inserting before item: ~A~%" (when x (data x)))
-;;                    (return (dll-insert pq x item :direction :before))))
-;;                 ((eq x (tail pq))
-;;                  (progn
-;;                    (LoGS-debug "inserting after item: ~A~%" (when x (data x)))
-;;                    (return (dll-insert pq x item :direction :after))))
-;;                 (t (setf x (rlink x)))))))
 
 (defmethod enqueue ((pq priority-queue) item)
     (LoGS-debug "inserting item: ~A into priority queue ~A~%" item pq)
@@ -67,16 +49,15 @@
                (t (setf x (rlink x))))))
 
 (defmethod check-limits OR ((pq priority-queue))
-  (loop as dlli = (head pq)
-        when t
-        do (LoGS-debug "checking pq: ~A dlli: ~A~%" pq dlli)
-        when (not dlli)
-        do
-        (return)
-        when (not (check-limits (data dlli)))
-        do 
-        (return)
-        when t
-        do
-        (dll-delete pq dlli)
-        (setf dlli (rlink dlli))))
+           (loop for dlli = (head pq) then (rlink dlli)
+              when t
+              do (LoGS-debug "checking pq: ~A dlli: ~A~%" pq dlli)
+              when (not dlli)
+              do
+                (return)
+              when (not (check-limits (data dlli)))
+              do 
+                (return)
+              when t
+              do
+                (dll-delete pq dlli)))

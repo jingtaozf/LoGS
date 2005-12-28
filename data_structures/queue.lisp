@@ -62,5 +62,4 @@
 	       (first (data q))))
   queue-data))
 
-; (setf q (make-instance 'queue))
 
