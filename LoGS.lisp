@@ -16,8 +16,9 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
-;; (declaim (optimize (speed 0) (debug 3) (safety 3)))
+;;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+
+(declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
@@ -81,8 +82,8 @@
 (defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defmacro LoGS-debug (message &rest rest)
-  (when +debug+
-    `(format t ,message ,@rest)))
+  `(when +debug+
+     (format t ,message ,@rest)))
 
 (defparameter *use-internal-real-time* t 
   "should LoGS use the internal-real-time?")
@@ -173,7 +174,7 @@
         )
     
     ;; process any files
-    (process-files2)
+    (process-files)
     ;; call any exit functions
     (mapcar
      (lambda (function)
@@ -190,6 +191,10 @@
 (defun process-files ()    
   
   (loop as *message* = (get-logline *messages*)
+       
+     when +debug+
+       do (format t "processing message: ~A~%" (message *message*))
+       
      ;; exit if there is no message and we're not running forever
      when (and (not *run-forever*) (not *message*))
      do

@@ -272,6 +272,6 @@
            (let ((next (rlink context)))
              (expire-context (data context))
              (setq context next))
-         when (not context)
+         else
          do
            (return t))))

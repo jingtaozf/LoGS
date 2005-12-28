@@ -98,7 +98,9 @@ both matches and continuep is nil."))
              do 
                (let ((data (data *current-rule*)))
                  (if (dead-p data)
+                     ;; if the rule is dead, remove it
                      (dll-delete ruleset *current-rule*)
+                     ;; else check the rule against the message
                      (progn
                        (LoGS-debug "checking rule~%")
                        (and 

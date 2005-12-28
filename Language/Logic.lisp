@@ -195,7 +195,7 @@
 (defparameter *LoGS-statement-slot* (make-hash-table))
 
 (defmacro get-statement-func (statement)
-  `(gethash ,statement ,*LoGS-statements*))
+  `(gethash ,statement *LoGS-statements*))
 
 (defmacro get-statement-slot (statement)
   `(gethash ,statement ,*LoGS-statement-slot*))
