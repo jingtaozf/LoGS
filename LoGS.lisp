@@ -189,20 +189,11 @@
 ;; adding the option processing to the mainline made testing more difficult
 ;; so I broke the processing out to a separate function.
 (defun process-files ()    
-  
-  (loop as *message* = (get-logline *messages*)
+  (declare (OPTIMIZE (SPEED 0) (DEBUG 3) (SAFETY 3)))  
+  (loop named processing as *message* = (get-logline *messages*)
        
      when +debug+
-       do (format t "processing message: ~A~%" (message *message*))
-       
-     ;; exit if there is no message and we're not running forever
-     when (and (not *run-forever*) (not *message*))
-     do
-       (return)
-     ;; if we are running forever and there is no message sleep 
-     when (and *run-forever* (not *message*))
-     do
-       (sleep *LoGS-sleep-time*)
+       do (format t "processing message: ~A~%" (if *message* (message *message*)))
        
      ;; update the internal time
      when *use-internal-real-time*
@@ -211,42 +202,22 @@
               
      ;; check the message against the ruleset if it exists
      ;; and check the timeout objects
+
+     if *message*
+     do
+       (LoGS-debug "got message: ~A~%" (IF *MESSAGE* (message *message*)))
+       (check-rules *message* *root-ruleset*)
+
+     else
+     do
+       (LoGS-debug "no message~%")
+       (if *run-forever*
+           ;; sleep a bit
+           (sleep *LoGS-sleep-time*)
+           ;; exit if there is no message and we're not running forever
+           (return-from processing))
+
      when t
      do
-       (when (and *message* (head *root-ruleset*))
-         (check-rules *message* *root-ruleset*))
-       
-       (when (head *timeout-object-timeout-queue*)
-         (check-limits *timeout-object-timeout-queue*))
-       
-       (when (head *relative-timeout-object-timeout-queue*)
-         (check-limits *relative-timeout-object-timeout-queue*))))
-
-(defun process-files2 ()
-  (declare (OPTIMIZE (SPEED 0) (debug 3) (SAFETY 3)))
-  (let ((*message* ()))
-    (tagbody
-     next-message
-       (setf *message* (get-logline *messages*))
-     process-message
-       (when (and *message* (head *root-ruleset*))
-         (check-rules *message* *root-ruleset*))
-       (when (head *relative-timeout-object-timeout-queue*)
-         (check-limits *relative-timeout-object-timeout-queue*))
-       (when (head *timeout-object-timeout-queue*)
-         (check-limits *timeout-object-timeout-queue*))
-       (unless *message* 
-         (go no-message))
-       (go next-message)
-     no-message
-       (when
-           (and *run-forever* (not *message*))
-         (go do-sleep))
-       (when
-           (and (not *run-forever*) (not *message*))
-         (go done))
-     do-sleep
-       (sleep *LoGS-sleep-time*)
-       (go next-message)
-     done
-       )))
+       (check-limits *timeout-object-timeout-queue*)
+       (check-limits *relative-timeout-object-timeout-queue*)))
