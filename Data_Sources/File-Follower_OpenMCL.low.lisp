@@ -17,7 +17,7 @@
 
 ;; This file contains low-level OpenMCL specific code
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 
 (defun fifo-p (filename)
   "is the named file a fifo?"

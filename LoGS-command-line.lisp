@@ -15,7 +15,7 @@
 ;;;; along with this program; if not, write to the Free Software
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 
 (defvar *file-list* ())
 
@@ -27,7 +27,7 @@
       (cond ((eq 1 len) (setf *messages* (car *file-list*)))
             ((eq 0 len) (setf *messages* (make-instance 'STDIN-follower)))
             (t (progn
-                 (setf *messages* (make-instance 'LoGS::multi-follower))
+                 (setf *messages* (make-instance 'org.prewett.LoGS::multi-follower))
                  (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*))))))))
 
 (setf *opts*
@@ -37,7 +37,7 @@
                       :arguments ()
                       :action #'(lambda () 
                                   (setq
-                                   LoGS::*use-internal-real-time* ()))
+                                   org.prewett.LoGS::*use-internal-real-time* ()))
                       :description "do not use internal time")
    
        (make-instance 'cli-opt
@@ -45,13 +45,13 @@
                       :arguments '("<filename>" "[position]")
                       ;; XXX needs to change, get rid of *messages*
                       :action #'(lambda (filename &optional position)
-                                  (let ((ff (make-instance 'LoGS::File-Follower 
+                                  (let ((ff (make-instance 'org.prewett.LoGS::File-Follower 
                                                            :FileName 
                                                            filename)))
                                     ;; if position is specified, start there
                                     (when position
                                       (when (not ff) (error "no ff~%"))
-                                      (LoGS::set-file-follower-position
+                                      (org.prewett.LoGS::set-file-follower-position
                                        ff
                                        (read-from-string position)))
                                     (push ff *file-list*)))
@@ -60,13 +60,13 @@
                       :name "--PBS-file"
                       :arguments '("<filename>")
                       :action #'(lambda (filename &optional position)
-                                  (let ((ff (make-instance 'LoGS::PBS-File-Follower
+                                  (let ((ff (make-instance 'org.prewett.LoGS::PBS-File-Follower
                                                            :FileName
                                                            filename)))
                                     ;; if position is specified, start there
                                     (when position
-                                      (LoGS::set-file-follower-position
-                                       LoGS::*messages*
+                                      (org.prewett.LoGS::set-file-follower-position
+                                       org.prewett.LoGS::*messages*
                                        (read-from-string position)))
                                     (push ff *file-list*)))
                       :description "follow a sequence of PBS log files starting with the named file")
@@ -82,7 +82,7 @@
                                   (let ((ff 
                                          (if (and buffer-size (integerp (read-from-string buffer-size)))
                                              (make-instance 
-                                              'LoGS::buffered-sql-Follower
+                                              'org.prewett.LoGS::buffered-sql-Follower
                                               :username username
                                               :password password
                                               :host host
@@ -91,7 +91,7 @@
                                               :buffer-size buffer-size
                                               )
                                              (make-instance 
-                                              'LoGS::buffered-sql-Follower
+                                              'org.prewett.LoGS::buffered-sql-Follower
                                               :username username
                                               :password password
                                               :host host
@@ -115,8 +115,8 @@
                       :action 
                       #'(lambda (&rest filenames)
                           (progn
-                            (setf LoGS::*messages*
-                                  (make-instance 'LoGS::multi-follower))
+                            (setf org.prewett.LoGS::*messages*
+                                  (make-instance 'org.prewett.LoGS::multi-follower))
                             
                             (mapcar
                              (lambda (filename)
@@ -127,10 +127,10 @@
                                        (when position-str 
                                          (read-from-string position-str)))
                                       (follower (make-instance 
-                                                 'LoGS::file-follower
+                                                 'org.prewett.LoGS::file-follower
                                                  :filename name)))
                                  (when position
-                                   (LoGS::set-file-follower-position 
+                                   (org.prewett.LoGS::set-file-follower-position 
                                     follower position))
                                  (push follower *file-list*)))
                              filenames)))
@@ -154,7 +154,6 @@
                       :arguments '("<ruleset>")
                       :action
                       #'(lambda (ruleset)
-                          (in-package :LoGS)
                           (load (compile-file ruleset)))
                       :description "name of the ruleset to load")
 
@@ -163,21 +162,21 @@
                       :arguments ()
                       :action
                       #'(lambda ()
-                          (setq LoGS::*run-forever* t))
+                          (setq org.prewett.LoGS::*run-forever* t))
                       :description "don't exit when there is no more immediately available input")
        (make-instance 'cli-opt
                       :name "--tail"
                       :arguments ()
                       :action
                       #'(lambda ()
-                          (setq LoGS::*run-forever* t))
+                          (setq org.prewett.LoGS::*run-forever* t))
                       :description "an alias for --run-forever")
        (make-instance 'cli-opt
                       :name "--remember-file"
                       :arguments ()
                       :action
                       #'(lambda ()
-                          (setq LoGS::*remember-file* t))
+                          (setq org.prewett.LoGS::*remember-file* t))
                       :description "store the name of the file that a given message came from in the from-file slot of the message if set")
 
        (make-instance 'cli-opt
@@ -185,7 +184,7 @@
                       :arguments ()
                       :action
                       #'(lambda ()
-                          (setq LoGS::*tag-messages* t))
+                          (setq org.prewett.LoGS::*tag-messages* t))
                       :description
                       "allow messages to be given tags")
 
@@ -194,7 +193,7 @@
                       :arguments ()
                       :action
                       #'(lambda ()
-                          (setq LoGS::*count-rules* t))
+                          (setq org.prewett.LoGS::*count-rules* t))
                       :description
                       "count the number of times a rule is matched/attempted")
        (make-instance 'cli-opt
@@ -202,10 +201,10 @@
                       :arguments ()
                       :action
                       #'(lambda ()
-                          (setq LoGS::*run-before-exit*
+                          (setq org.prewett.LoGS::*run-before-exit*
                                 (cons
                                  #'expire-all-contexts
-                                 LoGS::*run-before-exit*)))
+                                 org.prewett.LoGS::*run-before-exit*)))
                       :description
                       "expire all remaining contexts before exiting LoGS")
 
@@ -245,7 +244,7 @@
                       :action
                       #'(lambda ()
                           (progn
-                            (cl-cli::help LoGS::*opts*)
+                            (org.prewett.cl-cli::help org.prewett.LoGS::*opts*)
                             (quit-LoGS)))
                       :description "display this help text")
        ))

@@ -17,7 +17,7 @@
 
 ;; This file contains low-level CMUCL specific code
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 
 (import '(unix:unix-stat unix:unix-open unix:o_rdonly unix:o_nonblock system:make-fd-stream))
 

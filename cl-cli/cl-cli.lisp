@@ -15,7 +15,7 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(defpackage :cl-cli
+(defpackage :org.prewett.cl-cli
   (:use :cl
 	#+allegro :clos
 	#+cmu :pcl
@@ -25,7 +25,7 @@
         )
   (:export process-options cli-opt get-application-args))
 
-(in-package :cl-cli)
+(in-package :org.prewett.cl-cli)
 
 ;; current version of cl-cli
 ; this is now inside of the eval-when so that SBCL won't puke because

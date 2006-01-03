@@ -20,7 +20,7 @@
 ;; all of the nifty functionality should be in the underlying data source.  
 ;; eg. a file-follower handles the inode rotation stuff.
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 
 (defclass Multi-Follower (collection Data-Source)
   ((current-follower :initform 0 :accessor current-follower)))

@@ -31,11 +31,11 @@
         (concatenate
          'string
          "^"
-         "(" LoGS::*Month-regexp* ")" " "
-         "(" LoGS::*Day-regexp* ")" " "
-         "(" LoGS::*Hour-regexp* ")" ":"
-         "(" LoGS::*Minute-regexp* ")" ":"
-         "(" LoGS::*Second-regexp* ")")
+         "(" org.prewett.LoGS::*Month-regexp* ")" " "
+         "(" org.prewett.LoGS::*Day-regexp* ")" " "
+         "(" org.prewett.LoGS::*Hour-regexp* ")" ":"
+         "(" org.prewett.LoGS::*Minute-regexp* ")" ":"
+         "(" org.prewett.LoGS::*Second-regexp* ")")
         string)
      (if matches
          (encode-universal-time

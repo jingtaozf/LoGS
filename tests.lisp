@@ -18,7 +18,7 @@
 
 ;;(load "CLUnit.lisp")
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 (use-package :ORG.ANCAR.CLUNIT)
 
 ;; UGH!
@@ -1984,9 +1984,9 @@
     :test-fn
     (lambda ()
       (progn
-        (setq LoGS::*use-internal-real-time* t) ;; make sure its in true state
+        (setq org.prewett.LoGS::*use-internal-real-time* t) ;; make sure its in true state
         (process-options *opts* '("--no-internal-time"))
-        (assert-nil LoGS::*use-internal-real-time*))))
+        (assert-nil org.prewett.LoGS::*use-internal-real-time*))))
 
 (deftest "--file option test"
     :category 'cli-tests

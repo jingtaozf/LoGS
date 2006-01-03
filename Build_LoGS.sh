@@ -23,4 +23,4 @@ LOGS="load-LoGS"
 CL_CLI="cl-cli/cl-cli.lisp"
 LOGS_CORE="LoGS.core"
 
-lisp -eval "(progn (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\"))  (load (compile-file \"$LOGS\"))(load (compile-file \"$LOGS\"))(in-package :LoGS) (load \"sysloghelp\") (cl-user::save-lisp \"$LOGS_CORE\"))"
+lisp -eval "(progn (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\"))  (load (compile-file \"$LOGS\"))(load (compile-file \"$LOGS\"))(in-package :org.prewett.LoGS) (load \"sysloghelp\") (cl-user::save-lisp \"$LOGS_CORE\"))"

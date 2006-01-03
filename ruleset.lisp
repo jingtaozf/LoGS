@@ -19,7 +19,7 @@
 ;;; that data structure's stuff goes here, move macros, methods
 ;;; for ruleset creation elsewhere.
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 
 (defclass ruleset (rule doubly-linked-list)
   ((elements :initform (make-hash-table :test #'equal) :accessor elements

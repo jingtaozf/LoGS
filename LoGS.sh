@@ -7,7 +7,7 @@ MYRULES=myrules.lisp
 
 echo lisp -core $LOGS_CORE -eval \
 	"(and " \
-	"(in-package :LoGS)" \
+	"(in-package :org.prewett.LoGS)" \
 	"(load (compile-file \"$MYRULES\"))" \
 	"(setf *messages* (make-instance 'file-follower :filename \"messages\"))" \
 	"(main) (cl-user::quit))" \

@@ -15,7 +15,7 @@
 ;;;; along with this program; if not, write to the Free Software
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 
 (defclass rule (killable-item named-object timeout-object relative-timeout-object)
   ((match :initarg :match

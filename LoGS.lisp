@@ -44,14 +44,14 @@
 (setq ext:*gc-verbose* NIL)
 
 ;; define the LoGS package
-(defpackage :LoGS
+(defpackage :org.prewett.LoGS
   (:use :cl
 	#+allegro :clos
 	#+cmu :pcl
         #+sbcl :sb-mop
 	#+lispworks :hcl
         :cl-user
-        :cl-cli ;; my command-line processing code
+        :org.prewett.cl-cli ;; my command-line processing code
         :cl-ppcre)
   #+sbcl
   (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
@@ -68,7 +68,7 @@
                           #:find-class #:class-name #:class-of)
   (:export main))
 
-(in-package :LoGS)
+(in-package :org.prewett.LoGS)
 
 (defconstant +LoGS-version+ 
   (with-open-file 
