@@ -125,8 +125,7 @@
                        (neighbor-item (eql NIL))
                        insert-item
                        &key direction)
-  (unless (gethash 
-           insert-item
+  (unless (gethash insert-item
            (list-entries doubly-linked-list))
     (dll-insert doubly-linked-list
                 neighbor-item
@@ -160,12 +159,11 @@
     (when lookup
       (dll-delete doubly-linked-list lookup))))
 
-(defgeneric remove-item (remove-tiem)
+(defgeneric remove-item (remove-item)
   (:documentation "unlink a dlli from its neighbors; cut it  out of the list"))
 
 (defmethod remove-item ((remove-item doubly-linked-list-item))
-  (let ((before (llink remove-item))
-        (after (rlink remove-item)))
+  (with-slots ((before llink)(after rlink)) remove-item
     (when before
       (setf (rlink before) after))
     (when after
@@ -175,14 +173,14 @@
                        (item-to-delete doubly-linked-list-item))
   (progn
     (remove-item item-to-delete)
-    (when (eq (head doubly-linked-list) item-to-delete) ; head
+    (when (eql (head doubly-linked-list) item-to-delete) ; head
       (setf (head doubly-linked-list)
-            (if (eq item-to-delete (rlink item-to-delete))
+            (if (eql item-to-delete (rlink item-to-delete))
                 ()
                 (rlink item-to-delete))))
-    (when (eq (tail doubly-linked-list) item-to-delete) ;tail
+    (when (eql (tail doubly-linked-list) item-to-delete) ;tail
       (setf (tail doubly-linked-list)
-            (if (eq item-to-delete (llink item-to-delete))
+            (if (eql item-to-delete (llink item-to-delete))
                 ()
                 (llink item-to-delete))))))
 

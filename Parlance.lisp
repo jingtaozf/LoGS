@@ -278,24 +278,46 @@
 (defun match-regexp (regexp)
   "create a function that will match the given regular expression"
   (lambda (message)
-    (cl-ppcre::scan
-     regexp
-     (message message))))
+    (and
+     (cl-ppcre::scan
+      regexp
+      (message message))
+     (values t ()))))
 
-(defun match-regexp-binding-list (regexp binding-list)
+(defun copy-array-add-zeroeth-element (array element)
+  (let* ((dimensions (array-dimensions array))
+         (element-type (array-element-type array))
+         (adjustable (adjustable-array-p array))
+         (fill-pointer (when (array-has-fill-pointer-p array)
+                         (fill-pointer array)))
+         (new-array (make-array (list (incf (car dimensions)))
+                                :element-type element-type
+                                :adjustable adjustable
+                                :fill-pointer fill-pointer)))
+    (loop for i from 0 below (length array)
+         do
+         (setf (aref new-array (+ 1 i)) (aref array i)))
+    (setf (aref new-array 0) element)
+    new-array))
+    
+
+(defun match-regexp-binding-list (regexp binding-list &key use-full-match)
   "create a function that will match the given regexp and return a match value and a list of bindings"
   (lambda (message)
     (multiple-value-bind (matches sub-matches)
         (cl-ppcre::scan-to-strings regexp (message message))
-      (when matches
-        (unless (eql (length sub-matches) (length binding-list))
-          (error "binding and match length mis-match~%"))
-        (let ((count -1))
-          (mapcar
-           (lambda (var)
-             (incf count)
-             (list var (aref sub-matches count)))
-           binding-list))))))
+        (when matches
+          (let ((sub-matches (copy-array-add-zeroeth-element sub-matches matches)))
+            (unless (eql (length sub-matches) (length binding-list))
+              (error "binding and match length mis-match~%"))
+            (let ((count -1))
+              (values 
+               t
+               (mapcar
+                (lambda (var)
+                  (incf count)
+                (list var (aref sub-matches count)))
+                binding-list))))))))
 
 
 (defmacro match-regexp2 (regexp string &optional bind-list)
@@ -318,3 +340,4 @@
 
 (defmacro script-return-value-with-arglist (scriptname args)
   `(script-return-value ,scriptname ,@args))
+

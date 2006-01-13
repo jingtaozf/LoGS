@@ -53,6 +53,12 @@
                 :type integer))
   (:documentation "Rules associate messages with actions."))
 
+(defmethod print-object ((obj rule) stream)
+  (print-unreadable-object (obj stream :type t :identity t)
+    (with-slots (match no-match delete-rule no-delete-rule continuep actions environment match-count match-try) obj
+    (format stream "match: ~A~%no-match: ~A~%delete-rule: ~A~%no-delete-rule: ~A~%continuep: ~A~%actions: ~A~%environment: ~A~% match-count: ~A~% match-try: ~A!~%"
+            match no-match delete-rule no-delete-rule continuep actions environment match-count match-try))))
+
 (defmacro rule (&rest rest)
   `(make-instance 'rule ,@rest))
 
@@ -97,13 +103,13 @@
                            `(funcall ,body-result))))
     `(let ((,vars (mapcar #'car ,env))
            (,vals (mapcar #'cadr ,env)))
-      `(declare (special ,@,vars))
-      (progv (cons 'env ,vars) (cons ,env ,vals)
-        (let ((,body-result ,body))
-          (cond ((functionp ,body-result)
-                 ,funcall-body)
-                (t
-                 ,body-result)))))))
+       `(declare (special ,@,vars))
+       (progv (cons 'env ,vars) (cons ,env ,vals)
+         (let ((,body-result ,body))
+           (cond ((functionp ,body-result)
+                  ,funcall-body)
+                 (t
+                  ,body-result)))))))
 
 ;; check-rule should return 2 values, whether the rule matched
 ;; and whether the you should continue.
@@ -123,23 +129,23 @@
        (multiple-value-bind (matchp rule-environment)
            (rule-matches-p rule message)
          
-           (when matchp
-             (update-relative-timeout rule)
-             (with-slots (delete-rule no-delete-rule environment) 
-                 rule  
-
-               (when (actions rule)
-                 (run-actions rule message rule-environment))
-               (when delete-rule 
-                 (and
-                  (funcall delete-rule message)
-                  (if no-delete-rule
-                      (funcall no-delete-rule message)
-                      t)
-                  (setf (dead-p rule) t)
-                  (dll-delete *ruleset* rule)))
-               
-               (values matchp rule-environment))))))))
+         (when matchp
+           (update-relative-timeout rule)
+           (with-slots (delete-rule no-delete-rule environment) 
+               rule  
+             
+             (when (actions rule)
+               (run-actions rule message rule-environment))
+             (when delete-rule 
+               (and
+                (funcall delete-rule message)
+                (if no-delete-rule
+                    (funcall no-delete-rule message)
+                    t)
+                (setf (dead-p rule) t)
+                (dll-delete *ruleset* rule)))
+             
+             (values matchp rule-environment))))))))
   
 (defgeneric run-actions (rule message environment)
   (:documentation "run a rule's actions."))

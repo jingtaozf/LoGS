@@ -29,7 +29,8 @@
     #+openmcl
     (run-program ,program (quote ,args) :wait () :output t)
     #+allegro
-    (excl:run-shell-command (format () "~A ~{ ~A~}" ,program ,args))
+    (excl:run-shell-command (format () "~A ~{ ~A~}" ,program ,args)
+                            :output *standard-output*)
     ))
 
 ;; like exec, but wait and return the return code from the program
@@ -89,8 +90,11 @@
    :wait t 
    :input (make-string-input-stream (message message)))
   #+allegro
-    (excl.osi:command-output (format () "~A ~{ ~A~}" program args)
-                             :input (message message)))
+  (mapcar
+   (lambda (output-line)
+     (format t "~&~A~%" output-line))
+   (excl.osi:command-output (format () "~A ~{ ~A~}" program args)
+                           :input (message message))))
 
 (defmethod pipe ((string string) (program string) &rest args)
   #+cmu

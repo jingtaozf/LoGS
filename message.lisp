@@ -31,3 +31,7 @@
 (defclass string-message (message) ()
   (:documentation "A class that holds string messages."))
 
+(defmethod print-object ((obj message) stream)
+  (print-unreadable-object (obj stream :type t :identity t)
+    (with-slots (message) obj
+      (format stream "\"~A\"" message))))
