@@ -84,6 +84,7 @@ the given ruleset until it finds a rule that
 both matches and continuep is nil."))
 
 (defmethod check-rules ((message message) (ruleset ruleset))
+  (declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
   (let ((head (head ruleset))
         (*ruleset* ruleset))
     (LoGS-debug "checking rules: ~A ~A~%" (name ruleset) (message message))

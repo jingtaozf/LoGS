@@ -49,15 +49,16 @@
                (t (setf x (rlink x))))))
 
 (defmethod check-limits OR ((pq priority-queue))
+           (declare (OPTIMIZE (SPEED 0) (DEBUG 3) (SAFETY 3)))  
            (loop for dlli = (head pq) then (rlink dlli)
               when t
               do (LoGS-debug "checking pq: ~A dlli: ~A~%" pq dlli)
               when (not dlli)
               do
                 (return)
-              when (not (check-limits (data dlli)))
+              else when (not (check-limits (data dlli)))
               do 
                 (return)
-              when t
+              else when t
               do
                 (dll-delete pq dlli)))

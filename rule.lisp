@@ -117,6 +117,7 @@
   (:documentation "see if the given message matches the rule, if so, run the rule's actions."))
 
 (defmethod check-rule ((rule rule) (message message))
+  (declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
   (unless (dead-p rule)
 
     (LoGS-debug "checking rule: ~A~%against message: ~A~%" 

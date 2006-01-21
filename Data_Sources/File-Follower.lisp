@@ -32,16 +32,16 @@
    (probe-file (Filename ff))
    ;; get the inode of the file we are reading
    (let ((ino (get-inode-from-filename (filename ff))))
-     (and ino
-          (progn
-            (setf (Inode ff) ino)
-            (when (filestream ff) (close (filestream ff)))
-            (if
-             (fifo-p (filename ff))
-             (setf (Filestream ff)
-                   (open-fifo (filename ff)))
-             (setf (Filestream ff) 
-                   (open (Filename ff) :direction :input))))))))
+     (when ino
+       (setf (Inode ff) ino)
+       (when (filestream ff) 
+         (close (filestream ff)))
+       (if
+        (fifo-p (filename ff))
+        (setf (Filestream ff)
+              (open-fifo (filename ff)))
+        (setf (Filestream ff) 
+              (open (Filename ff) :direction :input)))))))
 
 (defgeneric set-file-follower-position (file-follower position)
   (:documentation "set the offset into the file of the file-follower"))
@@ -76,26 +76,28 @@
 "Return the next line of this file.  We refuse to read eof.  When we 
 have reached end of the file, we check to see if there is a new inode 
 associated with our filename. if there is, we start following that filename."
-  (if (open-stream-p (filestream ff))
-      (if (peek-char nil (filestream ff) nil)
-          (read-line (filestream ff) nil)
-          (let ((stat-inode (get-inode-from-filename (filename ff))))
-            (and (not (eql (inode ff) stat-inode))
-                 (read-line (start-file-follower ff) nil))))
-      (let ((stat-inode (get-inode-from-filename (filename ff))))
-        (when (not (eql (inode ff) stat-inode))
-             (read-line (start-file-follower ff) nil)))))
+(declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
+(if (open-stream-p (filestream ff))
+    (if (peek-char nil (filestream ff) nil)
+        (read-line (filestream ff) nil)
+        (let ((stat-inode (get-inode-from-filename (filename ff))))
+          (and (not (eql (inode ff) stat-inode))
+               (read-line (start-file-follower ff) nil))))
+    (let ((stat-inode (get-inode-from-filename (filename ff))))
+      (when (not (eql (inode ff) stat-inode))
+        (read-line (start-file-follower ff) nil)))))
 
 (defmethod get-logline ((ff file-follower))
 "Wrap the next line of the file associated with the file-follower inside of
 a message."
-  (let ((line (get-line ff)))
-    (when line
-      (cond ((and *remember-file* *tag-messages*)
-             (make-instance 'message :message line :from-file (filename ff) :tag ()))
-            (*remember-file*
-             (make-instance 'message :message line :from-file (filename ff)))
-            (*tag-messages*
-             (make-instance 'message :message line :tag ()))
-            (t
-             (make-instance 'message :message line))))))
+(declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
+(let ((line (get-line ff)))
+  (when line
+    (cond ((and *remember-file* *tag-messages*)
+           (make-instance 'message :message line :from-file (filename ff) :tag ()))
+          (*remember-file*
+           (make-instance 'message :message line :from-file (filename ff)))
+          (*tag-messages*
+           (make-instance 'message :message line :tag ()))
+          (t
+           (make-instance 'message :message line))))))
