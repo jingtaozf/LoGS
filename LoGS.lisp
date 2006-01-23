@@ -45,6 +45,7 @@
 
 ;; define the LoGS package
 (defpackage :org.prewett.LoGS
+  (:nicknames :LoGS)
   (:use :cl
 	#+allegro :clos
 	#+cmu :pcl
@@ -70,13 +71,9 @@
 
 (in-package :org.prewett.LoGS)
 
-(defconstant +LoGS-version+ 
-  (with-open-file 
-      (file 
-       (merge-pathnames 
-        (make-pathname :name "LoGS-version" :type () :directory ())
-        (make-pathname :name () :type () :defaults *load-truename*))
-       :direction :input) (read file)))
+(eval-when (:compile-toplevel)
+  (defconstant +LoGS-version+ "0.1.1-pre"))
+    
 
 ;; this is a constant so we can optimize out the checks for production runs
 (defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
