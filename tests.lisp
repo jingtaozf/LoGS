@@ -587,13 +587,8 @@
         (enqueue ruleset rule)
         ;; simulate process-files2
         (let ((retval ()))
-          (tagbody
-             (setf retval (not (check-rules message ruleset)))
-           next-message
-             (format t "done~%"))
-
-          retval
-             ))))
+          (setf retval (not (check-rules message ruleset)))
+          ))))
 
 (deftest "check-rules finds match in second rule"
     :category 'rule-tests
