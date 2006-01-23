@@ -585,10 +585,7 @@
             (rule (make-instance 'rule :match #'match-none))
             (message (make-instance 'message :message "test message")))
         (enqueue ruleset rule)
-        ;; simulate process-files2
-        (let ((retval ()))
-          (setf retval (not (check-rules message ruleset)))
-          ))))
+        (not (check-rules message ruleset)))))
 
 (deftest "check-rules finds match in second rule"
     :category 'rule-tests
