@@ -56,7 +56,9 @@
   #+openmcl
   (#_unlink (ccl::make-cstring filename))
   #+(or clisp lispworks)
-  (delete-file filename))
+  (delete-file filename)
+  #+allegro
+  (excl.osi:unlink filename))
 
 (defmacro with-temporary-file (stream filename open-forms closed-forms)
   `(unwind-protect
