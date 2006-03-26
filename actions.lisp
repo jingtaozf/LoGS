@@ -40,7 +40,10 @@
     (declare (ignore messages))
     #+cmu
     (extensions:process-exit-code (extensions:run-program ,program ',args :wait t :output t))
-    #-cmu
+    #+allegro
+    (excl:run-shell-command (format () "~A ~{ ~A~}" ,program ',args)
+                            :output *standard-output*)
+    #-(or cmu allegro)
     (error "unimplemented~%")
     ))
 
