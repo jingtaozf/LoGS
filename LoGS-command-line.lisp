@@ -28,7 +28,7 @@
             ((eq 0 len) (setf *messages* (make-instance 'STDIN-follower)))
             (t (progn
                  (setf *messages* (make-instance 'org.prewett.LoGS::multi-follower))
-                 (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*))))))))
+                 (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*)))))))
 
 (setf *opts*
       (list
