@@ -111,6 +111,30 @@
                  (t
                   ,body-result)))))))
 
+(defgeneric run-actions (rule message environment)
+  (:documentation "run a rule's actions."))
+
+(defmethod run-actions ((rule rule) (message message) environment)
+  (let ((actions (actions rule)))
+    (when actions
+      (mapcar 
+       (lambda (action)
+         (declare (function action))
+         
+         (progn
+           (LoGS-debug "running action ~A in env ~A with args: ~A~%"
+                     action 
+                     environment
+                     message)
+
+           (in-given-environment
+                environment
+                action
+                message)
+
+           (LoGS-debug "ran action~%")))
+       actions))))
+
 ;; check-rule should return 2 values, whether the rule matched
 ;; and whether the you should continue.
 (defgeneric check-rule (rule message)
@@ -147,30 +171,6 @@
                 (dll-delete *ruleset* rule)))
              
              (values matchp rule-environment))))))))
-  
-(defgeneric run-actions (rule message environment)
-  (:documentation "run a rule's actions."))
-
-(defmethod run-actions ((rule rule) (message message) environment)
-  (let ((actions (actions rule)))
-    (when actions
-      (mapcar 
-       (lambda (action)
-         (declare (function action))
-         
-         (progn
-           (LoGS-debug "running action ~A in env ~A with args: ~A~%"
-                     action 
-                     environment
-                     message)
-
-           (in-given-environment
-                environment
-                action
-                message)
-
-           (LoGS-debug "ran action~%")))
-       actions))))
 
 (defmethod check-limits :around ((rule rule))
   (when (call-next-method)
