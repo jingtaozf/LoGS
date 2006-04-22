@@ -22,18 +22,10 @@
           :accessor match
           :initform ()
           :type (or null function))
-   (no-match :initarg :no-match
-             :accessor no-match
-             :initform ()
-             :type (or null function))
    (delete-rule :initarg :delete-rule
            :accessor delete-rule
            :initform ()
            :type (or null function))
-   (no-delete-rule :initarg :no-delete-rule
-              :accessor no-delete-rule
-              :initform ()
-              :type (or null function))
    (continuep :initarg :continuep
               :initform ()
               :accessor continuep)
@@ -55,9 +47,9 @@
 
 (defmethod print-object ((obj rule) stream)
   (print-unreadable-object (obj stream :type t :identity t)
-    (with-slots (match no-match delete-rule no-delete-rule continuep actions environment match-count match-try) obj
-    (format stream "match: ~A~%no-match: ~A~%delete-rule: ~A~%no-delete-rule: ~A~%continuep: ~A~%actions: ~A~%environment: ~A~% match-count: ~A~% match-try: ~A!~%"
-            match no-match delete-rule no-delete-rule continuep actions environment match-count match-try))))
+    (with-slots (match delete-rule continuep actions environment match-count match-try) obj
+    (format stream "match: ~A~%delete-rule: ~A~%continuep: ~A~%actions: ~A~%environment: ~A~% match-count: ~A~% match-try: ~A!~%"
+            match delete-rule continuep actions environment match-count match-try))))
 
 (defmacro rule (&rest rest)
   `(make-instance 'rule ,@rest))
@@ -70,7 +62,7 @@
     (> time timeout)))
 
 (defmethod rule-matches-p ((rule rule) (message message))
-  (with-slots (match no-match)
+  (with-slots (match)
       rule
     
     ;; do bookkeeping
@@ -82,9 +74,7 @@
     (multiple-value-bind (matches sub-matches)
         (cond ((functionp match) (funcall match message))
               (t match))
-      (and matches
-           (not (cond ((functionp no-match) (funcall no-match message))
-                      (t no-match)))
+      (when matches
            ;; bookkeeping ; increment the count since we've matched
            (or
             (when +enable-rule-count+
@@ -156,17 +146,13 @@
          
          (when matchp
            (update-relative-timeout rule)
-           (with-slots (delete-rule no-delete-rule environment) 
+           (with-slots (delete-rule environment) 
                rule  
              
              (when (actions rule)
                (run-actions rule message rule-environment))
              (when delete-rule 
-               (and
-                (funcall delete-rule message)
-                (if no-delete-rule
-                    (funcall no-delete-rule message)
-                    t)
+               (when (funcall delete-rule message)
                 (setf (dead-p rule) t)
                 (dll-delete *ruleset* rule)))
              

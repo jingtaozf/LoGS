@@ -457,8 +457,7 @@
     (lambda () 
       (let ((message (make-instance 'message :message "asdf"))
             (rule (make-instance 'rule
-                                 :match #'match-all
-                                 :no-match #'match-none)))
+                                 :match #'match-all)))
         (multiple-value-bind (matches sub-matches)
             (check-rule rule message)
           (declare (ignore sub-matches))
@@ -519,12 +518,13 @@
     :test-fn
     (lambda ()
       (let ((ruleset (make-instance 'ruleset 
-                                    :match #'match-all
-                                    :no-match #'match-all))
+                                    :match (lambda (message)
+					     (and (match-all message)
+						  (not (match-all message))))))
             (message (make-instance 'message))
             (r1 (make-instance 'rule :match #'match-all)))
         (enqueue ruleset r1)
-        (not 
+        (not 				; is this a fair test?
          (check-rule ruleset message)))))
 
 
@@ -1299,8 +1299,11 @@
     (lambda ()
       (let ((dummy ()))
         (let ((rule (make-instance 'rule
-                                   :match #'match-all
-                                   :no-match #'match-all
+                                   :match (lambda (msg)
+					    (if (and (match-all msg)
+						     (not (match-all msg)))
+						t
+  					        'nil))
                                    :actions
                                    (list
                                     (lambda (message matches sub-matches)
@@ -1367,11 +1370,8 @@
             (rule (make-instance 'rule
                                  :match (lambda (message) 
                                           (declare (ignore message))
-                                          t)
-                                 :no-match (lambda (message) 
-                                             (declare (ignore message))
-                                             t))))
-        (not (check-rule rule message)))))
+                                          t))))
+        (check-rule rule message))))
 
 (deftest "regexp rule works"
     :category 'rule-tests

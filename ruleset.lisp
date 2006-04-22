@@ -46,7 +46,7 @@
 
 ;; check rule for when the rule itself is a ruleset!
 (defmethod check-rule ((ruleset ruleset) (message message))
-  (with-slots (match no-match delete-rule no-delete-rule actions) 
+  (with-slots (match delete-rule actions) 
       ruleset
 
     (when +enable-rule-count+
@@ -60,22 +60,16 @@
         (declare (ignore sub-matches))
 
         (when delete-rule 
-          (and
-           (funcall delete-rule message)
-           (if no-delete-rule
-               (funcall no-delete-rule message)
-               t)
-           (setf (dead-p ruleset) t)
-           (dll-delete *ruleset* ruleset)))
+          (when (funcall delete-rule message)
+	    (setf (dead-p ruleset) t)
+	    (dll-delete *ruleset* ruleset)))
         
         (when matches
           (when +enable-rule-count+
             (when *count-rules*
               (incf (match-count ruleset))))
-          (if (or (not (functionp no-match))
-                  (not (funcall no-match message)))
-              (let ((*ruleset* ruleset))
-                (check-rules message *ruleset*)))))))
+	  (let ((*ruleset* ruleset))
+	    (check-rules message *ruleset*))))))
 
 (defgeneric check-rules (message ruleset)
   (:documentation
