@@ -30,23 +30,43 @@
 
 ;; add an item to the priority queue
 
-(defmethod enqueue ((pq priority-queue) item)
-    (LoGS-debug "inserting item: ~A into priority queue ~A~%" item pq)
-    ;; find the right place to insert the item
-    (loop with x
-       initially (setf x (head pq))
-       do
-         (cond ((or (not x)
-                    (not
-                     (funcall (comparison-function pq) item (data x))))
-                (progn
-                  (LoGS-debug "inserting before item: ~A~%" (when x (data x)))
-                  (return (dll-insert pq x item :direction :before))))
-               ((eq x (tail pq))
-                (progn
-                  (LoGS-debug "inserting after item: ~A~%" (when x (data x)))
-                  (return (dll-insert pq x item :direction :after))))
-               (t (setf x (rlink x))))))
+;; (defmethod enqueue ((pq priority-queue) item)
+;;     (LoGS-debug "inserting item: ~A into priority queue ~A~%" item pq)
+;;     ;; find the right place to insert the item
+;;     (loop with x
+;;        initially (setf x (head pq))
+;;        do
+;;          (cond ((or (not x)
+;;                     (not
+;;                      (funcall (comparison-function pq) item (data x))))
+;;                 (progn
+;;                   (LoGS-debug "inserting before item: ~A~%" (when x (data x)))
+;;                   (return (dll-insert pq x item :direction :before))))
+;;                ((eq x (tail pq))
+;;                 (progn
+;;                   (LoGS-debug "inserting after item: ~A~%" (when x (data x)))
+;;                   (return (dll-insert pq x item :direction :after))))
+;;                (t (setf x (rlink x))))))
+
+(defmethod enqueue ((pq priority-queue) &rest items)
+  (loop for item in items
+        do
+        (LoGS-debug "inserting item: ~A into priority queue ~A~%" item pq)
+        ;; find the right place to insert the item
+        (loop with x
+              initially (setf x (head pq))
+              do
+              (cond ((or (not x)
+                         (not
+                          (funcall (comparison-function pq) item (data x))))
+                     (progn
+                       (LoGS-debug "inserting before item: ~A~%" (when x (data x)))
+                       (return (dll-insert pq x item :direction :before))))
+                    ((eq x (tail pq))
+                     (progn
+                       (LoGS-debug "inserting after item: ~A~%" (when x (data x)))
+                       (return (dll-insert pq x item :direction :after))))
+                    (t (setf x (rlink x)))))))
 
 (defmethod check-limits OR ((pq priority-queue))
            (declare (OPTIMIZE (SPEED 0) (DEBUG 3) (SAFETY 3)))  

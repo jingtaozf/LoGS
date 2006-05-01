@@ -31,6 +31,21 @@
    :environment environment
    :match match-func))
 
+(defmacro match-regexp (regexp)
+  (let ((message (gensym)))
+    `(lambda (,message)
+      (cl-ppcre::scan ,regexp (message ,message)))))
+
+;; filter out messages matching the given regexp
+(defun filter-regexp (regexp &key name environment continuep)
+  "create a rule that causes messages matching the given regexp to be ignored"
+  (filter
+   (match-regexp regexp)
+   :name name
+   :continuep continuep
+   :environment environment
+   ))
+
 ;; suppress messages matching match1 until timeout has been exceeded
 ;; how is this different from throttling?  Shouldn't this be called throttling?
 (defun suppress (match-func timeout &key name environment continuep)

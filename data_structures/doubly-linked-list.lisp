@@ -142,13 +142,15 @@
          (list-entries doubly-linked-list)) 
         insert-item))
 
- (defgeneric enqueue (data-structure item)
+ (defgeneric enqueue (data-structure &rest items)
    (:documentation "add the given item to the data structure (queue)"))
 
 (defmethod enqueue ((doubly-linked-list doubly-linked-list)
-                    insert-item)
-  (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item 
-              :direction :after))
+                    &rest items)
+  (loop for insert-item in items
+        do
+        (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item 
+                    :direction :after)))
 
 (defgeneric dll-delete (doubly-linked-list item-to-delete)
   (:documentation "remove the given item from the data structure (queue)"))
