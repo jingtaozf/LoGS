@@ -25,6 +25,7 @@
 ;; filter out matching messages
 (defun filter (match-func &key name environment continuep)
   "create a rule that causes messages that match to be ignored"
+  (declare (optimize speed (safety 0) (space 0) (debug 0) (compilation-speed 0)))
   (rule
    :name name
    :continuep continuep
@@ -34,6 +35,7 @@
 (defmacro match-regexp (regexp)
   (let ((message (gensym)))
     `(lambda (,message)
+      (declare (optimize speed (safety 0) (space 0) (debug 0) (compilation-speed 0)))
       (cl-ppcre::scan ,regexp (message ,message)))))
 
 ;; filter out messages matching the given regexp

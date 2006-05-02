@@ -25,7 +25,7 @@
     #+cmu
     (extensions:run-program ,program (quote ,args) :wait () :output t)
     #+sbcl
-    (run-program ,program (quote ,args) :wait () :output t)
+    (run-program ,program (quote ,args) :wait () :output t :search t)
     #+openmcl
     (run-program ,program (quote ,args) :wait () :output t)
     #+allegro
@@ -40,10 +40,12 @@
     (declare (ignore messages))
     #+cmu
     (extensions:process-exit-code (extensions:run-program ,program ',args :wait t :output t))
+    #+sbcl
+    (SB-EXT:process-exit-code (SB-EXT:run-program ,program ',args :search t :wait t :output t))
     #+allegro
     (excl:run-shell-command (format () "~A ~{ ~A~}" ,program ',args)
                             :output *standard-output*)
-    #-(or cmu allegro)
+    #-(or sbcl cmu allegro)
     (error "unimplemented~%")
     ))
 
