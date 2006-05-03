@@ -22,12 +22,12 @@
 (use-package :ORG.ANCAR.CLUNIT)
 
 ;; UGH!
-#+(or allegro clisp lispworks)
+#+(or ecl allegro clisp lispworks)
 (set-dispatch-macro-character #\# #\$
                               (lambda (s c n)
                                 (let ((thing (read s nil (values) t))) ())))
 
-#+(or allegro clisp lispworks)
+#+(or ecl allegro clisp lispworks)
 (set-dispatch-macro-character #\# #\_
                               (lambda (s c n)
                                 (let ((thing (read s nil (values) t))) ())))

@@ -82,6 +82,7 @@
           (lambda (file)
             (when file
               (let* ((load-filename (merge-pathnames (make-pathname :name file :type "lisp" :directory (if dir `(:relative ,dir))) LoGS-home)))
+		(format t "loading file: ~A~%" load-filename)
                 (load-LoGS-file load-filename))))
           (cadr x))
          ))
