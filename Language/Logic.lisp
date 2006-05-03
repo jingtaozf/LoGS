@@ -17,6 +17,19 @@
 
 (in-package :org.prewett.LoGS)
 
+;; is this more of the right direction?
+;;
+;; (make-instance 'rule
+;;                :match (with-message message
+;;                         (and (> 42 (length (message message)))
+;;                              (cl-ppcre::scan
+;;                               "the sky is falling"
+;;                               (message message)))))
+
+(defmacro with-message (message &body body)
+  `(lambda (,message)
+    ,@body))
+
 (defun parse-continuing (list)
   (values
    t

@@ -37,7 +37,7 @@
   (let ((LoGS-files 
          (list
           '(()
-            ("LoGS"))
+            ("package" "LoGS"))
 
           '("data_structures"
             ("doubly-linked-list"

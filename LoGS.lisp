@@ -16,60 +16,14 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-;;(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+;; (declaim (optimize (speed 0) (debug 3) (safety 3)))
 
-(declaim (optimize (speed 0) (debug 3) (safety 3)))
+(in-package :org.prewett.LoGS)
 
 ;; freeze the LoGS classes if we're on cmucl 19
 #+CMU19
-(declaim (EXTENSIONS:FREEZE-TYPE NAMED-OBJECT FROM-MESSAGE RULESET TIMEOUT-OBJECT RULE DOUBLY-LINKED-LIST PRIORITY-QUEUE RELATIVE-TIMEOUT-OBJECT MESSAGE MULTI-FOLLOWER PRIORITY-QUEUE-ITEM COLLECTION PBS-FILE-FOLLOWER CONTEXT LIST-FOLLOWER STRING-MESSAGE KILLABLE-ITEM FILE-FOLLOWER DATA-SOURCE DOUBLY-LINKED-LIST-ITEM LIMITED-COLLECTION WINDOW))
-
-;; we need the sb-posix package under SBCL in order to open FIFOs non-blocking
-#+sbcl
-(require :sb-posix)
-
-#+acl
-(require :osi) ;; for file stat, etc.
-
-; set this to something *BIG* 
-;; this is 1/2 of my physical memory; that seems to work well; YMMV
-;#+cmu
-;(LISP::%SET-BYTES-CONSED-BETWEEN-GCS 65712128)
-
-;#+sbcl
-;(setf (SB-EXT:BYTES-CONSED-BETWEEN-GCS) 65712128)
-
-; Turn off gc messages
-#+cmu
-(setq ext:*gc-verbose* NIL)
-
-;; define the LoGS package
-(defpackage :org.prewett.LoGS
-  (:nicknames :LoGS)
-  (:use :cl
-	#+allegro :clos
-	#+cmu :pcl
-        #+sbcl :sb-mop
-	#+lispworks :hcl
-        :cl-user
-        :org.prewett.cl-cli ;; my command-line processing code
-        :cl-ppcre)
-  #+sbcl
-  (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
-  #+sbcl
-  (:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly)
-  #+sbcl
-  (:import-from :sb-sys #:make-fd-stream)
-  #+openmcl
-  (:import-from :ccl #:make-fd-stream)
-  #+cmu
-  (:import-from :extensions #:quit #:RUN-PROGRAM)
-  #+cmu
-  (:shadowing-import-from :pcl #:standard-class #:built-in-class
-                          #:find-class #:class-name #:class-of)
-  (:export main))
-
-(in-package :org.prewett.LoGS)
+(declaim (EXTENSIONS:FREEZE-TYPE NAMED-OBJECT RULESET TIMEOUT-OBJECT RULE DOUBLY-LINKED-LIST PRIORITY-QUEUE RELATIVE-TIMEOUT-OBJECT MESSAGE MULTI-FOLLOWER PRIORITY-QUEUE-ITEM COLLECTION PBS-FILE-FOLLOWER CONTEXT LIST-FOLLOWER STRING-MESSAGE KILLABLE-ITEM FILE-FOLLOWER DATA-SOURCE DOUBLY-LINKED-LIST-ITEM LIMITED-COLLECTION WINDOW))
 
 (eval-when (:compile-toplevel)
   (defconstant +LoGS-version+ "0.1.1"))

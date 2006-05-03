@@ -358,3 +358,5 @@
 (defmacro script-return-value-with-arglist (scriptname args)
   `(script-return-value ,scriptname ,@args))
 
+(defmacro with-message (message &body body)
+  `(lambda (,message) ,@body))

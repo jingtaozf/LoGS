@@ -2288,9 +2288,9 @@
     :category 'logic-tests
     :test-fn
     (lambda ()
-      (let* ((parse-list (list (list 'or 
-                                     'function #'true-func 
-                                     'function #'true-func)))
+      (let* ((parse-list `((or 
+                            function ,#'true-func 
+                            function ,#'true-func)))
              (message (make-instance 'message))
              (match-fn (parse-match parse-list)))
         (and
@@ -2344,17 +2344,16 @@
     :category 'logic-tests
     :test-fn
     (lambda ()
-      (let* ((parse-list (list (list 'and
-                                     'function #'false-func 
-                                     'function #'false-func)))
+      (let* ((parse-list 
+              `((and 
+                 function ,#'false-func
+                 function ,#'false-func)))
              (message (make-instance 'message))
              (match-fn (parse-match parse-list)))
         (and
          (functionp match-fn)
          (not (funcall match-fn message))
          t))))
-
-
 
 ;; a little slicker way of running all of the tests
 (defun run-categories (&rest rest)
