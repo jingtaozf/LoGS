@@ -79,8 +79,8 @@
 
 ;; make a function to write the message to a file
 (defmacro file-write (filename)
-  (lambda (thing)
-     `(write-to-file ,filename thing)))
+  `(lambda (thing)
+     (write-to-file ,filename thing)))
 
 
 (defmethod pipe ((message message) (program string) &rest args)

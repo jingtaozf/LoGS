@@ -316,7 +316,6 @@
          (setf (aref new-array (+ 1 i)) (aref array i)))
     (setf (aref new-array 0) element)
     new-array))
-    
 
 (defun match-regexp-binding-list (regexp binding-list &key use-full-match)
   "create a function that will match the given regexp and return a match value and a list of bindings"
@@ -324,7 +323,10 @@
     (multiple-value-bind (matches sub-matches)
         (cl-ppcre::scan-to-strings regexp (message message))
         (when matches
-          (let ((sub-matches (copy-array-add-zeroeth-element sub-matches matches)))
+          (let ((sub-matches 
+                 (if use-full-match
+                     (copy-array-add-zeroeth-element sub-matches matches)
+                     sub-matches)))
             (unless (eql (length sub-matches) (length binding-list))
               (error "binding and match length mis-match~%"))
             (let ((count -1))
@@ -333,9 +335,8 @@
                (mapcar
                 (lambda (var)
                   (incf count)
-                (list var (aref sub-matches count)))
+                  (list var (aref sub-matches count)))
                 binding-list))))))))
-
 
 (defmacro match-regexp2 (regexp string &optional bind-list)
   (let ((thing (cons 'list 

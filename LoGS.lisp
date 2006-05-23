@@ -16,7 +16,7 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ; proper optimizations?
-(declaim  (OPTIMIZE (SPEED 3) (debug 0) (SAFETY 0)))
+(declaim (OPTIMIZE speed (safety 0) (space 0) (debug 0) (compilation-speed 0)))
 ;; (declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 (in-package :org.prewett.LoGS)
@@ -32,7 +32,7 @@
 (defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defmacro LoGS-debug (message &rest rest)
-  `(when +debug+
+  `(when ,+debug+
      (format t ,message ,@rest)))
 
 (defparameter *use-internal-real-time* t 
