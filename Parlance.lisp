@@ -292,15 +292,6 @@
   (declare (ignore message))
   ())
 
-(defun match-regexp (regexp)
-  "create a function that will match the given regular expression"
-  (lambda (message)
-    (and
-     (cl-ppcre::scan
-      regexp
-      (message message))
-     (values t ()))))
-
 (defun copy-array-add-zeroeth-element (array element)
   (let* ((dimensions (array-dimensions array))
          (element-type (array-element-type array))

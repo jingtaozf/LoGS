@@ -29,4 +29,6 @@
   (progn
     (unless (name named-object)
       (setf (name named-object) (gensym)))
-    named-object))
+    NIL))
+;; cmucl 19c doesn't like the after method returning anything!
+;; named-object))

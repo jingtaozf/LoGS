@@ -32,7 +32,7 @@
 (defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defmacro LoGS-debug (message &rest rest)
-  `(when ,+debug+
+  `(when +debug+
      (format t ,message ,@rest)))
 
 (defparameter *use-internal-real-time* t 
