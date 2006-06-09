@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2005 James Earl Prewett
+;;;; Copyright (C) 2003-2006 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -47,9 +47,9 @@
 
 (defmethod print-object ((obj rule) stream)
   (print-unreadable-object (obj stream :type t :identity t)
-    (with-slots (match delete-rule continuep actions environment match-count match-try) obj
-    (format stream "match: ~A~%delete-rule: ~A~%continuep: ~A~%actions: ~A~%environment: ~A~% match-count: ~A~% match-try: ~A!~%"
-            match delete-rule continuep actions environment match-count match-try))))
+    (with-slots (name match delete-rule continuep actions environment match-count match-try) obj
+    (format stream "name: ~A match: ~A delete-rule: ~A continuep: ~A actions: ~A environment: ~A  match-count: ~A  match-try: ~A"
+            name match delete-rule continuep actions environment match-count match-try))))
 
 (defmacro rule (&rest rest)
   `(make-instance 'rule ,@rest))
@@ -109,8 +109,6 @@
     (when actions
       (mapcar 
        (lambda (action)
-         (declare (function action))
-         
          (progn
            (LoGS-debug "running action ~A in env ~A with args: ~A~%"
                      action 
@@ -147,7 +145,7 @@
          (when matchp
            (update-relative-timeout rule)
            (with-slots (delete-rule environment) 
-               rule  
+               rule
              
              (when (actions rule)
                (run-actions rule message rule-environment))
