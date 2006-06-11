@@ -136,8 +136,9 @@ on the required behaviour for SLOT."))
           `(lambda (,msg)
             (multiple-value-bind (,matches ,sub-matches)
                 (cl-ppcre:scan-to-strings ,regex (message ,msg))
-              (when ,matches (values t '((,(intern "SUB-MATCHES")
-                                          ,sub-matches)))))))
+              (when ,matches (values t
+                                     (list (list ',(intern "SUB-MATCHES")
+                                                 ,sub-matches)))))))
         match)))
 
 (defun handle-actions (rule exprs)
