@@ -222,7 +222,7 @@ on the required behaviour for SLOT."))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :environment)))
   (declare (ignore slot))
-  (nreverse (rule-macro-environment rule)))
+  `',(nreverse (rule-macro-environment rule)))
 
 (defun handle-continuep (rule exprs)
   (setf (rule-macro-continuep rule) t)
