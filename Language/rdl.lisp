@@ -19,7 +19,8 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 (defpackage :org.prewett.LoGS.language
-  (:use :logs :cl))
+  (:use :cl)
+  (:import-from :logs :rule :message))
 
 (in-package #:org.prewett.LoGS.language)
 
@@ -131,11 +132,12 @@ on the required behaviour for SLOT."))
         (let ((msg (gensym "MESSAGE"))
               (matches (gensym "MATCHES"))
               (sub-matches (gensym "SUB-MATCHES"))
-              (regex (apply #'concatenate 'string (nreverse match))))
+              (regex (format () "~{(~a)~^|~}" (nreverse match))))
           `(lambda (,msg)
             (multiple-value-bind (,matches ,sub-matches)
                 (cl-ppcre:scan-to-strings ,regex (message ,msg))
-              (when ,matches (values t '((sub-matches ,sub-matches)))))))
+              (when ,matches (values t '((,(intern "SUB-MATCHES")
+                                          ,sub-matches)))))))
         match)))
 
 (defun handle-actions (rule exprs)
