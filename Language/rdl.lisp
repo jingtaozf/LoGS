@@ -131,14 +131,15 @@ on the required behaviour for SLOT."))
     (if (every #'stringp match)
         (let ((msg (gensym "MESSAGE"))
               (matches (gensym "MATCHES"))
-              (sub-matches (gensym "SUB-MATCHES"))
-              (regex (format () "~{(~a)~^|~}" (nreverse match))))
+              (sub-matches (gensym "SUB-MATCHES")))
           `(lambda (,msg)
             (multiple-value-bind (,matches ,sub-matches)
-                (cl-ppcre:scan-to-strings ,regex (message ,msg))
-              (when ,matches (values t
-                                     (list (list ',(intern "SUB-MATCHES")
-                                                 ,sub-matches)))))))
+                (and ,@(loop as r in (nreverse match)
+                             collecting `(cl-ppcre:scan-to-strings
+                                          ,r
+                                          (message ,msg))))
+              (when ,matches (values t (list (list ',(intern "SUB-MATCHES")
+                                                   ,sub-matches)))))))
         match)))
 
 (defun handle-actions (rule exprs)
