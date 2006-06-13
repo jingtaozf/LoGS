@@ -73,6 +73,8 @@
            "Language"
            (list
             "Logic"))
+           '(()
+             ("mainline"))
           ))
         (LoGS-home (make-pathname :name () :type () :defaults (parse-namestring *load-truename*))))
     (mapcar 
