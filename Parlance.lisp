@@ -123,7 +123,7 @@
    (append
     (list
      (lambda (message)
-       (declare (ignore message))
+       (declare (ignore message) (special env))
        (let ((ign-match1 (rule :match match1))
              (find-match2 (rule
                            :match

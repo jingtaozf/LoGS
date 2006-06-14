@@ -128,7 +128,10 @@ on the required behaviour for SLOT."))
   "Return the form for MATCH tag"
   (declare (ignore slot))
   (let ((match (rule-macro-match rule)))
-    (if (every #'stringp match)
+    ;; if there is no match, we need not generate a match function
+    ;; I believe the match function that matched no regexps was technically
+    ;; correct, but this is slightly better in terms of speed and IMO clarity
+    (if (and match (every #'stringp match))
         (let ((msg (gensym "MESSAGE"))
               (matches (gensym "MATCHES"))
               (sub-matches (gensym "SUB-MATCHES")))

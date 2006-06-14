@@ -72,7 +72,7 @@
           (list 
            "Language"
            (list
-            "Logic"))
+            "rdl"))
            '(()
              ("mainline"))
           ))
