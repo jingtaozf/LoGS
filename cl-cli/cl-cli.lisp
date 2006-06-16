@@ -29,8 +29,7 @@
 (in-package :org.prewett.cl-cli)
 
 ;; current version of cl-cli
-; this is now inside of the eval-when so that SBCL won't puke because
-; its being overly pedantic
+; this is now inside of the eval-when so that SBCL won't puke 
 (eval-when (:compile-toplevel)
   (defconstant +cl-cli-version+ "0.0.2-pre"))
     
@@ -60,12 +59,12 @@
                           (setq ,seenflag t)))
                        ((equal "-" (subseq x 0 1)) (return ,arglist)) 
                        (t (setq ,arglist (append ,arglist (list (pop ,args)))))))))))
+    
     (loop as nextopt = (nextarg args)
-          
           when (not nextopt)
           do (return)
           
-          when t
+          else
           do 
           (process-switch nextopt options-list))))
 
@@ -73,7 +72,7 @@
 (defun process-switch (list options-list)
   (let* ((switch (pop list))
          (opt (car (member switch options-list 
-                      :test #'(lambda (a b) (equal a (name b)))))))
+                           :test #'(lambda (a b) (equal a (name b)))))))
     (when opt
       (let ((numargs (length list)))
         (multiple-value-bind (minargs maxargs)
@@ -118,7 +117,7 @@
         (values min max))))
 
 ;; modified from James F. Amundson's code
-;; CMU is working; I haven't checked others... & LoGS doesn't do CLISP (yet)
+;; CMU is working; I haven't checked others... 
 (defun get-application-args ()
     #+clisp (rest ext:*args*)
     
@@ -135,18 +134,19 @@
       
     #+cmu (cdr lisp::lisp-command-line-list)
 
-    ;; FIXME: openmcl version missing
-
-    ;; FIXME: LispWorks version missing
     #+lispworks
     (cdr SYSTEM:*LINE-ARGUMENTS-LIST*)
-)
+
+    ;; FIXME: openmcl version missing
+    #-(or lispworks cmu allegro gcl sbcl clisp)
+       (error "unimplemented"))
 
 ;; display option help
 (defun help (opts)
-  (mapcar (lambda (option)
-	    (format t "~A~10T~{~T~A~}~25T~A~%" 
-		    (name option)
-		    (or (arguments option) '(""))
-		    (or (description option) "")))
-	  opts))
+  (mapcar 
+   (lambda (option)
+     (format t "~A~10T~{~T~A~}~25T~A~%" 
+             (name option)
+             (or (arguments option) '(""))
+             (or (description option) "")))
+   opts))
