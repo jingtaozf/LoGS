@@ -78,43 +78,49 @@
         (multiple-value-bind (minargs maxargs)
             (option-lengths opt)
           
-          (cond ((< numargs minargs)
-                 (error "too few arguments for flag: ~A expecting ~A to ~A, given ~A~%"
-                        (name opt) minargs maxargs numargs))
-                ((not maxargs) t)
-                ((> numargs maxargs)
-                 (error "too many arguments for flag: ~A expecting ~A to ~A, given ~A~%"
-                        (name opt) minargs maxargs numargs)))
-          
-          (when (action opt)
-            (apply (action opt) list)))))))
+          (cond 
+            ((< numargs minargs)
+             (error "too few arguments for flag: ~A expecting ~A to ~A, given ~A~%"
+                    (name opt) minargs maxargs numargs))
+            ((not maxargs) t)
+            ((> numargs maxargs)
+             (error "too many arguments for flag: ~A expecting ~A to ~A, given ~A~%"
+                    (name opt) minargs maxargs numargs))
+            
+            ((action opt)
+             (apply (action opt) list))))))))
         
 ;; pull the next flag & its args off the args list
 (defun option-lengths (option)
-  (let ((min 0)
-        (max 0)
-        (seenopt nil)
-        (multiargs nil))
+  (let ((min-args 0) ; minimum arguments to this flag
+        (max-args 0) ; maximum arguments to this flag
+        (seen-optional-arg nil) ; has an optional argument been seen?
+        (multiargs nil) ; are an infinite number of arguments possible?
+        )
     (loop as x in (arguments option)
+          ;; handle a mandatory argument
           when (equal "<" (subseq x 0 1))
           do
-          (when seenopt 
+          (when seen-optional-arg 
             (error "mandatory argument listed after optional argument!~%"))
-          (incf min)
-          (incf max)
+          (incf min-args)
+          (incf max-args)
           
+          ;; handle rest arguments
           when (equal "..." x)
           do
           (setf multiargs t)
-          (setf seenopt t)
+          (setf seen-optional-arg t)
           
+          ;; handle optional arguments
           when (equal "[" (subseq x 0 1))
           do
-          (incf max)
-          (setf seenopt t))
+          (incf max-args)
+          (setf seen-optional-arg t))
+    ;; return how many min/max args we take
     (if multiargs
-        (values min ())
-        (values min max))))
+        (values min-args ()) 
+        (values min-args max-args))))
 
 ;; modified from James F. Amundson's code
 ;; CMU is working; I haven't checked others... 
