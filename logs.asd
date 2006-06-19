@@ -24,17 +24,17 @@
                  (:module "Data_Sources"
                           :components ((:file 
                                         #+cmu 
-                                        "File-Follower_CMUCL.low"
+                                        "File-Follower_CMUCL_low"
                                         #+sbcl
-                                        "File-Follower_SBCL.low"
+                                        "File-Follower_SBCL_low"
                                         #+openmcl
-                                        "File-Follower_OpenMCL.low"
+                                        "File-Follower_OpenMCL_low"
                                         #+allegro
-                                        "File-Follower_Allegro.low"
+                                        "File-Follower_Allegro_low"
                                         #+clisp
-                                        "File-Follower_CLISP.low"
+                                        "File-Follower_CLISP_low"
                                         #+lispworks
-                                        "File-Follower_LispWorks.low")
+                                        "File-Follower_LispWorks_low")
                                        (:file "Data-Source")
                                        (:file "List-Follower")
                                        (:file "File-Follower")
