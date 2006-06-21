@@ -66,6 +66,6 @@
                  (:file "Parlance")
                  (:file "LoGS-command-line")
                  (:module "Language"
-                          :components ((:file "Logic")))))
+                          :components ((:file "rdl")))))
 
 
