@@ -29,10 +29,10 @@
 (in-package :org.prewett.cl-cli)
 
 ;; current version of cl-cli
-; this is now inside of the eval-when so that SBCL won't puke 
+; this is now inside of the eval-when so that SBCL won't puke
 (eval-when (:compile-toplevel)
   (defconstant +cl-cli-version+ "0.0.2-pre"))
-    
+
 
 #+cmu
 (setf EXTENSIONS::*COMPLAIN-ABOUT-ILLEGAL-SWITCHES* ())
@@ -43,90 +43,86 @@
    (action :initform () :initarg :action :accessor action)
    (description :initform () :initarg :description :accessor description)))
 
-
 ;; process all options given on the command line
 (defun process-options (options-list args)
-  (macrolet ((nextarg (args)
-               (let ((seenflag (gensym))
-                     (arglist (gensym)))
-                 `(let ((,seenflag ()) 
-                        (,arglist ())) 
-                   (dolist (x ,args ,arglist) 
-                     (cond 
-                       ((and (not ,seenflag) (equal "-" (subseq x 0 1)))
-                        (progn
-                          (setq ,arglist (append ,arglist (list (pop ,args))))
-                          (setq ,seenflag t)))
-                       ((equal "-" (subseq x 0 1)) (return ,arglist)) 
-                       (t (setq ,arglist (append ,arglist (list (pop ,args)))))))))))
-    
-    (loop as nextopt = (nextarg args)
-          when (not nextopt)
-          do (return)
-          
-          else
-          do 
-          (process-switch nextopt options-list))))
+  (declare (ignorable options-list))
+  (flet ((nextarg ()
+           (loop with seenflag = 'nil
+                 as arg in args
+                 if (not seenflag)
+                 do (setq seenflag t)
+                 else if (optionp arg)
+                 do (loop-finish)
+                 collect (pop args))))
+    (loop as cdr on args until (optionp (car cdr)) finally (setq args cdr))
+    (loop as nextopt = (nextarg)
+          while nextopt
+          do (process-switch nextopt options-list))))
+
+(defun optionp (string)
+ "Is STRING a command line option?"
+ (or (starts-with-p string "--") (starts-with-p string "-")))
+
+(defun starts-with-p (string1 string2 &key (test #'string=))
+ "Does STRING1 start with STRING2?"
+ (and (>= (length string1) (length string2))
+      (funcall test string1 string2 :end1 (length string2))))
+
+(defun same-name-p (string name)
+ "Is NAME the same as STRING in terms of command line options?"
+ (or (equal name (subseq string 1)) (equal name (subseq string 2))))
 
 ;; process an individual switch
 (defun process-switch (list options-list)
-  (let* ((switch (pop list))
-         (opt (car (member switch options-list 
-                           :test #'(lambda (a b) (equal a (name b)))))))
-    (when opt
-      (let ((numargs (length list)))
-        (multiple-value-bind (minargs maxargs)
-            (option-lengths opt)
-          
-          (cond 
-            ((< numargs minargs)
-             (error "too few arguments for flag: ~A expecting ~A to ~A, given ~A~%"
-                    (name opt) minargs maxargs numargs))
-            ((not maxargs) t)
-            ((> numargs maxargs)
-             (error "too many arguments for flag: ~A expecting ~A to ~A, given ~A~%"
-                    (name opt) minargs maxargs numargs))
-            
-            ((action opt)
-             (apply (action opt) list))))))))
-        
+ (let* ((switch (pop list))
+        (opt (car (member switch options-list
+                          :test #'(lambda (a b) (same-name-p a (name b)))))))
+   (when opt
+     (let ((numargs (length list)))
+       (multiple-value-bind (minargs maxargs)
+           (option-lengths opt)
+         (cond
+           ((< numargs minargs)
+            (error "too few arguments for flag: ~A expecting ~A to ~A, given ~A~%"
+                   (name opt) minargs maxargs numargs))
+           ((and (numberp maxargs) (> numargs maxargs))
+            (error "too many arguments for flag: ~A expecting ~A to ~A, given ~A~%"
+                   (name opt) minargs maxargs numargs))
+           ((action opt)
+            (apply (action opt) list))))))))
+
 ;; pull the next flag & its args off the args list
 (defun option-lengths (option)
-  (let ((min-args 0) ; minimum arguments to this flag
-        (max-args 0) ; maximum arguments to this flag
-        (seen-optional-arg nil) ; has an optional argument been seen?
+  (let ((min-args 0)                  ; minimum arguments to this flag
+        (max-args 0)                  ; maximum arguments to this flag
+        (seen-optional-arg nil)  ; has an optional argument been seen?
         (multiargs nil) ; are an infinite number of arguments possible?
         )
-    (loop as x in (arguments option)
-          ;; handle a mandatory argument
-          when (equal "<" (subseq x 0 1))
-          do
-          (when seen-optional-arg 
-            (error "mandatory argument listed after optional argument!~%"))
-          (incf min-args)
-          (incf max-args)
-          
-          ;; handle rest arguments
-          when (equal "..." x)
-          do
-          (setf multiargs t)
-          (setf seen-optional-arg t)
-          
-          ;; handle optional arguments
-          when (equal "[" (subseq x 0 1))
-          do
-          (incf max-args)
-          (setf seen-optional-arg t))
-    ;; return how many min/max args we take
-    (if multiargs
-        (values min-args ()) 
-        (values min-args max-args))))
+    (flet ((specialp (arg)
+             (and (symbolp arg) (char= (elt (symbol-name arg) 0) #\&)))
+           (special (arg)
+             (let ((arg (intern (symbol-name arg))))
+               (ecase arg
+                 (&optional (setq seen-optional-arg t))
+                 (&rest (setq multiargs t))
+                 ((&body &key)
+                  (error "Cannot support ~a for command line." arg))))))
+      (loop as arg in (arguments option)
+            if (specialp arg)
+            do (special arg)
+            else
+            do (incf max-args)
+            and unless (or seen-optional-arg multiargs)
+            do (incf min-args)
+            finally (return (if multiargs
+                                (values min-args ())
+                                (values min-args max-args)))))))
 
 ;; modified from James F. Amundson's code
-;; CMU is working; I haven't checked others... 
+;; CMU is working; I haven't checked others...
 (defun get-application-args ()
     #+clisp (rest ext:*args*)
-    
+
     #+sbcl (rest sb-ext:*posix-argv*)
 
     #+gcl  (let ((result  si::*command-args*))
@@ -137,7 +133,7 @@
     (let ((args (system:command-line-arguments :application t)))
       ;; Skip the first arg, which is the full path to alisp.
       (rest args))
-      
+
     #+cmu (cdr lisp::lisp-command-line-list)
 
     #+lispworks
@@ -149,9 +145,9 @@
 
 ;; display option help
 (defun help (opts)
-  (mapcar 
+  (mapcar
    (lambda (option)
-     (format t "~A~10T~{~T~A~}~25T~A~%" 
+     (format t "~A~10T~{~T~A~}~25T~A~%"
              (name option)
              (or (arguments option) '(""))
              (or (description option) "")))

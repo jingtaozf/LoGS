@@ -33,7 +33,7 @@
 (setf *opts*
       (list
        (make-instance 'cli-opt
-                      :name "--no-internal-time"
+                      :name "no-internal-time"
                       :arguments ()
                       :action #'(lambda () 
                                   (setq
@@ -41,8 +41,8 @@
                       :description "do not use internal time")
    
        (make-instance 'cli-opt
-                      :name "--file"
-                      :arguments '("<filename>" "[position]")
+                      :name "file"
+                      :arguments '(filename &optional position)
                       ;; XXX needs to change, get rid of *messages*
                       :action #'(lambda (filename &optional position)
                                   (let ((ff (make-instance 'org.prewett.LoGS::File-Follower 
@@ -57,8 +57,8 @@
                                     (push ff *file-list*)))
                       :description "name of the file to process and optional position")
        (make-instance 'cli-opt
-                      :name "--PBS-file"
-                      :arguments '("<filename>")
+                      :name "PBS-file"
+                      :arguments '(filename &optional position)
                       :action #'(lambda (filename &optional position)
                                   (let ((ff (make-instance 'org.prewett.LoGS::PBS-File-Follower
                                                            :FileName
@@ -72,8 +72,8 @@
                       :description "follow a sequence of PBS log files starting with the named file")
        
        (make-instance 'cli-opt
-                      :name "--mysql-follower"
-                      :arguments '("<host>" "<database>" "<username>" "<password>" "<query>" "[buffer-size]")
+                      :name "mysql-follower"
+                      :arguments '(host database username password query &optional buffer-size)
                       :action 
                   
                       (if +use-sql+
@@ -110,8 +110,8 @@
                           ))
 
        (make-instance 'cli-opt
-                      :name "--files"
-                      :arguments '("<filename>" "...")
+                      :name "files"
+                      :arguments '(&rest filenames)
                       :action 
                       #'(lambda (&rest filenames)
                           (progn
@@ -137,8 +137,8 @@
                       :description "names of files to process and optional position (separated by colons eg. logfile:42)")
 
        (make-instance 'cli-opt
-                      :name "--spawn" 
-                      :arguments '("<command>" "...")
+                      :name "spawn" 
+                      :arguments '(command &rest args)
                       :action
                       #'(lambda (command &rest args)
                           (let ((spawn (make-instance 'spawn 
@@ -150,29 +150,29 @@
                       "spawn the named command (with optional arguments) and use its output as an input source for LoGS")
                       
        (make-instance 'cli-opt
-                      :name "--ruleset"
-                      :arguments '("<ruleset>")
+                      :name "ruleset"
+                      :arguments '(ruleset)
                       :action
                       #'(lambda (ruleset)
                           (load (compile-file ruleset)))
                       :description "name of the ruleset to load")
 
        (make-instance 'cli-opt
-                      :name "--run-forever"
+                      :name "run-forever"
                       :arguments ()
                       :action
                       #'(lambda ()
                           (setq org.prewett.LoGS::*run-forever* t))
                       :description "don't exit when there is no more immediately available input")
        (make-instance 'cli-opt
-                      :name "--tail"
+                      :name "tail"
                       :arguments ()
                       :action
                       #'(lambda ()
                           (setq org.prewett.LoGS::*run-forever* t))
                       :description "an alias for --run-forever")
        (make-instance 'cli-opt
-                      :name "--remember-file"
+                      :name "remember-file"
                       :arguments ()
                       :action
                       #'(lambda ()
@@ -180,7 +180,7 @@
                       :description "store the name of the file that a given message came from in the from-file slot of the message if set")
 
        (make-instance 'cli-opt
-                      :name "--tag-messages"
+                      :name "tag-messages"
                       :arguments ()
                       :action
                       #'(lambda ()
@@ -189,7 +189,7 @@
                       "allow messages to be given tags")
 
        (make-instance 'cli-opt
-                      :name "--count-rules"
+                      :name "count-rules"
                       :arguments ()
                       :action
                       #'(lambda ()
@@ -197,7 +197,7 @@
                       :description
                       "count the number of times a rule is matched/attempted")
        (make-instance 'cli-opt
-                      :name "--expire-contexts-on-exit"
+                      :name "expire-contexts-on-exit"
                       :arguments ()
                       :action
                       #'(lambda ()
@@ -209,8 +209,8 @@
                       "expire all remaining contexts before exiting LoGS")
 
        (make-instance 'cli-opt
-                      :name "--sleep-time"
-                      :arguments '("<seconds>")
+                      :name "sleep-time"
+                      :arguments '(seconds)
                       :action
                       #'(lambda (seconds)
                           (setf *LoGS-sleep-time* (read-from-string seconds)))
@@ -218,8 +218,8 @@
                       "how long to sleep when there are no messages to process")
    
        (make-instance 'cli-opt
-                      :name "--pid"
-                      :arguments '("<pidfile>")
+                      :name "pid"
+                      :arguments '(pidfile)
                       :action 
                       #'(lambda (pidfile)
                           (setf *write-pid-to-file* pidfile))
@@ -227,7 +227,7 @@
                       "the name of the file to write LoGS' PID to")
 
        (make-instance 'cli-opt
-                      :name "--LoGS-version"
+                      :name "LoGS-version"
                       :arguments ()
                       :action
                       #'(lambda ()
@@ -239,7 +239,7 @@
                       "print version and Copyright information for the program")
                             
        (make-instance 'cli-opt
-                      :name "--help"
+                      :name "help"
                       :arguments ()
                       :action
                       #'(lambda ()
