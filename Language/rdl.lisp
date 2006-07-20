@@ -54,7 +54,7 @@
     (fill-rule-template r)))
 
 (defun standardize (X)
-  "This is how we look at all lisp forms that are part of the RDL."
+  "This is how we look at all lisp forms that are part of the RDL:  convert them into interned symbols in the keyword package so that :FOO and 'FOO and \"foo\" are seen as equivalent."
   (intern (format () "~a" X) '#:keyword))
 
 (defun samep (x symbol)
