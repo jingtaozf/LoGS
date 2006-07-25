@@ -106,6 +106,8 @@ on the required behaviour for SLOT."))
   ;; matching regexp "abc" and regexp "def" == matching regexp "abcdef"
   ;; matching "string literal" == matching regexp "string literal"
   ;; matching regexp "foo+" and #'function == ERROR
+  ;;
+  ;; matching regexp "abc" or regexp "def"
   (destructuring-bind (car . cdr) exprs
     (cond ((samep car :regexp)
            (destructuring-bind (string . cdr) cdr
@@ -187,7 +189,9 @@ on the required behaviour for SLOT."))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :actions)))
   (declare (ignore slot))
-  (nreverse (rule-macro-actions rule)))
+  (aif (rule-macro-actions rule)
+       (cons 'list
+             (nreverse it))))
 
 (defun handle-timeout (rule exprs)
   (destructuring-bind (preposition seconds &rest rest) exprs
@@ -253,6 +257,7 @@ on the required behaviour for SLOT."))
 (setf (handle-fn :timeout)      #'handle-timeout)
 (setf (handle-fn :filter)       #'handle-filter)
 (setf (handle-fn :setenv)       #'handle-setenv)
+(setf (handle-fn :continuep)    #'handle-continuep)
 
 ;;; Aliases
 (defmacro set-aliases (symbol (&rest aliases))
@@ -270,3 +275,4 @@ on the required behaviour for SLOT."))
 (set-aliases setenv (set with))
 (set-aliases name (named))
 (set-aliases timeout (timing-out))
+(set-aliases continuep (continue continuing))
