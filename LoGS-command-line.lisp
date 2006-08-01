@@ -37,7 +37,8 @@
                       :arguments ()
                       :action #'(lambda () 
                                   (setq
-                                   org.prewett.LoGS::*use-internal-real-time* ()))
+                                   org.prewett.LoGS::*use-internal-real-time* ()
+                                   org.prewett.LoGS::*LoGS-internal-time-units-per-second* 1))
                       :description "do not use internal time")
    
        (make-instance 'cli-opt

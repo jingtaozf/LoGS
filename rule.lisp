@@ -120,7 +120,7 @@
                 action
                 message)
 
-           (LoGS-debug "ran action~%")))
+           (LoGS-debug "ran action for rule: ~A~%" (name rule))))
        actions))))
 
 ;; check-rule should return 2 values, whether the rule matched

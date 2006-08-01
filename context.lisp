@@ -41,6 +41,11 @@
     :accessor lives-after-timeout))
   (:documentation "A data structure that stores messages."))
 
+(defmethod print-object ((obj context) stream)
+  (print-unreadable-object (obj stream :type t :identity t)
+    (with-slots (name) obj
+      (format stream "~A" name))))
+
 (defmacro context (&rest rest)
   `(ensure-context ,@rest))
 
@@ -257,17 +262,19 @@
 (defmacro ensure-context (&rest rest &key name &allow-other-keys)
   (let ((context-name (gensym)))
     `(let ((,context-name (get-context ,name)))
-       (LoGS-debug "a context named ~A already exists at~%" 
-                   ,name ,context-name)
-       (or ,context-name
-           (make-instance 'context ,@rest)))))
+      (if ,context-name
+          (progn
+            (LoGS-debug "a context named ~A already exists at~%" 
+                        ,name ,context-name)
+            ,context-name)
+          (make-instance 'context ,@rest)))))
 
 ;; expire all remaining contexts
 
 (defun expire-all-contexts ()
   (loop
      for context = (head *contexts*) then next
-     as next = (rlink context)
+     as next = (when context (rlink context))
      when context
      do
        (expire-context (data context))

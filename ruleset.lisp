@@ -46,30 +46,33 @@
 
 ;; check rule for when the rule itself is a ruleset!
 (defmethod check-rule ((ruleset ruleset) (message message))
-  (with-slots (match delete-rule actions) 
-      ruleset
+  (unless (dead-p ruleset)
 
-    (when +enable-rule-count+
-      (when *count-rules*
-        (incf (match-try ruleset))))
+    (LoGS-debug "checking ruleset: ~A~%against message: ~A~%" 
+                (name ruleset) (message message))
 
-    (multiple-value-bind (matches sub-matches)
-        (if (functionp match)
-            (funcall match message)
-            match)
-        (declare (ignore sub-matches))
 
-        (when delete-rule 
-          (when (funcall delete-rule message)
-	    (setf (dead-p ruleset) t)
-	    (dll-delete *ruleset* ruleset)))
+    (with-slots (environment) ruleset
+        (in-given-environment
+         environment
+
+         (multiple-value-bind (matchp rule-environment)
+             (rule-matches-p ruleset message)
+           (when matchp
+             (update-relative-timeout ruleset)
+
+             (with-slots (delete-rule (ruleset-environment environment))
+               ruleset
         
-        (when matches
-          (when +enable-rule-count+
-            (when *count-rules*
-              (incf (match-count ruleset))))
-	  (let ((*ruleset* ruleset))
-	    (check-rules message *ruleset*))))))
+               (when delete-rule 
+                 (when (funcall delete-rule message)
+                   (setf (dead-p ruleset) t)
+                   (dll-delete *ruleset* ruleset)))
+        
+               (let ((*ruleset* ruleset))
+                 (in-given-environment
+                  (append environment rule-environment ruleset-environment)
+                 (check-rules message *ruleset*))))))))))
 
 (defgeneric check-rules (message ruleset)
   (:documentation

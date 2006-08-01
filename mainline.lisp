@@ -35,7 +35,7 @@
        (funcall function))
      *run-before-exit*)
     ;; exit LoGS
-    (quit-LoGS)
+    ; (quit-LoGS)
     ))
 
 
@@ -61,7 +61,6 @@
 
      if *message*
      do
-       (LoGS-debug "got message: ~A~%" (IF *MESSAGE* (message *message*)))
        (check-rules *message* *root-ruleset*)
 
      else

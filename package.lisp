@@ -60,7 +60,21 @@
   #+cmu
   (:shadowing-import-from :pcl #:standard-class #:built-in-class
                           #:find-class #:class-name #:class-of)
-  (:export main))
+  (:export main
+           get-context add-to-context
+           *now*
+           *LoGS-internal-time-units-per-second*
+           mail
+           ruleset
+           rule
+           enqueue
+           *root-ruleset*
+           match-all
+           exec
+           exec-returning-value
+           write-to-file ;; XXX should this be exported? XXX
+           file-write
+           pipe))
 
 #-(or ecl cmu sbcl allegro openmcl lispworks)
 (error "LoGS is not supported on your Lisp")
