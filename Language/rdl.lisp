@@ -29,6 +29,10 @@
   `(let ((it ,test-form))
     (if it ,then-form ,else-form)))
 
+(defmacro awhen (test-form &body then-forms)
+  `(let ((it ,test-form))
+    (if it (progn ,@then-forms))))
+
 ;;; an 'accessor' for the handle-fns
 (defmacro handle-fn (keyword)
   `(get ,keyword 'handle-fn))
@@ -89,15 +93,15 @@ on the required behaviour for SLOT."))
 
 (defun handle-name (rule exprs)
   (destructuring-bind (name . rest) exprs
-    (push name (rule-macro-name rule))
+    (aif (rule-macro-name rule)
+         (error "Each rule can have only one name.  Rule was already named ~
+                 as ~a" it)
+         (setf (rule-macro-name rule) name))
     rest))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :name)))
   (declare (ignore slot))
-  (aif (rule-macro-name rule)
-       (if (cdr it)
-           (error "Each rule can have only one name.")
-           (car it))))
+  (or (rule-macro-name rule) (gensym "NAME")))
 
 ;;; There is a macro hiding in all the HANDLE- functions!
 
