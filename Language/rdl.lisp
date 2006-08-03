@@ -102,7 +102,7 @@ on the required behaviour for SLOT."))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :name)))
   (declare (ignore slot))
-  (or (rule-macro-name rule) (gensym "NAME")))
+  (rule-macro-name rule))
 
 ;;; There is a macro hiding in all the HANDLE- functions!
 
