@@ -20,9 +20,10 @@
 
 (defpackage :org.prewett.LoGS.language
   (:use :cl)
-  (:import-from :logs :rule :message))
+  (:import-from :logs :rule :message)
+  (:nicknames :language))
 
-(in-package #:org.prewett.LoGS.language)
+(in-package #:language)
 
 ;;; Paul Graham, On Lisp, p191
 (defmacro aif (test-form then-form &optional else-form)
@@ -113,22 +114,59 @@ on the required behaviour for SLOT."))
   ;;
   ;; matching regexp "abc" or regexp "def"
   (destructuring-bind (car . cdr) exprs
-    (cond ((samep car :regexp)
-           (destructuring-bind (string . cdr) cdr
-             (push string (rule-macro-match rule))
-             (if (samep (car cdr) :and)
-                 (handle-match rule (cdr cdr))
-                 cdr)))
-          ((stringp car)
-           ;; If just a string is specified, assume it is a regexp
-           (handle-match rule `(:regexp ,car ,@cdr)))
+    (cond ((not (null (rule-macro-match rule)))
+           (error "Only one match expression may be specified per rule."))
+          ((or (stringp car) (samep car :regexp))
+           (destructuring-bind (sanitized exprs) (match-sanitize exprs)
+             (setf (rule-macro-match rule) `(:regexp ,@sanitized))
+             exprs))
           (t
-           (aif (rule-macro-match rule)
-                (error "Cannot have multiple matching functions.  ~S ~
-                         already specified." it))
            ;; Assume it is a predefined function
            (setf (rule-macro-match rule) car)
            cdr))))
+
+(defun match-sanitize (expr)
+  "Removes the `REGEXP's from EXPR and finds where the match
+expression ends.  Returns a (MATCH REST) list where MATCH is the
+sanitized part of the match and REST is the remainder of the rule for
+other settings."
+  (loop
+    with list = expr
+    as car = (car list)
+    and conjunction = nil then (not conjunction)
+    if conjunction
+      unless (or (samep car :and) (samep car :or))
+        do (loop-finish)
+      end
+    else
+      do (cond ((stringp car) t)
+               ((samep car :regexp) (pop list) (setq car (car list)))
+               (t (error "Expected keyword REGEXP or string.  Got ~s"
+                         car)))
+    collect car into collect
+    do (pop list)
+    finally (return (list collect list))))
+
+(defun parse-and-or (expr)
+  "Return EXPR in prefix notation.  EXPR is in infix expression of the
+form (form1 conjunction form2 conjunction ...) where conjunction is
+AND or OR.  AND has a higher priority than OR."
+  (let (output stack)
+    (labels ((stack-push (x)
+               (cond ((or (null stack) (samep x :and))
+                      (push x stack))
+                     (t (stack-pop)
+                        (stack-push x))))
+             (stack-pop ()
+               (destructuring-bind (operand1 operand2 &rest rest) output
+                 (setq output `((,(pop stack) ,operand1 ,operand2) ,@rest))))
+             (unstack () (loop while stack do (stack-pop))))
+      (loop
+        as toggle = t then (not toggle)
+        as x in expr
+        if toggle do (push x output)
+        else      do (stack-push x)
+        finally (unstack) (return output)))))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :match)))
   "Return the form for MATCH tag"
@@ -137,16 +175,20 @@ on the required behaviour for SLOT."))
     ;; if there is no match, we need not generate a match function
     ;; I believe the match function that matched no regexps was technically
     ;; correct, but this is slightly better in terms of speed and IMO clarity
-    (if (and match (every #'stringp match))
+    (if (and (consp match) (eq (car match) :regexp))
         (let ((msg (gensym "MESSAGE"))
               (matches (gensym "MATCHES"))
-              (sub-matches (gensym "SUB-MATCHES")))
+              (sub-matches (gensym "SUB-MATCHES"))
+              (mmesg (gensym "MSGMSG")))
           `(lambda (,msg)
             (multiple-value-bind (,matches ,sub-matches)
-                (and ,@(loop as r in (nreverse match)
-                             collecting `(cl-ppcre:scan-to-strings
-                                          ,r
-                                          (message ,msg))))
+                (let ((,mmesg (message ,msg)))
+                  ,@(parse-and-or
+                     (loop
+                       as toggle = nil then (not toggle)
+                       as e in (cdr match)
+                       when toggle collect e
+                       else collect `(cl-ppcre:scan-to-strings ,e ,mmesg))))
               (when ,matches (values t (list (list ',(intern "SUB-MATCHES")
                                                    ,sub-matches)))))))
         match)))
