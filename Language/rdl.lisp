@@ -59,7 +59,9 @@
     (fill-rule-template r)))
 
 (defun standardize (X)
-  "This is how we look at all lisp forms that are part of the RDL:  convert them into interned symbols in the keyword package so that :FOO and 'FOO and \"foo\" are seen as equivalent."
+  "This is how we look at all lisp forms that are part of the RDL:
+convert them into interned symbols in the keyword package so that :FOO
+and 'FOO and \"foo\" are seen as equivalent."
   (intern (format () "~a" X) '#:keyword))
 
 (defun samep (x symbol)
@@ -92,6 +94,7 @@ on the required behaviour for SLOT."))
          (funcall it rule exprs)
          (error "Unknown keyword ~S" keyword))))
 
+
 (defun handle-name (rule exprs)
   (destructuring-bind (name . rest) exprs
     (aif (rule-macro-name rule)
@@ -100,12 +103,15 @@ on the required behaviour for SLOT."))
          (setf (rule-macro-name rule) name))
     rest))
 
+(setf (handle-fn :name) #'handle-name)
+
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :name)))
   (declare (ignore slot))
   (rule-macro-name rule))
 
 ;;; There is a macro hiding in all the HANDLE- functions!
 
+
 (defun handle-match (rule exprs)
   ;; Syntax:
   ;; matching regexp "abc" and regexp "def" == matching regexp "abcdef"
@@ -125,6 +131,8 @@ on the required behaviour for SLOT."))
            (setf (rule-macro-match rule) car)
            cdr))))
 
+(setf (handle-fn :match) #'handle-match)
+
 (defun match-sanitize (expr)
   "Removes the `REGEXP's from EXPR and finds where the match
 expression ends.  Returns a (MATCH REST) list where MATCH is the
@@ -135,7 +143,7 @@ other settings."
     as car = (car list)
     and conjunction = nil then (not conjunction)
     if conjunction
-      unless (or (samep car :and) (samep car :or))
+      unless (or (samep car :and) (samep car :or) (samep car :>or))
         do (loop-finish)
       end
     else
@@ -150,23 +158,31 @@ other settings."
 (defun parse-and-or (expr)
   "Return EXPR in prefix notation.  EXPR is in infix expression of the
 form (form1 conjunction form2 conjunction ...) where conjunction is
-AND or OR.  AND has a higher priority than OR."
-  (let (output stack)
-    (labels ((stack-push (x)
-               (cond ((or (null stack) (samep x :and))
+AND or OR.  AND has a higher priority than OR.  To allow those
+situations where an OR of higher priority is desired, we use >OR.  >OR
+has greater priority than AND."
+  (let ((output '()) (stack '()))
+    (labels ((symid (sym) (standardize sym))
+             (actual-sym (sym)
+               (ecase (symid sym) (:and 'cl:and) ((:or :>or) 'cl:or)))
+             (priority (sym)
+               (ecase (symid sym) (:or  0) (:and 1) (:>or 2)))
+             (stack-push (x)
+               (cond ((or (null stack)
+                          (>= (priority x) (priority (car stack))))
                       (push x stack))
-                     (t (stack-pop)
-                        (stack-push x))))
+                     (t (stack-pop) (stack-push x))))
              (stack-pop ()
-               (destructuring-bind (operand1 operand2 &rest rest) output
-                 (setq output `((,(pop stack) ,operand1 ,operand2) ,@rest))))
+               (destructuring-bind (oprnd1 oprnd2 &rest rest) output
+                 (let ((top (actual-sym (pop stack))))
+                   (setq output `((,top ,oprnd1 ,oprnd2) ,@rest)))))
              (unstack () (loop while stack do (stack-pop))))
       (loop
         as toggle = t then (not toggle)
-        as x in expr
+        as x in (reverse expr)
         if toggle do (push x output)
         else      do (stack-push x)
-        finally (unstack) (return output)))))
+        finally (unstack) (return (car output))))))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :match)))
   "Return the form for MATCH tag"
@@ -183,16 +199,17 @@ AND or OR.  AND has a higher priority than OR."
           `(lambda (,msg)
             (multiple-value-bind (,matches ,sub-matches)
                 (let ((,mmesg (message ,msg)))
-                  ,@(parse-and-or
-                     (loop
-                       as toggle = nil then (not toggle)
-                       as e in (cdr match)
-                       when toggle collect e
-                       else collect `(cl-ppcre:scan-to-strings ,e ,mmesg))))
+                  ,(parse-and-or
+                    (loop
+                      as toggle = nil then (not toggle)
+                      as e in (cdr match)
+                      when toggle collect e
+                      else collect `(cl-ppcre:scan-to-strings ,e ,mmesg))))
               (when ,matches (values t (list (list ',(intern "SUB-MATCHES")
                                                    ,sub-matches)))))))
         match)))
 
+
 (defun handle-actions (rule exprs)
   ;; Valid syntactic choices:
   ;; doing foo => foo
@@ -233,12 +250,15 @@ AND or OR.  AND has a higher priority than OR."
           (push fn (rule-macro-actions rule)))
       rest)))
 
+(setf (handle-fn :actions) #'handle-actions)
+
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :actions)))
   (declare (ignore slot))
   (aif (rule-macro-actions rule)
        (cons 'list
              (nreverse it))))
 
+
 (defun handle-timeout (rule exprs)
   (destructuring-bind (preposition seconds &rest rest) exprs
     (cond ((samep preposition :in)
@@ -253,6 +273,8 @@ AND or OR.  AND has a higher priority than OR."
            rest)
           (t (error "Unexpected keyword ~S" preposition)))))
 
+(setf (handle-fn :timeout) #'handle-timeout)
+
 (defmethod get-rule-slot ((r rule-macro) (slot (eql :timeout)))
   "By default just return the slot value"
   (rule-macro-timeout r))
@@ -261,64 +283,66 @@ AND or OR.  AND has a higher priority than OR."
   "By default just return the slot value"
   (rule-macro-relative-timeout r))
 
+
 (defun handle-setenv (rule exprs)
-  (labels ((evalable (X) (if (consp X)
-                             (and (fboundp (car X)) (every #'evalable (cdr X)))
-                             (constantp X))))
-    (destructuring-bind (var = val &rest rest) exprs
-      (declare (ignore =))
-      (unless (symbolp var) (error "Cannot assign value to ~S" var))
-      (let ((val (if (evalable val) (eval val) val)))
-        (pushnew `(,var ,val) (rule-macro-environment rule)
-                 :test #'eql :key #'car))
-      (if (samep (car rest) :and)
-          (handle-setenv rule (cdr rest))
-          rest))))
+  (destructuring-bind (var = val &rest rest) exprs
+    (unless (symbolp var) (error "Cannot assign value to ~S" var))
+    (unless (samep = :=) (error "Incorrect assignment symbol.  Expected ~
+                                 = but got ~S" =))
+    (pushnew `(list ',var ,val) (rule-macro-environment rule)
+             :test #'eq :key #'(lambda (x) (second (second x))))
+    (if (samep (car rest) :and)
+        (handle-setenv rule (cdr rest))
+        rest)))
+
+(setf (handle-fn :setenv) #'handle-setenv)
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :environment)))
   (declare (ignore slot))
-  `',(nreverse (rule-macro-environment rule)))
+  (aif (rule-macro-environment rule)
+       `(list ,@(nreverse it))
+       '()))
 
+
 (defun handle-continuep (rule exprs)
   (setf (rule-macro-continuep rule) t)
   exprs)
+
+(setf (handle-fn :continuep) #'handle-continuep)
 
 (defmethod get-rule-slot ((r rule-macro) (slot (eql :continuep)))
   "By default just return the slot value"
   (rule-macro-continuep r))
 
+
 (defun handle-filter (rule exprs)
   (setf (rule-macro-filter rule) t
         (rule-macro-continuep rule) t)
   (handle-match rule exprs))
+
+(setf (handle-fn :filter) #'handle-filter)
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :filter)))
   (declare (ignore slot))
   (when (and (rule-macro-filter rule) (rule-macro-actions rule))
     (error "Cannot specify actions when filtering rule.")))
 
-(setf (handle-fn :match)        #'handle-match)
-(setf (handle-fn :name)         #'handle-name)
-(setf (handle-fn :actions)      #'handle-actions)
-(setf (handle-fn :timeout)      #'handle-timeout)
-(setf (handle-fn :filter)       #'handle-filter)
-(setf (handle-fn :setenv)       #'handle-setenv)
-(setf (handle-fn :continuep)    #'handle-continuep)
-
+
 ;;; Aliases
 (defmacro set-aliases (symbol (&rest aliases))
-  `(let ,@(loop as alias in aliases
-                as alias-sym = (gensym)
-                with symbol-sym = (gensym)
-                with symbol-let = `(,symbol-sym (standardize ',symbol))
-                collecting `(,alias-sym (standardize ',alias)) into lets
-                appending `((alias ,alias-sym) ,symbol-sym) into setfs
-                finally (return `((,symbol-let ,@lets) (setf ,@setfs))))))
+  `(let ,@(loop
+             as alias in aliases
+             as alias-sym = (gensym)
+             with symbol-sym = (gensym)
+             with symbol-let = `(,symbol-sym (standardize ',symbol))
+             collecting `(,alias-sym (standardize ',alias)) into lets
+             appending `((alias ,alias-sym) ,symbol-sym) into setfs
+             finally (return `((,symbol-let ,@lets) (setf ,@setfs))))))
 
-(set-aliases match (matching matches))
-(set-aliases filter (filtering))
-(set-aliases actions (doing do))
-(set-aliases setenv (set with))
-(set-aliases name (named))
-(set-aliases timeout (timing-out))
-(set-aliases continuep (continue continuing))
+(set-aliases match      (matching matches))
+(set-aliases filter     (filtering))
+(set-aliases actions    (doing do))
+(set-aliases setenv     (set with))
+(set-aliases name       (named))
+(set-aliases timeout    (timing-out))
+(set-aliases continuep  (continue continuing))
