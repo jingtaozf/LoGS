@@ -23,10 +23,11 @@
 
 (defun fifo-p (filename)
   (if
-   (logand 4096 
-           (nth-value 3 
-                      (unix-stat filename)))
-   t ()))
+   (eql 0
+        (logand 4096 
+                (nth-value 3 
+                           (unix-stat filename))))
+   () t))
 
 (defun get-file-length-from-filename (filename)
   "Given a filename, return the number of bytes currently in the file."
