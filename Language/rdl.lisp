@@ -1,4 +1,4 @@
-;;;; Logs extensible (common-lisp based) log/event analysis engine/language
+;;; Logs extensible (common-lisp based) log/event analysis engine/language
 ;;;; Copyright (C) 2006 Vijay Lakshminarayanan
 
 ;;;; This program is free software; you can redistribute it and/or
@@ -46,6 +46,7 @@
 (defstruct rule-macro
   (name '())
   (match '())
+  (bind '())
   (actions '())
   (environment '())
   (timeout '())
@@ -111,7 +112,6 @@ on the required behaviour for SLOT."))
 
 ;;; There is a macro hiding in all the HANDLE- functions!
 
-
 (defun handle-match (rule exprs)
   ;; Syntax:
   ;; matching regexp "abc" and regexp "def" == matching regexp "abcdef"
@@ -205,11 +205,35 @@ has greater priority than AND."
                       as e in (cdr match)
                       when toggle collect e
                       else collect `(cl-ppcre:scan-to-strings ,e ,mmesg))))
-              (when ,matches (values t (list (list ',(intern "SUB-MATCHES")
-                                                   ,sub-matches)))))))
+              (when ,matches 
+                (values t
+                        (aif ',(get-rule-slot rule :bind)
+                             (cons
+                              (list ',(intern "SUB-MATCHES")
+                                    ,sub-matches)
+                              (loop for count from 0 below (length ,sub-matches)
+                                    collect
+                                    (list (nth count it) (aref ,sub-matches count))))
+                             (list (list ',(intern "SUB-MATCHES")
+                                         ,sub-matches))))))))
         match)))
 
-
+(defun handle-bind (rule exprs)
+  "vars to bind from match"
+  (destructuring-bind (car . cdr) exprs
+    (cond ((samep car :vars)
+           (handle-bind rule cdr))
+          ((listp car)
+           (format t "found list: ~A~%" car)
+           (setf (rule-macro-bind rule) car)
+           cdr))))
+
+(setf (handle-fn :bind) #'handle-bind)
+
+(defmethod get-rule-slot ((rule rule-macro) (slot (eql :bind)))
+  (declare (ignore slot))
+  (rule-macro-bind rule))
+
 (defun handle-actions (rule exprs)
   ;; Valid syntactic choices:
   ;; doing foo => foo
