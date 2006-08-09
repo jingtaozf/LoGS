@@ -43,19 +43,21 @@
   `(get ,keyword 'alias))
 
 ;;; Influenced by Peter Norvig's LOOP implementation
-(defstruct rule-macro
-  (name '())
-  (match '())
-  (bind '())
-  (actions '())
-  (environment '())
-  (timeout '())
-  (relative-timeout '())
-  (filter '())
-  (continuep '()))
+
+;;; changed to CLOS objects instead of structures
+(defclass rule-macro ()
+  ((name :initform '() :accessor RULE-MACRO-NAME)
+   (match :initform '() :accessor RULE-MACRO-MATCH)
+   (bind :initform '() :accessor RULE-MACRO-BIND)
+   (actions :initform '() :accessor RULE-MACRO-ACTIONS)
+   (environment :initform '() :accessor RULE-MACRO-ENVIRONMENT)
+   (timeout :initform '() :accessor RULE-MACRO-TIMEOUT)
+   (relative-timeout :initform '() :accessor RULE-MACRO-RELATIVE-TIMEOUT)
+   (filter :initform '() :accessor RULE-MACRO-FILTER)
+   (continuep :initform '() :accessor RULE-MACRO-CONTINUEP)))
 
 (defmacro rule (&rest exprs)
-  (let ((r (make-rule-macro)))
+  (let ((r (make-instance 'rule-macro)))
     (parse-rule r exprs)
     (fill-rule-template r)))
 
