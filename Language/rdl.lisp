@@ -21,7 +21,7 @@
 
 (defpackage :org.prewett.LoGS.language
   (:use :cl)
-  (:import-from :logs :rule :message)
+  (:import-from :logs :rule :ruleset :message)
   (:nicknames :language))
 
 (in-package #:language)
@@ -62,6 +62,14 @@
     (parse-rule r exprs)
     (fill-rule-template r)))
 
+(defclass ruleset-macro (rule-macro)
+  ((elements :initform () :accessor RULESET-MACRO-ELEMENTS)))
+
+(defmacro ruleset (&rest exprs)
+  (let ((r (make-instance 'ruleset-macro)))
+    (parse-rule r exprs)
+    (fill-rule-template r)))
+
 (defun standardize (X)
   "This is how we look at all lisp forms that are part of the RDL:
 convert them into interned symbols in the keyword package so that :FOO
@@ -79,7 +87,10 @@ and 'FOO and \"foo\" are seen as equivalent."
   (:documentation "Returns the requested slot for RULE depending
 on the required behaviour for SLOT."))
 
-(defun fill-rule-template (rule)
+;; make this OO
+(defgeneric fill-rule-template (rule))
+
+(defmethod fill-rule-template ((rule rule-macro))
   `(make-instance
     'rule
     ,@(loop as slot in '(:match :name :actions :environment :timeout
@@ -87,7 +98,18 @@ on the required behaviour for SLOT."))
             as res = (get-rule-slot rule slot)
             if res append `(,slot ,res))))
 
-(defun parse-rule (rule exprs)
+(defmethod fill-rule-template ((rule ruleset-macro))
+  `(make-instance
+    'ruleset
+    ,@(loop as slot in '(:match :name :actions :environment :timeout
+                         :relative-timeout :filter :continuep)
+            as res = (get-rule-slot rule slot)
+            if res append `(,slot ,res))))
+
+;; make this OO
+(defgeneric parse-rule (rule exprs))
+
+(defmethod parse-rule ((rule rule-macro) exprs)
   (unless (null exprs)
     (parse-rule rule (parse-keyword rule (car exprs) (cdr exprs)))))
 
@@ -190,7 +212,7 @@ on the required behaviour for SLOT."))
     (labels ((symid (sym) (standardize sym))
              (actual-sym (sym)
                (ecase (symid sym) (:and 'cl:and) (:or 'cl:or)))
-             (stack-push (x) (push (if (consp x) (main x) x) stack))
+             (stack-push (x) (push (if (consp x) (main-parse x) x) stack))
              (stack-pop ()
                (destructuring-bind (oprnd1 oprnd2 . rest) output
                  (let ((top (actual-sym (pop stack))))
@@ -205,15 +227,15 @@ on the required behaviour for SLOT."))
                         (cl-ppcre-it (second form)))
                        ((eq (car form) :not)
                         `(cl:not ,(manage-form (cadr form))))
-                       (t (main form)))))
-             (main (list)
+                       (t (main-parse form)))))
+             (main-parse (list)
                (loop
                  as operator = nil then (not operator)
                  as x in (reverse list)
                  if operator do (stack-push x)
                  else        do (push (manage-form x) output)
                  finally (unstack) (return (car output)))))
-      (main expr))))
+      (main-parse expr))))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :match)))
   "Return the form for MATCH tag"
