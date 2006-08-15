@@ -2393,4 +2393,7 @@
 (defun run-all-categories ()
   (apply #'run-categories (org.ancar.clunit::list-test-categories)))
 
+;; load other tests
+(load "Language/rdl-tests.lisp")
+
 (run-all-categories)
