@@ -63,7 +63,7 @@
     (fill-rule-template r)))
 
 (defclass ruleset-macro (rule-macro)
-  ((elements :initform () :accessor RULESET-MACRO-ELEMENTS)))
+  ((elements :initform () :accessor MACRO-ELEMENTS)))
 
 (defmacro ruleset (&rest exprs)
   (let ((r (make-instance 'ruleset-macro)))
@@ -113,6 +113,7 @@ on the required behaviour for SLOT."))
   (unless (null exprs)
     (parse-rule rule (parse-keyword rule (car exprs) (cdr exprs)))))
 
+;; handle one keyword and its arguments, returning what remains in exprs
 (defun parse-keyword (rule keyword exprs)
   (let* ((keyword (standardize keyword))
          (keyword (or (alias keyword) keyword)))
@@ -198,14 +199,14 @@ on the required behaviour for SLOT."))
       with collect = nil
       as first = (first expr)
       as conjunction = nil then (not conjunction)
-      do (pop expr)
+      as xxx = (pop expr) then (pop expr)
       if conjunction
         if (conjunctionp first) collect first into c
-        else return (list c expr)
-      else do (destructuring-bind (keyword-part remaining-part)
-                  (manage-keyword first expr)
-                (setq expr remaining-part collect keyword-part))
-           and collect collect into c)))
+        else return (list c (cons xxx expr))
+        else do (destructuring-bind (keyword-part remaining-part)
+                    (manage-keyword first expr)
+                  (setq expr remaining-part collect keyword-part))
+        and collect collect into c)))
 
 (defun parse-match (expr gensym)
   (let ((output '()) (stack '()))
@@ -253,15 +254,16 @@ on the required behaviour for SLOT."))
             (multiple-value-bind (,matches ,sub-matches)
                 (let ((,mmesg (message ,msg)))
                   ,(parse-match (cdr match) mmesg))
-              (when ,matches 
+              (when ,matches
                 (values
                  t
                  (aif ',(get-rule-slot rule :bind)
                       (cons
                        (list ',(intern "SUB-MATCHES")
                              ,sub-matches)
-                       (loop for count from 0 below (length ,sub-matches)
+                       (loop for count from 0 below (length it)
                              for val in it
+                             while (> (length ,sub-matches) count)
                              collect
                              (list val (aref ,sub-matches count))))
                       (list (list ',(intern "SUB-MATCHES")
