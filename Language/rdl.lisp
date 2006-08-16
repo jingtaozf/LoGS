@@ -301,7 +301,6 @@ on the required behaviour for SLOT."))
             (samep car :variables))
            (handle-bind rule cdr))
           ((listp car)
-           (format t "found list: ~A~%" car)
            (setf (macro-bind rule) car)
            cdr))))
 
