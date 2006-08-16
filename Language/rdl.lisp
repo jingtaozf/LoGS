@@ -221,13 +221,10 @@ on the required behaviour for SLOT."))
     (let ((return-values (gensym)))
       `(let ((,return-values (multiple-value-list ,(car or-exprs))))
          (cond ((car ,return-values)
-                (format t "ret~%")
                 (values-list ,return-values))
                ((null ',(cdr or-exprs))
-                (format t "nothing left~%")
                 ())
                (t 
-                (format t "rec~%")
                 (multiple-value-or ,@(cdr or-exprs))
                 ))))))
 
