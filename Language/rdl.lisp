@@ -199,20 +199,43 @@ on the required behaviour for SLOT."))
       with collect = nil
       as first = (first expr)
       as conjunction = nil then (not conjunction)
-      as xxx = (pop expr) then (pop expr)
+      as next-expr = (pop expr) then (pop expr)
       if conjunction
-        if (conjunctionp first) collect first into c
-        else return (list c (cons xxx expr))
+       if (conjunctionp first) 
+       collect first into c
+        else return (if next-expr
+                        (list c (cons next-expr expr))
+                        (list c expr))
         else do (destructuring-bind (keyword-part remaining-part)
                     (manage-keyword first expr)
                   (setq expr remaining-part collect keyword-part))
         and collect collect into c)))
 
+;; like OR, but returns all of the values from the statement that returns t 
+;; as its first value
+;; 
+;; this way it may be nested and still ensure that all of the values are
+;; properly returned. 
+(defmacro multiple-value-or (&rest or-exprs)
+  (when (car or-exprs)
+    (let ((return-values (gensym)))
+      `(let ((,return-values (multiple-value-list ,(car or-exprs))))
+         (cond ((car ,return-values)
+                (format t "ret~%")
+                (values-list ,return-values))
+               ((null ',(cdr or-exprs))
+                (format t "nothing left~%")
+                ())
+               (t 
+                (format t "rec~%")
+                (multiple-value-or ,@(cdr or-exprs))
+                ))))))
+
 (defun parse-match (expr gensym)
   (let ((output '()) (stack '()))
     (labels ((symid (sym) (standardize sym))
              (actual-sym (sym)
-               (ecase (symid sym) (:and 'cl:and) (:or 'cl:or)))
+               (ecase (symid sym) (:and 'cl:and) (:or 'multiple-value-or)))
              (stack-push (x) (push (if (consp x) (main-parse x) x) stack))
              (stack-pop ()
                (destructuring-bind (oprnd1 oprnd2 . rest) output
@@ -251,30 +274,31 @@ on the required behaviour for SLOT."))
               (sub-matches (gensym "SUB-MATCHES"))
               (mmesg (gensym "MSGMSG")))
           `(lambda (,msg)
-            (multiple-value-bind (,matches ,sub-matches)
-                (let ((,mmesg (message ,msg)))
-                  ,(parse-match (cdr match) mmesg))
-              (when ,matches
-                (values
-                 t
-                 (aif ',(get-rule-slot rule :bind)
-                      (cons
-                       (list ',(intern "SUB-MATCHES")
-                             ,sub-matches)
-                       (loop for count from 0 below (length it)
-                             for val in it
-                             while (> (length ,sub-matches) count)
-                             collect
-                             (list val (aref ,sub-matches count))))
-                      (list (list ',(intern "SUB-MATCHES")
-                                  ,sub-matches))))))))
+             (multiple-value-bind (,matches ,sub-matches)
+                 (let ((,mmesg (message ,msg)))
+                   ,(parse-match (cdr match) mmesg))
+               (when ,matches
+                 (warn "sub-matches: ~A~%" ,sub-matches)
+                 (values
+                  ,matches
+                  (cons
+                   (list ',(intern "SUB-MATCHES")
+                         ,sub-matches)
+                   (loop for count from 0 
+                      below (length (get-rule-slot ,rule :bind))
+                      for val in (get-rule-slot ,rule :bind)
+                      while (> (length ,sub-matches) count)
+                      collect
+                        (list val (aref ,sub-matches count)))))))))
         match)))
 
 
 (defun handle-bind (rule exprs)
   "vars to bind from match"
   (destructuring-bind (car . cdr) exprs
-    (cond ((samep car :vars)
+    (cond ((or
+            (samep car :vars)
+            (samep car :variables))
            (handle-bind rule cdr))
           ((listp car)
            (format t "found list: ~A~%" car)
@@ -424,3 +448,4 @@ on the required behaviour for SLOT."))
 (set-aliases name       (named))
 (set-aliases timeout    (timing-out))
 (set-aliases continuep  (continue continuing))
+(set-aliases bind       (binding))
