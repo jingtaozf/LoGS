@@ -45,6 +45,9 @@
                 :type integer))
   (:documentation "Rules associate messages with actions."))
 
+ (defmethod make-load-form ((self rule) &optional environment)
+    (make-load-form-saving-slots self :environment environment))
+
 (defmethod print-object ((obj rule) stream)
   (print-unreadable-object (obj stream :type t :identity t)
     (with-slots (name match delete-rule continuep actions environment match-count match-try) obj
