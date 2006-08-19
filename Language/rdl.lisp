@@ -275,15 +275,14 @@ on the required behaviour for SLOT."))
                  (let ((,mmesg (message ,msg)))
                    ,(parse-match (cdr match) mmesg))
                (when ,matches
-                 (warn "sub-matches: ~A~%" ,sub-matches)
                  (values
                   ,matches
                   (cons
                    (list ',(intern "SUB-MATCHES")
                          ,sub-matches)
                    (loop for count from 0 
-                      below (length (get-rule-slot ,rule :bind))
-                      for val in (get-rule-slot ,rule :bind)
+                      below ,(length (get-rule-slot rule :bind))
+                      for val in ',(get-rule-slot rule :bind)
                       while (> (length ,sub-matches) count)
                       collect
                         (list val (aref ,sub-matches count)))))))))

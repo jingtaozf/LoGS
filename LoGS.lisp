@@ -99,4 +99,16 @@
   #-allegro
   (cl-user::quit))
 
-
+;; load a file, compile it if needed
+(defun load-LoGS-file (filename)
+  (let ((the-filename (make-pathname 
+                       :name filename 
+                       :type "lisp" 
+                       :defaults (parse-namestring *load-truename*))))
+    (let ((compiled-filename (compile-file-pathname the-filename)))
+      (when (or 
+             (not (probe-file compiled-filename)) ; no compiled file
+             (> (file-write-date the-filename)
+                (file-write-date compiled-filename))) ; old compiled file
+        (compile-file the-filename))
+      (load compiled-filename))))

@@ -280,6 +280,9 @@
   "an alias for print-log"
   (print-log))
 
+(defun print-message (message)
+  (format t "~A~%" (message message)))
+
 ;;;; match functions
 
 (defun match-all (message) 
