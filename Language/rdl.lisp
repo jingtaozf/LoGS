@@ -35,9 +35,11 @@
   `(let ((it ,test-form))
     (if it (progn ,@then-forms))))
 
+
 ;;; an 'accessor' for the handle-fns
-(defmacro handle-fn (keyword)
-  `(get ,keyword 'handle-fn))
+;; (defmacro handle-fn (keyword)
+;;   `(get ,keyword 'handle-fn))
+(defgeneric handle-fn (keyword type))
 
 ;;; To use synonyms easily
 (defmacro alias (keyword)
@@ -87,7 +89,9 @@ and 'FOO and \"foo\" are seen as equivalent."
   (:documentation "Returns the requested slot for RULE depending
 on the required behaviour for SLOT."))
 
-;; make this OO
+(defmethod get-rule-slot (rule slot)
+  (error "unknown slot: ~A in ~A" slot rule))
+
 (defgeneric fill-rule-template (rule))
 
 (defmethod fill-rule-template ((rule rule-macro))
@@ -106,7 +110,6 @@ on the required behaviour for SLOT."))
             as res = (get-rule-slot rule slot)
             if res append `(,slot ,res))))
 
-;; make this OO
 (defgeneric parse-rule (rule exprs))
 
 (defmethod parse-rule ((rule rule-macro) exprs)
@@ -117,7 +120,7 @@ on the required behaviour for SLOT."))
 (defun parse-keyword (rule keyword exprs)
   (let* ((keyword (standardize keyword))
          (keyword (or (alias keyword) keyword)))
-    (aif (handle-fn keyword)
+    (aif (handle-fn keyword rule)
          (funcall it rule exprs)
          (error "Unknown keyword ~S" keyword))))
 
@@ -130,7 +133,9 @@ on the required behaviour for SLOT."))
          (setf (macro-name rule) name))
     rest))
 
-(setf (handle-fn :name) #'handle-name)
+(defmethod handle-fn ((keyword (eql :name)) (type rule-macro))
+  #'handle-name)
+
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :name)))
   (declare (ignore slot))
@@ -178,7 +183,8 @@ on the required behaviour for SLOT."))
            (setf (macro-match rule) car)))
     cdr))
 
-(setf (handle-fn :match) #'handle-match)
+(defmethod handle-fn ((keyword (eql :match)) (type rule-macro))
+  #'handle-match)
 
 (defun match-separate (expr)
   (labels ((conjunctionp (X) (or (samep X :and) (samep X :or)))
@@ -300,7 +306,8 @@ on the required behaviour for SLOT."))
            (setf (macro-bind rule) car)
            cdr))))
 
-(setf (handle-fn :bind) #'handle-bind)
+(defmethod handle-fn ((keyword (eql :bind)) (type rule-macro))
+  #'handle-bind)
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :bind)))
   (declare (ignore slot))
@@ -347,7 +354,8 @@ on the required behaviour for SLOT."))
           (push fn (macro-actions rule)))
       rest)))
 
-(setf (handle-fn :actions) #'handle-actions)
+(defmethod handle-fn ((keyword (eql :actions)) (type rule-macro))
+  #'handle-actions)
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :actions)))
   (declare (ignore slot))
@@ -370,7 +378,8 @@ on the required behaviour for SLOT."))
            rest)
           (t (error "Unexpected keyword ~S" preposition)))))
 
-(setf (handle-fn :timeout) #'handle-timeout)
+(defmethod handle-fn ((keyword (eql :timeout)) (type rule-macro))
+  #'handle-timeout)
 
 (defmethod get-rule-slot ((r rule-macro) (slot (eql :timeout)))
   "By default just return the slot value"
@@ -392,7 +401,8 @@ on the required behaviour for SLOT."))
         (handle-setenv rule (cdr rest))
         rest)))
 
-(setf (handle-fn :setenv) #'handle-setenv)
+(defmethod handle-fn ((keyword (eql :setenv)) (type rule-macro))
+  #'handle-setenv)
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :environment)))
   (declare (ignore slot))
@@ -405,7 +415,8 @@ on the required behaviour for SLOT."))
   (setf (macro-continuep rule) t)
   exprs)
 
-(setf (handle-fn :continuep) #'handle-continuep)
+(defmethod handle-fn ((keyword (eql :continuep)) (type rule-macro))
+  #'handle-continuep)
 
 (defmethod get-rule-slot ((r rule-macro) (slot (eql :continuep)))
   "By default just return the slot value"
@@ -417,7 +428,8 @@ on the required behaviour for SLOT."))
         (macro-continuep rule) t)
   (handle-match rule exprs))
 
-(setf (handle-fn :filter) #'handle-filter)
+(defmethod handle-fn ((keyword (eql :filter)) (type rule-macro))
+  #'handle-filter)
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :filter)))
   (declare (ignore slot))
