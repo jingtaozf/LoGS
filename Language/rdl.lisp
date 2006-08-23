@@ -35,11 +35,14 @@
   `(let ((it ,test-form))
     (if it (progn ,@then-forms))))
 
-
 ;;; an 'accessor' for the handle-fns
 ;; (defmacro handle-fn (keyword)
 ;;   `(get ,keyword 'handle-fn))
 (defgeneric handle-fn (keyword type))
+
+;;; I think we can leave 'alias' as it is -- I can't think of a time
+;;; when a keyword's alias would differ between two different classes of
+;;; objects (like rulesets and contexts for example)
 
 ;;; To use synonyms easily
 (defmacro alias (keyword)
@@ -65,7 +68,7 @@
     (fill-rule-template r)))
 
 (defclass ruleset-macro (rule-macro)
-  ((elements :initform () :accessor MACRO-ELEMENTS)))
+  ((elements :initform () :accessor MACRO-ELEMENTS :initarg :MACRO-ELEMENTS)))
 
 (defmacro ruleset (&rest exprs)
   (let ((r (make-instance 'ruleset-macro)))
@@ -102,13 +105,22 @@ on the required behaviour for SLOT."))
             as res = (get-rule-slot rule slot)
             if res append `(,slot ,res))))
 
-(defmethod fill-rule-template ((rule ruleset-macro))
-  `(make-instance
-    'ruleset
-    ,@(loop as slot in '(:match :name :actions :environment :timeout
-                         :relative-timeout :filter :continuep)
-            as res = (get-rule-slot rule slot)
-            if res append `(,slot ,res))))
+(defmethod fill-rule-template ((ruleset ruleset-macro))
+  `(let ((ruleset-instance 
+          (make-instance
+           'ruleset
+           ,@(loop as slot in '(:match :name :actions :environment :timeout
+                                :relative-timeout :filter :continuep)
+                as res = (get-rule-slot ruleset slot)
+                if res append `(,slot ,res)))))
+     (progn
+       ,@(mapcar
+         (lambda (rule)
+           `(logs::enqueue ruleset-instance ,rule)
+           )
+         (get-rule-slot ruleset :elements)))
+
+     ruleset-instance))
 
 (defgeneric parse-rule (rule exprs))
 
@@ -435,6 +447,29 @@ on the required behaviour for SLOT."))
   (declare (ignore slot))
   (when (and (macro-filter rule) (macro-actions rule))
     (error "Cannot specify actions when filtering rule.")))
+
+
+
+;; (ruleset
+;;  named 'foo
+;;  matching regexp "foo"
+;;  elements
+;;  ((rule named 'bar)))
+
+(defun handle-elements (ruleset exprs)
+  (destructuring-bind ((&rest rule-list) . rest) exprs
+    (setf (macro-elements ruleset) (append (macro-elements ruleset)
+                                           rule-list))
+    rest))
+
+(defmethod handle-fn ((keyword (eql :elements)) (type ruleset-macro))
+  #'handle-elements)
+
+
+(defmethod get-rule-slot ((ruleset ruleset-macro) (slot (eql :elements)))
+  (declare (ignore slot))
+  (macro-elements ruleset))
+
 
 
 ;;; Aliases
