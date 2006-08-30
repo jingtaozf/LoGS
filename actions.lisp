@@ -33,6 +33,24 @@
                             :output *standard-output*)
     ))
 
+(defmacro exec (program args)
+  `(do-exec ,program ,args))
+
+(defun do-exec (program args)
+  (lambda (messages) 
+    (declare (ignore messages))
+    #+cmu
+    (extensions:run-program program args :wait () :output t)
+    #+sbcl
+    (run-program program args :wait () :output t :search t)
+    #+openmcl
+    (run-program program args :wait () :output t)
+    #+allegro
+    (excl:run-shell-command (format () "~A ~{ ~A~}" program args)
+                            :output *standard-output*)
+    ))
+
+
 ;; like exec, but wait and return the return code from the program
 ;; for when the exec is useful /for/ the return value
 (defmacro exec-returning-value (program &rest args)

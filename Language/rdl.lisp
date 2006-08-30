@@ -21,7 +21,7 @@
 
 (defpackage :org.prewett.LoGS.language
   (:use :cl)
-  (:import-from :logs :rule :ruleset :message)
+  (:import-from :logs :rule :ruleset :message :exec)
   (:nicknames :language))
 
 (in-package #:language)
@@ -60,7 +60,8 @@
    (timeout :initform '() :accessor MACRO-TIMEOUT)
    (relative-timeout :initform '() :accessor MACRO-RELATIVE-TIMEOUT)
    (filter :initform '() :accessor MACRO-FILTER)
-   (continuep :initform '() :accessor MACRO-CONTINUEP)))
+   (continuep :initform '() :accessor MACRO-CONTINUEP)
+   (exec :initform '() :accessor MACRO-EXEC)))
 
 (defmacro rule (&rest exprs)
   (let ((r (make-instance 'rule-macro)))
@@ -98,12 +99,19 @@ on the required behaviour for SLOT."))
 (defgeneric fill-rule-template (rule))
 
 (defmethod fill-rule-template ((rule rule-macro))
-  `(make-instance
-    'rule
-    ,@(loop as slot in '(:match :name :actions :environment :timeout
-                         :relative-timeout :filter :continuep)
-            as res = (get-rule-slot rule slot)
-            if res append `(,slot ,res))))
+  `(let ((rule-instance 
+          (make-instance
+           'rule
+           ,@(loop as slot in '(:match :name :actions :environment :timeout
+                                :relative-timeout :filter :continuep)
+                   as res = (get-rule-slot rule slot)
+                   if res append `(,slot ,res)))))
+    (progn
+      (setf (logs::actions rule-instance)
+            (append (logs::actions rule-instance)
+                    (macro-exec ,rule))))
+    rule-instance
+  ))
 
 (defmethod fill-rule-template ((ruleset ruleset-macro))
   `(let ((ruleset-instance 
@@ -470,6 +478,22 @@ on the required behaviour for SLOT."))
   (declare (ignore slot))
   (macro-elements ruleset))
 
+
+
+(defmethod handle-fn ((keyword (eql :exec)) (type rule-macro))
+  #'handle-exec)
+
+(defun handle-exec (rule exprs)
+  (destructuring-bind (prog args . rest) exprs
+    (setf (macro-exec rule)
+          (append (macro-exec rule)
+                  (list
+                   (do-exec prog args))))
+    rest))
+
+(defmethod get-rule-slot ((rule rule-macro) (slot (eql :exec)))
+  (declare (ignore slot))
+  (macro-exec rule))
 
 
 ;;; Aliases
