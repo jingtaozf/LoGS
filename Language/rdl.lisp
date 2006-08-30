@@ -36,13 +36,9 @@
     (if it (progn ,@then-forms))))
 
 ;;; an 'accessor' for the handle-fns
-;; (defmacro handle-fn (keyword)
-;;   `(get ,keyword 'handle-fn))
-(defgeneric handle-fn (keyword type))
-
-;;; I think we can leave 'alias' as it is -- I can't think of a time
-;;; when a keyword's alias would differ between two different classes of
-;;; objects (like rulesets and contexts for example)
+(defgeneric handle-fn (keyword type)
+  (:documentation "Returns the requested handler function depending on the 
+TYPE of the object passed in"))
 
 ;;; To use synonyms easily
 (defmacro alias (keyword)
@@ -61,7 +57,8 @@
    (relative-timeout :initform '() :accessor MACRO-RELATIVE-TIMEOUT)
    (filter :initform '() :accessor MACRO-FILTER)
    (continuep :initform '() :accessor MACRO-CONTINUEP)
-   (exec :initform '() :accessor MACRO-EXEC)))
+   (storing :initform () :accessor MACRO-STORING)
+   (exec :initform () :accessor MACRO-EXEC)))
 
 (defmacro rule (&rest exprs)
   (let ((r (make-instance 'rule-macro)))
@@ -109,6 +106,13 @@ on the required behaviour for SLOT."))
     (progn
       (setf (logs::actions rule-instance)
             (append (logs::actions rule-instance)
+                    ;; storing actions
+                    (list
+                     ,@(mapcar
+                        (lambda (context)
+                          `(lambda (message)
+                             (LoGS::add-to-context ,context message)))
+                        (get-rule-slot rule :storing)))
                     (macro-exec ,rule))))
     rule-instance
   ))
@@ -119,15 +123,13 @@ on the required behaviour for SLOT."))
            'ruleset
            ,@(loop as slot in '(:match :name :actions :environment :timeout
                                 :relative-timeout :filter :continuep)
-                as res = (get-rule-slot ruleset slot)
-                if res append `(,slot ,res)))))
+                as slot-contents = (get-rule-slot ruleset slot)
+                if slot-contents append `(,slot ,slot-contents)))))
      (progn
        ,@(mapcar
-         (lambda (rule)
-           `(logs::enqueue ruleset-instance ,rule)
-           )
-         (get-rule-slot ruleset :elements)))
-
+          (lambda (rule)
+            `(logs::enqueue ruleset-instance ,rule))
+          (get-rule-slot ruleset :elements)))
      ruleset-instance))
 
 (defgeneric parse-rule (rule exprs))
@@ -480,6 +482,28 @@ on the required behaviour for SLOT."))
 
 
 
+(defmethod handle-storing (rule exprs)
+  (if (samep (car exprs) :into)
+      (handle-storing rule (cdr exprs))
+      (destructuring-bind ((&rest contexts) . rest) exprs
+        (setf (macro-storing rule)
+              (append (macro-storing rule)
+                      contexts))
+        rest)))
+
+(defmethod handle-fn ((keyword (eql :storing)) (type rule-macro))
+  #'handle-storing)
+
+(defmethod get-rule-slot ((rule rule-macro) (slot (eql :storing)))
+  (declare (ignore slot))
+  (macro-storing rule))
+
+(defmethod get-rule-slot ((ruleset ruleset-macro) (slot (eql :storing)))
+  (declare (ignore slot ruleset))
+  (error "cannot use ruleset to store messages into a context!"))
+
+
+
 (defmethod handle-fn ((keyword (eql :exec)) (type rule-macro))
   #'handle-exec)
 
@@ -488,12 +512,16 @@ on the required behaviour for SLOT."))
     (setf (macro-exec rule)
           (append (macro-exec rule)
                   (list
-                   (do-exec prog args))))
+                   (LoGS::do-exec prog args))))
     rest))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :exec)))
   (declare (ignore slot))
   (macro-exec rule))
+
+(defmethod get-rule-slot ((ruleset ruleset-macro) (slot (eql :exec)))
+  (declare (ignore slot))
+  (error "cannot use ruleset to exec~%"))
 
 
 ;;; Aliases
@@ -515,3 +543,4 @@ on the required behaviour for SLOT."))
 (set-aliases timeout    (timing-out))
 (set-aliases continuep  (continue continuing))
 (set-aliases bind       (binding))
+(set-aliases elements   (contents containing))

@@ -248,4 +248,20 @@
                             (org.prewett.cl-cli::help org.prewett.LoGS::*opts*)
                             (quit-LoGS)))
                       :description "display this help text")
-       ))
+       (make-instance 'cli-opt
+                      :name "run-before-exit"
+                      :arguments '(func)
+                      :action
+                      #'(lambda (func)
+                          (let ((split-func
+                                 (cl-ppcre::split
+                                  ":{1,2}"
+                                  func)))
+                            (setf LoGS::*run-before-exit* 
+                                  (cons 
+                                   (if (cdr split-func)
+                                       (intern 
+                                        (cadr split-func)
+                                        (car split-func))
+                                       (intern func))
+                                   LoGS::*run-before-exit*)))))))

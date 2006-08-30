@@ -189,3 +189,20 @@
 (defmethod dll-delete :after ((doubly-linked-list doubly-linked-list)
                               (item-to-delete doubly-linked-list-item))
   (remhash (data item-to-delete) (list-entries doubly-linked-list)))
+
+(defmethod map-dll (function (doubly-linked-list doubly-linked-list) &optional (level 1))
+  (format t "map-dll level: ~A~%" level)
+  (loop as entry = (head doubly-linked-list)
+     then (unless (equal (tail doubly-linked-list) entry)
+            (rlink entry))
+     unless entry
+     do
+       (return)
+     when entry
+     do
+       (progn
+         (funcall function (data entry) level)
+         (if (typep (data entry) 'doubly-linked-list)
+             (map-dll function (data entry) (+ 1 level))))))
+         
+       
