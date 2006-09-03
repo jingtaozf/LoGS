@@ -151,7 +151,7 @@
                rule
              
              (when (actions rule)
-               (run-actions rule message rule-environment))
+               (run-actions rule message (append rule-environment environment)))
              (when delete-rule 
                (when (funcall delete-rule message)
                 (setf (dead-p rule) t)

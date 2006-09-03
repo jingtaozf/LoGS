@@ -37,7 +37,10 @@
   (lambda (messages) 
     (declare (ignore messages))
     #+cmu
-    (extensions:run-program program 
+    (extensions:run-program (cond ((symbolp program)
+                                   (symbol-value program))
+                                  (t
+                                   program))
                             (mapcar
                              (lambda (arg)
                                (cond ((symbolp arg)
@@ -103,9 +106,9 @@
     (format file "~A~%" string)))
 
 ;; make a function to write the message to a file
-(defmacro file-write (filename)
-  `(lambda (thing)
-     (write-to-file ,filename thing)))
+(defun file-write (filename)
+  (lambda (thing)
+     (write-to-file filename thing)))
 
 
 (defmethod pipe ((message message) (program string) &rest args)
