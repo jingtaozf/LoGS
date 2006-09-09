@@ -71,7 +71,7 @@
         
                (let ((*ruleset* ruleset))
                  (in-given-environment
-                  (append environment rule-environment ruleset-environment)
+                  (append ruleset-environment environment rule-environment)
                  (check-rules message *ruleset*))))))))))
 
 (defgeneric check-rules (message ruleset)
