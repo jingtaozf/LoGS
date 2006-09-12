@@ -113,7 +113,7 @@ on the required behaviour for SLOT."))
                           `(lambda (message)
                              (LoGS::add-to-context ,context message)))
                         (get-rule-slot rule :storing)))
-                    (macro-exec ,rule))))
+                    )))
     rule-instance
   ))
 
@@ -509,10 +509,9 @@ on the required behaviour for SLOT."))
 
 (defun handle-exec (rule exprs)
   (destructuring-bind (prog args . rest) exprs
-    (setf (macro-exec rule)
-          (append (macro-exec rule)
-                  (list
-                   (LoGS::do-exec prog args))))
+    (push 
+     `(LoGS::do-exec ,prog ',args)
+     (macro-actions rule))
     rest))
 
 (defmethod get-rule-slot ((rule rule-macro) (slot (eql :exec)))
@@ -524,6 +523,22 @@ on the required behaviour for SLOT."))
   (error "cannot use ruleset to exec~%"))
 
 
+
+(defmethod handle-fn ((keyword (eql :write)) (type rule-macro))
+  #'handle-write)
+
+(defun handle-write (rule exprs)
+  (if (samep (car exprs) :to)
+      (handle-write rule (cdr exprs))
+      (destructuring-bind (filename . rest) exprs
+        (push
+         `(lambda (message)
+             ',filename)
+         (macro-actions rule))
+        rest)))
+
+
+
 ;;; Aliases
 (defmacro set-aliases (symbol (&rest aliases))
   `(let ,@(loop

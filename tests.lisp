@@ -2079,18 +2079,6 @@
         (add-item window (make-instance 'message))
         (assert-non-nil (check-limits window)))))
 
-;; (deftest "parse-function returns function"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list (lambda (message) 
-;;                                         (declare (ignore message))
-;;                                         t)))
-;;              (fn (parse-function parse-list))
-;;             (message (make-instance 'message :message "some message")))
-;;         (and (functionp fn)
-;;              (funcall fn message)))))
-
 (deftest "empty rule has no match"
     :category 'language-tests
     :test-fn
@@ -2098,10 +2086,8 @@
       (let ((rule (org.prewett.LoGS.language::rule)))
         (assert-nil (match rule)))))
 
-
-
 (deftest "rule can set environment"
-    :category 'language-tests
+    :category 'environment-tests
     :test-fn
     (lambda ()
       (let ((rule (org.prewett.LoGS.language::rule with foo = "one")))
@@ -2109,269 +2095,155 @@
          "one"
          (cadar (member 'foo (environment rule) :key #'car))))))
 
-;; (deftest "parse-function returns remaining"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let ((parse-list (list (lambda (message)
-;;                                (declare (ignore message))
-;;                                t)
-;;                          'a 'b 'c)))
-;;         (multiple-value-bind (fn rest)
-;;             (parse-function parse-list)
-;;           (declare (ignore fn))
-;;           (equal '(a b c) rest)))))
 
-;; (deftest "parse-regexp returns matching function"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list "the cat ran"))
-;;              (fn (parse-regexp parse-list))
-;;              (message (make-instance 'message :message "the cat ran")))
-;;         (and (functionp fn)
-;;              (and
-;;               (funcall fn message)
-;;               t)))))
+(deftest "ruleset can set environment"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let ((ruleset (language::ruleset with var = "xxx")))
+        (assert-equal
+         "xxx"
+         (cadr (assoc 'var (logs::environment ruleset)))))))
 
-;; (deftest "parse-script returns matching function"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list "true"))
-;;              (fn (parse-script parse-list))
-;;              (message (make-instance 'message :message "doesn't matter")))
-;;         (and (functionp fn)
-;;              (funcall fn message)
-;;              t))))
+(deftest "rule match can bind variable"
+    :category 'environment-tests
+    :test-fn 
+    (lambda ()
+      (let* ((set-me NIL)
+             (rule (language::rule 
+                    matching regexp "(.*)" 
+                    binding (variable)
+                    doing
+                    (lambda (message)
+                      (declare (ignore message))
+                      (setf set-me variable))))
+             (message (make-instance 'message :message "test")))
+        (logs::check-rule rule message)
+        (assert-equal "test" set-me))))
 
-;; (deftest "parse-script returns remaining"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let ((parse-list (list "true"
-;;                          'a 'b 'c)))
-;;         (multiple-value-bind (fn rest)
-;;             (parse-script parse-list)
-;;           (and (functionp fn)
-;;                (equal '(a b c) rest))))))
+(deftest "ruleset match can bind variable"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let* ((set-me NIL)
+             (ruleset (language::ruleset
+                       matching regexp "(.*)" 
+                       binding (variable)
+                       containing
+                       ((rule matching regexp ".*"
+                              doing
+                              (lambda (message)
+                                (declare (ignore message))
+                                (setf set-me variable))))))
+             (message (make-instance 'message :message "test")))
+        (logs::check-rule ruleset message)
+        (assert-equal "test" set-me))))
 
-;; (deftest "parse-regexp returns remaining"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let ((parse-list (list "the cat ran"
-;;                          'a 'b 'c)))
-;;         (multiple-value-bind (fn rest)
-;;             (parse-regexp parse-list)
-;;           (and (functionp fn)
-;;                (equal '(a b c) rest))))))
+(deftest "rule match variable overrides ruleset match variable"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let* ((set-me NIL)
+             (ruleset (language::ruleset
+                       matching regexp "(.*)" 
+                       binding (variable)
+                       containing
+                       ((rule matching regexp "foo:(.*)"
+                              binding (variable)
+                              doing
+                              (lambda (message)
+                                (declare (ignore message))
+                                (setf set-me variable))))))
+             (message (make-instance 'message :message "foo:test")))
+        (logs::check-rule ruleset message)
+        (assert-equal "test" set-me))))
 
-;; (deftest "parse-match regexp returns matching function"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list 'regexp "the cat ran"))
-;;              (match-fn (parse-match parse-list))
-;;              (message (make-instance 'message :message "the cat ran")))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
+(deftest "rule environment variable overrides ruleset environment variable"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let* ((set-me NIL)
+             (ruleset (language::ruleset
+                       with variable = 'ruleset-var
+                       matching regexp ".*" 
+                       containing
+                       ((rule matching regexp ".*"
+                              with variable = 'rule-var
+                              doing
+                              (lambda (message)
+                                (declare (ignore message))
+                                (setf set-me variable))))))
+             (message (make-instance 'message :message "test")))
+        (logs::check-rule ruleset message)
+        (assert-equal 'rule-var set-me))))
 
-;; (deftest "parse-match function returns matching function"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((the-function (lambda (message)
-;;                                            (declare (ignore message))
-;;                                            t))
-;;              (parse-list (list 'function the-function))
-;;              (message  (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (eql match-fn the-function)
-;;          (funcall match-fn message)
-;;          t))))
+(deftest "rule variable only lives for rule check"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let* ((set-me NIL)
+             (ruleset (language::ruleset
+                       matching regexp "(.*)" 
+                       binding (variable)
+                       containing
+                       ((rule matching regexp "foo:(.*)"
+                              binding (variable)
+                              continue
+                              doing
+                              (lambda (message)
+                                (declare (ignore message))
+                                (setf set-me variable)))
+                        (rule matching regexp ".*"
+                              doing
+                              (lambda (message)
+                                (declare (ignore message))
+                                (setf set-me variable))))))
+             (message (make-instance 'message :message "foo:test")))
+        (logs::check-rule ruleset message)
+        (assert-equal "foo:test" set-me))))
 
-;; (deftest "parse-match script returns matching script"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list 'script "true"))
-;;              (message  (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
+(deftest "all rule variable bindings happen"
+    :category 'environment-tests
+    :test-fn 
+    (lambda ()
+      (let* ((set-me NIL)
+             (ruleset 
+              (let ((var1 "var1")) ;; variable set lexically
+                (language::ruleset
+                 with var2 = "var2"     ;; variable set in ruleset's environment
+                 matching regexp "(.*):.*" 
+                 binding (var3)        ;; variable set by ruleset's match function
+                 containing
+                 ((rule 
+                   with var4 = "var4"   ;; variable set by rule's environment
+                         matching regexp "var3:(.*)"
+                              binding (var5) ;; variable set by rule's match function
+                              doing
+                              (lambda (message)
+                                (declare (ignore message))
+                                (setf set-me 
+                                      (format () "~A ~A ~A ~A ~A" 
+                                               var1 var2 var3 var4 var5))))))))
+             (message (make-instance 'message :message "var3:var5")))
+        (logs::check-rule ruleset message)
+        (assert-equal "var1 var2 var3 var4 var5" set-me))))
 
-;; (deftest "false script returns nil"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list 'script "false"))
-;;              (message  (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (not (funcall match-fn message))
-;;          t))))
-
-;; (deftest "true script returns t"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list 'script "true"))
-;;              (message  (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
-
-
-;; (defun true-func (message)
-;;   (declare (ignore message))
-;;   t)
-
-;; (defun false-func (message)
-;;   (declare (ignore message))
-;;   ())
-
-;; (deftest "true function returns t"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list 'function #'true-func))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
-
-;; (deftest "false function returns ()"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list 'function #'false-func))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (not (funcall match-fn message))
-;;          t))))
-
-;; (deftest "not of true function returns NIL"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list (list 'not 'function #'true-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (not (funcall match-fn message))
-;;          t))))
-
-;; (deftest "not of false function returns t"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list (list 'not 'function #'false-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
-
-;; (deftest "or of 2 falses is false"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list (list 'or 
-;;                                      'function #'false-func 
-;;                                      'function #'false-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (not (funcall match-fn message))
-;;          t))))
-
-;; (deftest "or of 2 trues is true"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list `((or 
-;;                             function ,#'true-func 
-;;                             function ,#'true-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
-
-;; (deftest "or of false and true is true"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list (list 'or 
-;;                                      'function #'false-func 
-;;                                      'function #'true-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
-
-;; (deftest "and of 2 trues is true"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list (list 'and
-;;                                      'function #'true-func 
-;;                                      'function #'true-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (funcall match-fn message)
-;;          t))))
-
-;; (deftest "and of true and false is false"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list (list (list 'and
-;;                                      'function #'true-func 
-;;                                      'function #'false-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (not (funcall match-fn message))
-;;          t))))
-
-;; (deftest "and of 2 falses is false"
-;;     :category 'logic-tests
-;;     :test-fn
-;;     (lambda ()
-;;       (let* ((parse-list 
-;;               `((and 
-;;                  function ,#'false-func
-;;                  function ,#'false-func)))
-;;              (message (make-instance 'message))
-;;              (match-fn (parse-match parse-list)))
-;;         (and
-;;          (functionp match-fn)
-;;          (not (funcall match-fn message))
-;;          t))))
+;; make sure that variable bindings aren't hanging around
+;; from a previous test
+(deftest "unbound variable test"
+    :category 'environment-tests
+    :test-fn 
+    (lambda ()
+      (let* ((set-me NIL)
+             (rule (rule 
+                    matching regexp ".*"
+                    doing
+                    (lambda (message)
+                      (declare (ignore message))
+                      (setf set-me (not (boundp 'var1))))))
+             (message (make-instance 'message :message "test")))
+        (logs::check-rule rule message)
+        (assert-non-nil set-me))))
 
 ;; a little slicker way of running all of the tests
 (defun run-categories (&rest rest)

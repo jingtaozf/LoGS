@@ -96,7 +96,6 @@
                            `(funcall ,body-result))))
     `(let ((,vars (mapcar #'car ,env))
            (,vals (mapcar #'cadr ,env)))
-       ;`(declare (special ,@,vars))
        (progv (cons 'env ,vars) (cons ,env ,vals)
          (let ((,body-result ,body))
            (cond ((functionp ,body-result)

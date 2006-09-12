@@ -34,14 +34,13 @@
     ))
 
 (defun do-exec (program args)
-  (lambda (messages) 
-    (declare (ignore messages))
-    #+cmu
-    (extensions:run-program (cond ((symbolp program)
-                                   (symbol-value program))
-                                  (t
-                                   program))
-                            (mapcar
+  #'(lambda (message) 
+      #+cmu
+      (extensions:run-program (cond ((symbolp program)
+                                     (symbol-value program))
+                                    (t
+                                     program))
+                              (mapcar
                              (lambda (arg)
                                (cond ((symbolp arg)
                                       (symbol-value arg))
@@ -57,7 +56,7 @@
                             :output *standard-output*)
     ))
 
-(defmacro exec (program args)
+(defmacro exec (program &rest args)
   `(do-exec ,program ,args))
 
 
@@ -108,7 +107,17 @@
 ;; make a function to write the message to a file
 (defun file-write (filename)
   (lambda (thing)
-     (write-to-file filename thing)))
+     (write-to-file 
+      (cond ((symbolp filename)
+             (symbol-value filename))
+            ((listp filename)
+             (apply #'format () 
+                    (mapcar (lambda (x) (if (symbolp x)
+                                            (symbol-value x)
+                                            x))
+                            filename)))
+            (t filename))
+      thing)))
 
 
 (defmethod pipe ((message message) (program string) &rest args)
