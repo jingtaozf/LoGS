@@ -533,7 +533,7 @@ on the required behaviour for SLOT."))
       (destructuring-bind (filename . rest) exprs
         (push
          `(lambda (message)
-             ',filename)
+            (logs::write-to-file ',filename message))
          (macro-actions rule))
         rest)))
 
