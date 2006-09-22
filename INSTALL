@@ -1,0 +1,36 @@
+LoGS 0.1.2 Installation Instructions
+
+LoGS works with several different Common Lisps.  These instructions
+assume CMUCL.
+
+Required Packages:
+In order to use the LoGS build and test scripts, you will need the
+following packages:
+
+LoGS:
+        http://download.savannah.gnu.org/releases/logs/
+CL-PPCRE:
+        http://www.weitz.de/files/cl-ppcre.tar.gz
+CL-INTERPOL:
+        http://www.weitz.de/files/cl-interpol.tar.gz
+CLUnit:
+        (packaged with LoGS)
+
+Unpacking:
+tar -zxvf /path/to/LoGS_0.1.2.tar.gz
+cd logs
+tar -zxvf /path/to/cl-ppcre.tar.gz
+tar -zxvf /path/to/cl-interpol.tar.gz
+
+Building LoGS:
+./Build_LoGS.sh
+
+You should now have a LoGS.core file in the build directory.
+
+Testing LoGS:
+./Test_LoGS.sh
+
+You should see a message like this if everything went well:
+TOTALS: 149 tests run; 149 tests passed; 0 tests failed.
+
+
