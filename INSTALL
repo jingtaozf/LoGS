@@ -1,8 +1,5 @@
 LoGS 0.1.2 Installation Instructions
 
-LoGS works with several different Common Lisps.  These instructions
-assume CMUCL.
-
 Required Packages:
 In order to use the LoGS build and test scripts, you will need the
 following packages:
@@ -22,15 +19,27 @@ cd logs
 tar -zxvf /path/to/cl-ppcre.tar.gz
 tar -zxvf /path/to/cl-interpol.tar.gz
 
-Building LoGS:
-./Build_LoGS.sh
+Building and testing LoGS using CMUCL:
 
-You should now have a LoGS.core file in the build directory.
+        Building LoGS:
+        ./Build_LoGS.sh
 
-Testing LoGS:
-./Test_LoGS.sh
+        You should now have a LoGS.core file in the build directory.
 
-You should see a message like this if everything went well:
-TOTALS: 149 tests run; 149 tests passed; 0 tests failed.
+        Testing LoGS:
+        ./Test_LoGS.sh
 
+        You should see a message like this if everything went well:
+        TOTALS: 149 tests run; 149 tests passed; 0 tests failed.
 
+Building and testing LoGS using SBCL:
+        Building LoGS:
+        ./SBCL-Build_LoGS.sh
+
+        You should now have a LoGS-sbcl.core file in the build directory.
+
+        Testing LoGS:
+        ./SBCL-Test_LoGS.sh
+
+        You should see a message like this if everything went well:
+        TOTALS: 149 tests run; 149 tests passed; 0 tests failed.
