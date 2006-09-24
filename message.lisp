@@ -35,3 +35,21 @@
   (print-unreadable-object (obj stream :type t :identity t)
     (with-slots (message) obj
       (format stream "\"~A\"" message))))
+
+(defun message-reader (stream char arg)
+  (declare (ignore char arg))
+  (let ((start-char (read-char stream)))
+    (unless (or
+             (equal #\' start-char)
+             (equal #\" start-char))
+      (error "expecting message string"))
+    (make-instance 
+     'message
+     :message
+     (with-output-to-string (output)
+      (loop as char = (read-char stream)
+           until (equal char start-char)
+           do
+           (format output "~C" char))))))
+
+(set-dispatch-macro-character #\# #\m #'message-reader)
