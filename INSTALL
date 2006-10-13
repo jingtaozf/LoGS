@@ -1,5 +1,6 @@
 LoGS 0.1.2 Installation Instructions
 
+---------------------------------------------------------------------
 Required Packages:
 In order to use the LoGS build and test scripts, you will need the
 following packages:
@@ -10,36 +11,54 @@ CL-PPCRE:
         http://www.weitz.de/files/cl-ppcre.tar.gz
 CL-INTERPOL:
         http://www.weitz.de/files/cl-interpol.tar.gz
+time.lisp:
+        http://cybertiggyr.com/gene/pdl/time.lisp
 CLUnit:
         (packaged with LoGS)
-
+---------------------------------------------------------------------
 Unpacking:
 tar -zxvf /path/to/LoGS_0.1.2.tar.gz
 cd logs
 tar -zxvf /path/to/cl-ppcre.tar.gz
 tar -zxvf /path/to/cl-interpol.tar.gz
 
-Building and testing LoGS using CMUCL:
+---------------------------------------------------------------------
+Building LoGS without ASDF:
 
-        Building LoGS:
-        ./Build_LoGS.sh
+LoGS works with several different Common Lisps.  These instructions
+assume CMUCL.
 
-        You should now have a LoGS.core file in the build directory.
+./Build_LoGS.sh
 
-        Testing LoGS:
-        ./Test_LoGS.sh
+You should now have a LoGS.core file in the build directory.
+---------------------------------------------------------------------
+Testing LoGS without ASDF:
+        
+./Test_LoGS.sh
 
-        You should see a message like this if everything went well:
-        TOTALS: 149 tests run; 149 tests passed; 0 tests failed.
+You should see a message like this if everything went well:
+TOTALS: 149 tests run; 149 tests passed; 0 tests failed.
+---------------------------------------------------------------------
+Building LoGS with ASDF:
 
-Building and testing LoGS using SBCL:
-        Building LoGS:
-        ./SBCL-Build_LoGS.sh
+In the ASDF directory, create sym links to the ASDF files of the
+required packages.
 
-        You should now have a LoGS-sbcl.core file in the build directory.
+I have 3 symlinks to LoGS.asd cl-ppcre.asd and cl-unit.asd in the ASDF
+directory.
 
-        Testing LoGS:
-        ./SBCL-Test_LoGS.sh
+Then at the REPL if I say (asdf:oos 'asdf:load-op 'LoGS) I'm done.  It
+handles compilation and loading of all necessary packages.
+        
+You should now have a LoGS-sbcl.core file in the build directory.
 
-        You should see a message like this if everything went well:
+The ASDF directory is implementation dependent and in my case it is
+~/.sbcl/systems  The directory for CMUCL is different, so to avoid
+duplication, what I've done is created a symlinked directory to the
+SBCL directory.
+        
+SBCL comes with ASDF built in and such that you can even say (require
+'package) and it will do the equivalent of what I wrote above.
+        
+	You should see a message like this if everything went well:
         TOTALS: 149 tests run; 149 tests passed; 0 tests failed.
