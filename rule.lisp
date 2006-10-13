@@ -50,12 +50,11 @@
 
 (defmethod print-object ((obj rule) stream)
   (print-unreadable-object (obj stream :type t :identity t)
-    (with-slots (name match delete-rule continuep actions environment match-count match-try) obj
-    (format stream "name: ~A match: ~A delete-rule: ~A continuep: ~A actions: ~A environment: ~A  match-count: ~A  match-try: ~A"
-            name match delete-rule continuep actions environment match-count match-try))))
-
-(defmacro rule (&rest rest)
-  `(make-instance 'rule ,@rest))
+    (with-slots 
+          (name match delete-rule timeout relative-timeout continuep actions environment match-count match-try)
+        obj
+      (format stream "name: ~A match: ~A delete-rule: ~A timeout: ~A relative timeout: ~A continuep: ~A actions: ~A environment: ~A  match-count: ~A  match-try: ~A"
+              name match delete-rule timeout relative-timeout continuep actions environment match-count match-try))))
 
 (defgeneric rule-exceeded-limit-p (rule time)
   (:documentation "see if the given rule has exceeded one of its limits (currently only timeout)"))
@@ -131,7 +130,7 @@
   (:documentation "see if the given message matches the rule, if so, run the rule's actions."))
 
 (defmethod check-rule ((rule rule) (message message))
-  (declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (unless (dead-p rule)
 
     (LoGS-debug "checking rule: ~A~%against message: ~A~%" 
@@ -146,7 +145,7 @@
          
          (when matchp
            (update-relative-timeout rule)
-           (with-slots (delete-rule environment) 
+           (with-slots (delete-rule environment)
                rule
              
              (when (actions rule)

@@ -26,21 +26,58 @@
     (let ((len (length *file-list*)))
       (cond ((eq 1 len) (setf *messages* (car *file-list*)))
             ((eq 0 len) (setf *messages* (make-instance 'STDIN-follower)))
-            (t (progn
-                 (setf *messages* (make-instance 'org.prewett.LoGS::multi-follower))
-                 (mapcar (lambda (ff) (add-item *messages* ff)) *file-list*)))))))
+            (t 
+             (progn
+               (setf *messages* 
+                     (make-instance 'org.prewett.LoGS::multi-follower))
+               (mapcar (lambda (ff) (add-item *messages* ff))
+                       *file-list*)))))))
+
+
+;;; some helper functions
+
+;; turn on offline mode
+(defun set-no-internal-time ()
+  (setq
+   org.prewett.LoGS::*use-internal-real-time* ()
+   org.prewett.LoGS::*LoGS-internal-time-units-per-second* 1))
+
+;; 
+
+;; The options list
 
 (setf *opts*
       (list
        (make-instance 'cli-opt
                       :name "no-internal-time"
                       :arguments ()
-                      :action #'(lambda () 
-                                  (setq
-                                   org.prewett.LoGS::*use-internal-real-time* ()
-                                   org.prewett.LoGS::*LoGS-internal-time-units-per-second* 1))
+                      :action #'set-no-internal-time
                       :description "do not use internal time")
-   
+       (make-instance 'cli-opt
+                      :name "timestamp-start"
+                      :arguments '(start-value)
+                      :action 
+                      (lambda (start-value)
+                        (setf LoGS::*timestamp-start* 
+                              (parse-integer start-value :junk-allowed t)))
+                      :description "the start of the timestamp for offline mode")
+       (make-instance 'cli-opt
+                      :name "timestamp-end"
+                      :arguments '(end-value)
+                      :action 
+                      (lambda (end-value)
+                        (setf LoGS::*timestamp-end* 
+                              (parse-integer end-value :junk-allowed t)))
+                      :description "the end of the timestamp for offline mode")
+       (make-instance 'cli-opt
+                      :name "parse-timestamp"
+                      :arguments NIL
+                      :action
+                      (lambda ()
+                        (set-no-internal-time)
+                        (setf LoGS::*parse-timestamp* t))
+                      :description "set *NOW* using the timestamp on each line")
+
        (make-instance 'cli-opt
                       :name "file"
                       :arguments '(filename &optional position)
@@ -264,4 +301,11 @@
                                         (cadr split-func)
                                         (car split-func))
                                        (intern func))
-                                   LoGS::*run-before-exit*)))))))
+                                   LoGS::*run-before-exit*)))))
+       (make-instance 'cli-opt
+                      :name "dont-quit-lisp"
+                      :arguments ()
+                      :action
+                      (lambda ()
+                        (setf LoGS::*quit-lisp-when-done* NIL))
+                      :description "do not terminate the Lisp process when LoGS is done")))

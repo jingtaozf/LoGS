@@ -84,6 +84,17 @@
   "Setting this variable to non-NIL causes LoGS to not exit when there is no more input immediately available.")
 (defvar *run-before-exit* ()
   "a list of functions to call when LoGS is done running (before exiting).")
+(defvar *timestamp-format* "%b %d %H:%M:%S"
+  "The format the timestamp is in.  Currently, this uses time.lisp's format")
+(defvar *timestamp-start* 0
+  "the start of the timestamp on each log line; used in 'offline mode'")
+(defvar *timestamp-end* 15
+  "the end of the timestamp on each log line; used in 'offline mode'")
+(defvar *parse-timestamp* ()
+  "should LoGS set *NOW* from the timestamp on each line?")
+(defvar *quit-lisp-when-done* t
+  "Should we exit the Lisp process when we're done processing files?")
+
 (defvar *opts* ()
   "a list of command-line options that LoGS understands")
 

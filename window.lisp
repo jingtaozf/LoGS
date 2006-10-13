@@ -26,9 +26,6 @@
                   :accessor window-length
                   :initform 0)))
 
-(defmacro window (&rest rest)
-  `(make-instance 'window ,@rest))
-
 (defmethod add-item ((window window) item &rest rest)
   (declare (ignore rest))
   (progn

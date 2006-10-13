@@ -37,4 +37,6 @@
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
-  (file-stat-ino (posix:file-stat filename)))
+  (and
+   (probe-file filename)
+   (file-stat-ino (posix:file-stat filename))))

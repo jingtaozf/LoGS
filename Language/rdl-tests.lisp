@@ -88,3 +88,44 @@ creating a rule."
                  (and (logs::relative-timeout rule)
                       (= (logs::relative-timeout rule) 12)))))
 
+(deftest "context timeout works"
+    :category 'timeout
+    :test-fn 
+    (lambda ()
+      (let ((context (context timeout at 12)))
+        (and (logs::timeout context)
+             (= (logs::timeout context) 12)))))
+
+(deftest "context relative timeout works"
+    :category 'timeout
+    :test-fn 
+    (lambda ()
+      (let ((context (context timeout in 12)))
+        (and (logs::relative-timeout context)
+             (= (logs::relative-timeout context) 12)))))
+
+;; Rule evaluation tests
+(deftest "a rule's name may be specified with a variable"
+    :category 'evaluation-tests
+    :test-fn
+    (lambda ()
+      (let* ((rule-name "test rule name")
+             (rule (rule named rule-name)))
+        (equal rule-name (LoGS::name rule)))))
+
+(deftest "a rule's match may be specified with a variable"
+    :category 'evaluation-tests
+    :test-fn
+    (lambda ()
+      (let* ((rule-match #'LoGS::match-all)
+             (rule (rule matching rule-match)))
+        (equal rule-match (LoGS::match rule)))))
+
+(deftest "a context's name may be specified with a variable"
+    :category 'evaluation-tests
+    :test-fn
+    (lambda ()
+      (let* ((context-name "test context name")
+             (context (context named context-name)))
+        (equal context-name (LoGS::name context)))))
+

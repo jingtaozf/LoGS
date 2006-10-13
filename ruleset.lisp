@@ -26,9 +26,6 @@
              :documentation "a hash table to hold all of the rules in this ruleset"))
   (:documentation "A class to store rules."))
 
-(defmacro ruleset (&rest rest)
-  `(make-instance 'ruleset ,@rest))
-
 (defmethod dll-insert :around ((ruleset ruleset)
                                neighbor-item 
                                (insert-item rule) &key direction)
@@ -46,22 +43,22 @@
 
 ;; check rule for when the rule itself is a ruleset!
 (defmethod check-rule ((ruleset ruleset) (message message))
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
   (unless (dead-p ruleset)
 
     (LoGS-debug "checking ruleset: ~A~%against message: ~A~%" 
                 (name ruleset) (message message))
 
-
     (with-slots (environment) ruleset
-        (in-given-environment
-         environment
+      (in-given-environment
+       environment
 
-         (multiple-value-bind (matchp rule-environment)
-             (rule-matches-p ruleset message)
-           (when matchp
-             (update-relative-timeout ruleset)
-
-             (with-slots (delete-rule (ruleset-environment environment))
+       (multiple-value-bind (matchp rule-environment)
+           (rule-matches-p ruleset message)
+         (when matchp
+           (update-relative-timeout ruleset)
+           
+           (with-slots (delete-rule)
                ruleset
         
                (when delete-rule 
@@ -71,7 +68,7 @@
         
                (let ((*ruleset* ruleset))
                  (in-given-environment
-                  (append ruleset-environment environment rule-environment)
+                  (append environment rule-environment)
                  (check-rules message *ruleset*))))))))))
 
 (defgeneric check-rules (message ruleset)
@@ -81,7 +78,7 @@ the given ruleset until it finds a rule that
 both matches and continuep is nil."))
 
 (defmethod check-rules ((message message) (ruleset ruleset))
-  (declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
   (let ((head (head ruleset))
         (*ruleset* ruleset))
     (LoGS-debug "checking rules: ~A ~A~%" (name ruleset) (message message))

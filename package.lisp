@@ -36,7 +36,7 @@
 #+cmu
 (setq ext:*gc-verbose* NIL)
 
-#+(or ecl cmu sbcl allegro openmcl lispworks)
+#+(or ecl cmu sbcl allegro openmcl lispworks clisp)
 (defpackage :org.prewett.LoGS
   (:nicknames :LoGS)
   (:use :cl
@@ -76,5 +76,5 @@
            file-write
            pipe))
 
-#-(or ecl cmu sbcl allegro openmcl lispworks)
+#-(or ecl cmu sbcl allegro openmcl lispworks clisp)
 (error "LoGS is not supported on your Lisp")

@@ -47,7 +47,9 @@
        (funcall function))
      *run-before-exit*)
     ;; exit LoGS
-    (quit-LoGS)))
+    (when *quit-lisp-when-done*
+      (quit-LoGS))
+    ))
 
 
 
@@ -63,9 +65,24 @@
        do (format t "processing message: ~A~%" (if *message* (message *message*)))
        
      ;; update the internal time
-     when *use-internal-real-time*
+     if *use-internal-real-time*
      do
        (setq *now* (get-internal-real-time))
+     else if (and *message* *parse-timestamp*)
+     do
+       ;; what to do if the time doesn't parse?
+       ;; for now, just keep the last timestamp and move on
+       (aif (cybertiggyr-time:parse-time
+             (subseq 
+              (message *message*)
+              *timestamp-start*
+              *timestamp-end*)
+             (list (cybertiggyr-time::make-fmt-recognizer 
+                    *timestamp-format*
+                    )))
+            (setq *now* it))
+     end
+     end
               
      ;; check the message against the ruleset if it exists
      ;; and check the timeout objects

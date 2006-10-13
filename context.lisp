@@ -46,9 +46,6 @@
     (with-slots (name) obj
       (format stream "~A" name))))
 
-(defmacro context (&rest rest)
-  `(ensure-context ,@rest))
-
 ;;; context name/alias related stuff
 (defvar *contexts-hash* (make-hash-table :test #'equal)
   "a hash to hold all of their contexts so that we can find them by name.")

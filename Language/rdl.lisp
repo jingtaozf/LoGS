@@ -21,7 +21,7 @@
 
 (defpackage :org.prewett.LoGS.language
   (:use :cl)
-  (:import-from :logs :rule :ruleset :message :exec)
+  (:import-from :logs :rule :ruleset :message :exec :context)
   (:nicknames :language))
 
 (in-package #:language)
@@ -63,7 +63,7 @@ TYPE of the object passed in"))
 (defmacro rule (&rest exprs)
   (let ((r (make-instance 'rule-macro)))
     (parse-rule r exprs)
-    (fill-rule-template r)))
+    (fill-object-template r)))
 
 (defclass ruleset-macro (rule-macro)
   ((elements :initform () :accessor MACRO-ELEMENTS :initarg :MACRO-ELEMENTS)))
@@ -71,7 +71,21 @@ TYPE of the object passed in"))
 (defmacro ruleset (&rest exprs)
   (let ((r (make-instance 'ruleset-macro)))
     (parse-rule r exprs)
-    (fill-rule-template r)))
+    (fill-object-template r)))
+
+(defclass context-macro ()
+  ((name :initform () :accessor MACRO-NAME :initarg :MACRO-NAME)
+   (actions :initform () :accessor MACRO-ACTIONS :initarg :MACRO-ACTIONS)
+   (max-lines :initform () :accessor MACRO-MAX-LINES :initarg :MACRO-MAX-LINES)
+   (min-lines :initform () :accessor MACRO-MIN-LINES :initarg :MACRO-MIN-LINES)
+   (lives-after-timeout :initform () :accessor MACRO-LIVES-AFTER-TIMEOUT :initarg :MACRO-LIVES-AFTER-TIMEOUT)
+   (timeout :initform '() :accessor MACRO-TIMEOUT)
+   (relative-timeout :initform '() :accessor MACRO-RELATIVE-TIMEOUT)))
+
+(defmacro context (&rest exprs)
+  (let ((c (make-instance 'context-macro)))
+    (parse-rule c exprs)
+    (fill-object-template c)))
 
 (defun standardize (X)
   "This is how we look at all lisp forms that are part of the RDL:
@@ -86,22 +100,22 @@ and 'FOO and \"foo\" are seen as equivalent."
         (symbol (standardize symbol)))
     (or (eq x symbol) (eq (alias x) symbol))))
 
-(defgeneric get-rule-slot (rule slot)
+(defgeneric get-object-slot (rule slot)
   (:documentation "Returns the requested slot for RULE depending
 on the required behaviour for SLOT."))
 
-(defmethod get-rule-slot (rule slot)
+(defmethod get-object-slot (rule slot)
   (error "unknown slot: ~A in ~A" slot rule))
 
-(defgeneric fill-rule-template (rule))
+(defgeneric fill-object-template (rule))
 
-(defmethod fill-rule-template ((rule rule-macro))
+(defmethod fill-object-template ((rule rule-macro))
   `(let ((rule-instance 
           (make-instance
            'rule
            ,@(loop as slot in '(:match :name :actions :environment :timeout
                                 :relative-timeout :filter :continuep)
-                   as res = (get-rule-slot rule slot)
+                   as res = (get-object-slot rule slot)
                    if res append `(,slot ,res)))))
     (progn
       (setf (logs::actions rule-instance)
@@ -112,31 +126,43 @@ on the required behaviour for SLOT."))
                         (lambda (context)
                           `(lambda (message)
                              (LoGS::add-to-context ,context message)))
-                        (get-rule-slot rule :storing)))
+                        (get-object-slot rule :storing)))
                     )))
     rule-instance
   ))
 
-(defmethod fill-rule-template ((ruleset ruleset-macro))
+(defmethod fill-object-template ((ruleset ruleset-macro))
   `(let ((ruleset-instance 
           (make-instance
            'ruleset
            ,@(loop as slot in '(:match :name :actions :environment :timeout
                                 :relative-timeout :filter :continuep)
-                as slot-contents = (get-rule-slot ruleset slot)
+                as slot-contents = (get-object-slot ruleset slot)
                 if slot-contents append `(,slot ,slot-contents)))))
      (progn
        ,@(mapcar
           (lambda (rule)
             `(logs::enqueue ruleset-instance ,rule))
-          (get-rule-slot ruleset :elements)))
+          (get-object-slot ruleset :elements)))
      ruleset-instance))
+
+(defmethod fill-object-template ((context context-macro))
+  `(let ((context-instance 
+          (logs::ensure-context
+           ,@(loop as slot in '(:name :actions :timeout :relative-timeout :max-lines :min-lines :lives-after-timeout)
+                as slot-contents = (get-object-slot context slot)
+                if slot-contents append `(,slot ,slot-contents)))))
+     context-instance))
 
 (defgeneric parse-rule (rule exprs))
 
 (defmethod parse-rule ((rule rule-macro) exprs)
   (unless (null exprs)
     (parse-rule rule (parse-keyword rule (car exprs) (cdr exprs)))))
+
+(defmethod parse-rule ((context context-macro) exprs)
+  (unless (null exprs)
+    (parse-rule context (parse-keyword context (car exprs) (cdr exprs)))))
 
 ;; handle one keyword and its arguments, returning what remains in exprs
 (defun parse-keyword (rule keyword exprs)
@@ -158,10 +184,16 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :name)) (type rule-macro))
   #'handle-name)
 
+(defmethod handle-fn ((keyword (eql :name)) (type context-macro))
+  #'handle-name)
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :name)))
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :name)))
   (declare (ignore slot))
   (macro-name rule))
+
+(defmethod get-object-slot ((context context-macro) (slot (eql :name)))
+  (declare (ignore slot))
+  (macro-name context))
 
 ;;; There is a macro hiding in all the HANDLE- functions!
 
@@ -286,7 +318,7 @@ on the required behaviour for SLOT."))
                  finally (unstack) (return (car output)))))
       (main-parse expr))))
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :match)))
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :match)))
   "Return the form for MATCH tag"
   (declare (ignore slot))
   (let ((match (macro-match rule)))
@@ -309,8 +341,8 @@ on the required behaviour for SLOT."))
                    (list ',(intern "SUB-MATCHES")
                          ,sub-matches)
                    (loop for count from 0 
-                      below ,(length (get-rule-slot rule :bind))
-                      for val in ',(get-rule-slot rule :bind)
+                      below ,(length (get-object-slot rule :bind))
+                      for val in ',(get-object-slot rule :bind)
                       while (> (length ,sub-matches) count)
                       collect
                         (list val (aref ,sub-matches count)))))))))
@@ -331,7 +363,7 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :bind)) (type rule-macro))
   #'handle-bind)
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :bind)))
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :bind)))
   (declare (ignore slot))
   (macro-bind rule))
 
@@ -379,37 +411,84 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :actions)) (type rule-macro))
   #'handle-actions)
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :actions)))
+(defmethod handle-fn ((keyword (eql :actions)) (type context-macro))
+  #'handle-actions)
+
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :actions)))
   (declare (ignore slot))
   (aif (macro-actions rule)
        (cons 'list
              (nreverse it))))
 
+(defmethod get-object-slot ((context context-macro) (slot (eql :actions)))
+  (declare (ignore slot))
+  (aif (macro-actions context)
+       (cons 'list
+             (nreverse it))))
+
 
+;;; Time related functions
+(defun calculate-timeout (seconds &key (at NIL))
+  "return the proper value of a timeout.  If at is not specified, assume the value is the number of seconds in the future that the timeout should occur.  If at is specified, assume the value specifies a UNIVERSAL-TIME when the timeout should occur." 
+  (if at
+      (let* ((current-universal-time (get-universal-time))
+             (time-diff (- seconds current-universal-time)))
+        (+ LoGS::*NOW*
+           (* time-diff
+              LoGS::*LOGS-INTERNAL-TIME-UNITS-PER-SECOND*)))
+      (+ LoGS::*NOW* 
+         (* seconds 
+            LoGS::*LOGS-INTERNAL-TIME-UNITS-PER-SECOND*))))
+
+(defgeneric resolve-time (seconds))
+
+(defmethod resolve-time ((seconds string))
+  (calculate-timeout
+   (cybertiggyr-time:parse-time seconds)
+   :AT T))
+
+(defmethod resolve-time ((seconds number))
+  seconds)
+
+;; is this right?
 (defun handle-timeout (rule exprs)
   (destructuring-bind (preposition seconds &rest rest) exprs
     (cond ((samep preposition :in)
            (aif (macro-relative-timeout rule)
                 (error "Relative timeout was already specified as ~S" it))
-           (setf (macro-relative-timeout rule) seconds)
+           (setf (macro-relative-timeout rule) 
+                 (resolve-time seconds))
            rest)
           ((samep preposition :at)
            (aif (macro-timeout rule)
                 (error "Timeout was already specified as ~S" it))
-           (setf (macro-timeout rule) seconds)
+           (setf (macro-timeout rule)
+                 (resolve-time seconds))
            rest)
           (t (error "Unexpected keyword ~S" preposition)))))
 
 (defmethod handle-fn ((keyword (eql :timeout)) (type rule-macro))
   #'handle-timeout)
 
-(defmethod get-rule-slot ((r rule-macro) (slot (eql :timeout)))
+(defmethod handle-fn ((keyword (eql :timeout)) (type context-macro))
+  #'handle-timeout)
+
+(defmethod get-object-slot ((r rule-macro) (slot (eql :timeout)))
   "By default just return the slot value"
   (macro-timeout r))
 
-(defmethod get-rule-slot ((r rule-macro) (slot (eql :relative-timeout)))
+(defmethod get-object-slot ((context context-macro) (slot (eql :timeout)))
+  "By default just return the slot value"
+  (macro-timeout context))
+
+(defmethod get-object-slot ((r rule-macro) (slot (eql :relative-timeout)))
   "By default just return the slot value"
   (macro-relative-timeout r))
+
+(defmethod get-object-slot ((context context-macro) 
+                          (slot (eql :relative-timeout)))
+  "By default just return the slot value"
+  (macro-relative-timeout context))
 
 
 (defun handle-setenv (rule exprs)
@@ -426,7 +505,7 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :setenv)) (type rule-macro))
   #'handle-setenv)
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :environment)))
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :environment)))
   (declare (ignore slot))
   (aif (macro-environment rule)
        `(list ,@(nreverse it))
@@ -440,7 +519,7 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :continuep)) (type rule-macro))
   #'handle-continuep)
 
-(defmethod get-rule-slot ((r rule-macro) (slot (eql :continuep)))
+(defmethod get-object-slot ((r rule-macro) (slot (eql :continuep)))
   "By default just return the slot value"
   (macro-continuep r))
 
@@ -453,7 +532,7 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :filter)) (type rule-macro))
   #'handle-filter)
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :filter)))
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :filter)))
   (declare (ignore slot))
   (when (and (macro-filter rule) (macro-actions rule))
     (error "Cannot specify actions when filtering rule.")))
@@ -476,7 +555,7 @@ on the required behaviour for SLOT."))
   #'handle-elements)
 
 
-(defmethod get-rule-slot ((ruleset ruleset-macro) (slot (eql :elements)))
+(defmethod get-object-slot ((ruleset ruleset-macro) (slot (eql :elements)))
   (declare (ignore slot))
   (macro-elements ruleset))
 
@@ -494,11 +573,11 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :storing)) (type rule-macro))
   #'handle-storing)
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :storing)))
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :storing)))
   (declare (ignore slot))
   (macro-storing rule))
 
-(defmethod get-rule-slot ((ruleset ruleset-macro) (slot (eql :storing)))
+(defmethod get-object-slot ((ruleset ruleset-macro) (slot (eql :storing)))
   (declare (ignore slot ruleset))
   (error "cannot use ruleset to store messages into a context!"))
 
@@ -514,13 +593,58 @@ on the required behaviour for SLOT."))
      (macro-actions rule))
     rest))
 
-(defmethod get-rule-slot ((rule rule-macro) (slot (eql :exec)))
+(defmethod get-object-slot ((rule rule-macro) (slot (eql :exec)))
   (declare (ignore slot))
   (macro-exec rule))
 
-(defmethod get-rule-slot ((ruleset ruleset-macro) (slot (eql :exec)))
+(defmethod get-object-slot ((ruleset ruleset-macro) (slot (eql :exec)))
   (declare (ignore slot))
   (error "cannot use ruleset to exec~%"))
+
+
+;; context min/max slots
+
+(defun handle-max-lines (context exprs)
+  (destructuring-bind (max . rest) exprs
+    (aif (macro-max-lines context)
+         (error "Each context can have only one maximum line count.  Context was already set to have a maximum of ~a" it)
+         (setf (macro-max-lines context) max))
+    rest))
+
+(defmethod handle-fn ((keyword (eql :max-lines)) (type context-macro))
+  #'handle-max-lines)
+
+(defun handle-min-lines (context exprs)
+  (destructuring-bind (min . rest) exprs
+    (aif (macro-min-lines context)
+         (error "Each context can have only one minimum line count.  Context was already set to have a minimum of ~a" it)
+         (setf (macro-min-lines context) min))
+    rest))
+
+(defmethod handle-fn ((keyword (eql :min-lines)) (type context-macro))
+  #'handle-min-lines)
+
+
+(defmethod get-object-slot ((context context-macro) (slot (eql :max-lines)))
+  (declare (ignore slot))
+  (macro-max-lines context))
+
+(defmethod get-object-slot ((context context-macro) (slot (eql :min-lines)))
+  (declare (ignore slot))
+  (macro-min-lines context))
+
+
+
+(defun handle-live-after-timeout (context exprs)
+  (setf (macro-lives-after-timeout context) t)
+  exprs)
+
+(defmethod handle-fn ((keyword (eql :lives-after-timeout)) (type context-macro))
+  #'handle-live-after-timeout)
+
+(defmethod get-object-slot ((c context-macro) (slot (eql :lives-after-timeout)))
+  "By default just return the slot value"
+  (macro-lives-after-timeout c))
 
 
 
