@@ -1,4 +1,4 @@
-;;; Logs extensible (common-lisp based) log/event analysis engine/language
+;;;; Logs extensible (common-lisp based) log/event analysis engine/language
 ;;;; Copyright (C) 2006 Vijay Lakshminarayanan
 
 ;;;; This program is free software; you can redistribute it and/or
@@ -276,23 +276,35 @@ on the required behaviour for SLOT."))
 ;; 
 ;; this way it may be nested and still ensure that all of the values are
 ;; properly returned. 
-(defmacro multiple-value-or (&rest or-exprs)
-  (when (car or-exprs)
-    (let ((return-values (gensym)))
-      `(let ((,return-values (multiple-value-list ,(car or-exprs))))
-         (cond ((car ,return-values)
-                (values-list ,return-values))
-               ((null ',(cdr or-exprs))
-                ())
-               (t 
-                (multiple-value-or ,@(cdr or-exprs))
-                ))))))
+
+;; suggested by Steve Haflich <smh@franz.com> as a better implementation
+;; of an OR that returns multiple values
+;; he says:
+;; "It exploits the ability of the compiler to stack cons a &rest list to
+;;  avoid heap consing, but it does have the overhead of establishing a
+;;  catch on the stack (to implement the block/return-from).  This is cons
+;;  free, but does cost cycles..."
+
+(defmacro ormv (&rest forms)
+  (let ((blk (gensym))
+        (fnc (gensym)))
+    `(block ,blk
+       (flet ((,fnc (&rest args)
+                (declare (dynamic-extent args)
+                         (optimize speed (safety 0)))
+                (and args
+                     (car args)
+                     (return-from ,blk (apply #'values args)))))
+         (declare (dynamic-extent ,fnc))
+         ,@(mapcar (lambda (form)
+                     `(multiple-value-call #',fnc ,form))
+                   forms)))))
 
 (defun parse-match (expr gensym)
   (let ((output '()) (stack '()))
     (labels ((symid (sym) (standardize sym))
              (actual-sym (sym)
-               (ecase (symid sym) (:and 'cl:and) (:or 'multiple-value-or)))
+               (ecase (symid sym) (:and 'cl:and) (:or 'ormv)))
              (stack-push (x) (push (if (consp x) (main-parse x) x) stack))
              (stack-pop ()
                (destructuring-bind (oprnd1 oprnd2 . rest) output
