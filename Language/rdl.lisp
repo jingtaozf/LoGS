@@ -442,15 +442,17 @@ on the required behaviour for SLOT."))
 ;;; Time related functions
 (defun calculate-timeout (seconds &key (at NIL))
   "return the proper value of a timeout.  If at is not specified, assume the value is the number of seconds in the future that the timeout should occur.  If at is specified, assume the value specifies a UNIVERSAL-TIME when the timeout should occur." 
-  (if at
-      (let* ((current-universal-time (get-universal-time))
-             (time-diff (- seconds current-universal-time)))
-        (+ LoGS::*NOW*
-           (* time-diff
-              LoGS::*LOGS-INTERNAL-TIME-UNITS-PER-SECOND*)))
-      (+ LoGS::*NOW* 
-         (* seconds 
-            LoGS::*LOGS-INTERNAL-TIME-UNITS-PER-SECOND*))))
+  (if seconds
+      (if at
+          (let* ((current-universal-time (get-universal-time))
+                 (time-diff (- seconds current-universal-time)))
+            (+ LoGS::*NOW*
+               (* time-diff
+                  LoGS::*LOGS-INTERNAL-TIME-UNITS-PER-SECOND*)))
+          (+ LoGS::*NOW* 
+             (* seconds 
+                LoGS::*LOGS-INTERNAL-TIME-UNITS-PER-SECOND*)))
+      (error "seconds not specified~%")))
 
 (defgeneric resolve-time (seconds))
 

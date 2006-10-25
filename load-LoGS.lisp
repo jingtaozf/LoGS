@@ -72,7 +72,7 @@
           (list 
            "Language"
            (list
-            "LoGS-time" "rdl"))
+            "rdl" "LoGS-time"))
            '(()
              ("mainline"))
           ))
