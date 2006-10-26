@@ -458,7 +458,11 @@ on the required behaviour for SLOT."))
 
 (defmethod resolve-time ((seconds string))
   (calculate-timeout
-   (cybertiggyr-time:parse-time seconds (list #'recognize-hhmmss #'recognize-hhmmss-tomorrow))
+   (cybertiggyr-time:parse-time 
+    seconds 
+    (list 
+     #'recognize-hhmmss 
+     #'recognize-hhmmss-tomorrow))
    :AT T))
 
 (defmethod resolve-time ((seconds number))

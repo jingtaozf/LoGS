@@ -25,19 +25,18 @@
       (process-command-line *opts* args))
     
     ;; write out PID if necessary
-    (if *write-pid-to-file*
-        (progn
-          (LoGS-debug "writing PID to file: ~A~%" *write-pid-to-file*)
-          (let ((PID 
-                 #+cmu
-                  (unix:unix-getpid)))
-            (with-open-file
-                (file *write-pid-to-file*
-                      :direction :output
-                      :if-exists :overwrite
-                      :if-does-not-exist :create)
-              (format file "~A~%" PID))))
-        )
+    (when *write-pid-to-file*
+      (progn
+        (LoGS-debug "writing PID to file: ~A~%" *write-pid-to-file*)
+        (let ((PID 
+               #+cmu
+                (unix:unix-getpid)))
+          (with-open-file
+              (file *write-pid-to-file*
+                    :direction :output
+                    :if-exists :overwrite
+                    :if-does-not-exist :create)
+            (format file "~A~%" PID)))))
     
     ;; process any files
     (process-files)
@@ -50,9 +49,6 @@
     (when *quit-lisp-when-done*
       (quit-LoGS))
     ))
-
-
-
 
 ;; pretty much the former mainline
 ;; adding the option processing to the mainline made testing more difficult
@@ -78,8 +74,7 @@
               *timestamp-start*
               *timestamp-end*)
              (list (cybertiggyr-time::make-fmt-recognizer 
-                    *timestamp-format*
-                    )))
+                    *timestamp-format*)))
             (setq *now* it))
      end
      end
