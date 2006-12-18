@@ -87,6 +87,12 @@ TYPE of the object passed in"))
     (parse-rule c exprs)
     (fill-object-template c)))
 
+
+;; maybe this should be a method instead of a function?
+;; (defgeneric standardize (X))
+;; (defmethod standardize ((X symbol))
+;;   (intern X '#:keyword))
+
 (defun standardize (X)
   "This is how we look at all lisp forms that are part of the RDL:
 convert them into interned symbols in the keyword package so that :FOO
