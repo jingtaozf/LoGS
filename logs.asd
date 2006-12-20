@@ -65,6 +65,8 @@
                  (:file "actions")
                  (:file "Parlance")
                  (:file "LoGS-command-line")
-                 (:module "Language"
-                          :components ((:file "rdl"))
+                 (:module "Language" 
+                          :components ((:file "defpackage")
+                                       (:file "LoGS-time")
+                                       (:file "rdl"))
                           :depends-on ("LoGS"))))
