@@ -20,7 +20,7 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 (defpackage :org.prewett.LoGS.language
-  (:use #:cl #:cybertiggyr)
+  (:use #:cl #:cybertiggyr-time)
   (:import-from #:logs #:rule #:ruleset #:message #:exec #:context)
   (:import-from #:cybertiggyr-time #:make-broken-time)
   (:nicknames #:language))
