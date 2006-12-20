@@ -1,10 +1,11 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
 ;;;; Copyright (C) 2006 Vijay Lakshminarayanan
 
-;;;; This program is free software; you can redistribute it and/or
-;;;; modify it under the terms of the GNU General Public License
-;;;; as published by the Free Software Foundation; either version 2
-;;;; of the License, or (at your option) any later version.
+;;;; This file is a part of LoGS.  LoGS is free software; you can
+;;;; redistribute it and/or modify it under the terms of the GNU
+;;;; General Public License as published by the Free Software
+;;;; Foundation; either version 2 of the License, or (at your option)
+;;;; any later version.
 
 ;;;; This file is a part of LoGS.  The copyright will soon be
 ;;;; transferred to the author of LoGS, James Earl Prewett
@@ -19,11 +20,6 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
-(defpackage :org.prewett.LoGS.language
-  (:use :cl)
-  (:import-from :logs :rule :ruleset :message :exec :context)
-  (:nicknames :language))
-
 (in-package #:language)
 
 ;;; Paul Graham, On Lisp, p191
@@ -116,49 +112,54 @@ on the required behaviour for SLOT."))
 (defgeneric fill-object-template (rule))
 
 (defmethod fill-object-template ((rule rule-macro))
-  `(let ((rule-instance 
-          (make-instance
-           'rule
-           ,@(loop as slot in '(:match :name :actions :environment :timeout
-                                :relative-timeout :filter :continuep)
-                   as res = (get-object-slot rule slot)
-                   if res append `(,slot ,res)))))
-    (progn
-      (setf (logs::actions rule-instance)
-            (append (logs::actions rule-instance)
-                    ;; storing actions
-                    (list
-                     ,@(mapcar
-                        (lambda (context)
-                          `(lambda (message)
-                             (LoGS::add-to-context ,context message)))
-                        (get-object-slot rule :storing)))
-                    )))
-    rule-instance
-  ))
+  (let ((rule-instance (gensym "RULE-INSTANCE")))
+    `(let ((,rule-instance
+            (make-instance
+             'rule
+             ,@(slot-contents rule
+                              '(:match :name :actions :environment :timeout
+                                :relative-timeout :filter :continuep)))))
+      (progn
+        (setf (logs::actions ,rule-instance)
+              (append (logs::actions ,rule-instance)
+                      ;; storing actions
+                      (list
+                       ,@(mapcar
+                          (lambda (context)
+                            `(lambda (message)
+                              (LoGS::add-to-context ,context message)))
+                          (get-object-slot rule :storing)))
+                      )))
+      ,rule-instance)))
 
 (defmethod fill-object-template ((ruleset ruleset-macro))
-  `(let ((ruleset-instance 
-          (make-instance
-           'ruleset
-           ,@(loop as slot in '(:match :name :actions :environment :timeout
-                                :relative-timeout :filter :continuep)
-                as slot-contents = (get-object-slot ruleset slot)
-                if slot-contents append `(,slot ,slot-contents)))))
-     (progn
-       ,@(mapcar
-          (lambda (rule)
-            `(logs::enqueue ruleset-instance ,rule))
-          (get-object-slot ruleset :elements)))
-     ruleset-instance))
+  (let ((ruleset-instance (gensym "RULESET-INSTANCE")))
+    `(let ((,ruleset-instance 
+            (make-instance
+             'ruleset
+             ,@(slot-contents ruleset
+                              '(:match :name :actions :environment :timeout
+                                :relative-timeout :filter :continuep)))))
+      (progn
+        ,@(mapcar
+           (lambda (rule)
+             `(logs::enqueue ,ruleset-instance ,rule))
+           (get-object-slot ruleset :elements)))
+      ,ruleset-instance)))
 
 (defmethod fill-object-template ((context context-macro))
-  `(let ((context-instance 
-          (logs::ensure-context
-           ,@(loop as slot in '(:name :actions :timeout :relative-timeout :max-lines :min-lines :lives-after-timeout)
-                as slot-contents = (get-object-slot context slot)
-                if slot-contents append `(,slot ,slot-contents)))))
-     context-instance))
+  (let ((context-instance (gensym "CONTEXT-INSTANCE")))
+    `(let ((,context-instance 
+            (logs::ensure-context
+             ,@(slot-contents context '(:name :actions :min-lines :max-lines
+                                        :relative-timeout :timeout
+                                        :lives-after-timeout)))))
+      ,context-instance)))
+
+(defun slot-contents (macro-object slots)
+  (loop as slot in slots
+        as slot-contents = (get-object-slot macro-object slot)
+        if slot-contents append `(,slot ,slot-contents)))
 
 (defgeneric parse-rule (rule exprs))
 
@@ -464,7 +465,7 @@ on the required behaviour for SLOT."))
 
 (defmethod resolve-time ((seconds string))
   (calculate-timeout
-   (cybertiggyr-time:parse-time 
+   (parse-time 
     seconds 
     (list 
      #'recognize-hhmmss 
