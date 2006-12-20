@@ -1,10 +1,11 @@
-;;;; Logs extensible (common-lisp based) log/event analysis engine/language
+;;;; LoGS extensible (common-lisp based) log/event analysis engine/language
 ;;;; Copyright (C) 2003-2006 James Earl Prewett
 
-;;;; This program is free software; you can redistribute it and/or
-;;;; modify it under the terms of the GNU General Public License
-;;;; as published by the Free Software Foundation; either version 2
-;;;; of the License, or (at your option) any later version.
+;;;; This file is a part of LoGS.  LoGS is free software; you can
+;;;; redistribute it and/or modify it under the terms of the GNU
+;;;; General Public License as published by the Free Software
+;;;; Foundation; either version 2 of the License, or (at your option)
+;;;; any later version.
 ;;;;
 ;;;; This program is distributed in the hope that it will be useful,
 ;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,8 +16,6 @@
 ;;;; along with this program; if not, write to the Free Software
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 (in-package :language)
-
-(use-package :cybertiggyr-time)
 
 (defun recognize-hhmmss (str tokens)
   "Recognize HHMMSS separated by ':'s.  All characters in the string
