@@ -86,6 +86,17 @@
               t)
            (values matches sub-matches)))))
 
+(defgeneric add-to-environment (rule var-val)
+  (:documentation "Add the (variable value) pair to RULE's environment"))
+
+(defmethod add-to-environment ((rule rule) (var-val cons))
+  ;; Note: Add error checking
+
+  ;; We append to the environment because PROGV takes the last value
+  ;; in case of a repetition
+  ;; (progv '(a b a) '(1 2 xx) (list a b)) => (XX 2)
+  (setf (environment rule) (append (environment rule) var-val)))
+
 (defmacro in-given-environment (env body &rest args)
   (let* ((vars (gensym))
          (vals (gensym))
