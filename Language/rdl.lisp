@@ -40,6 +40,18 @@ TYPE of the object passed in"))
 (defmacro alias (keyword)
   `(get ,keyword 'alias))
 
+;;; Peter Seibel's WITH-GENSYMS, slightly modified
+(defmacro with-gensyms ((&rest symbol-names) &body body)
+  (labels ((sym-name (sym-name)
+             (if (consp sym-name)
+                 (cons (car sym-name) (stringify (second sym-name)))
+                 (cons sym-name       (stringify sym-name))))
+           (stringify (symbol) (format () "~A" symbol)))
+    `(let ,(loop :as sym-name :in symbol-names
+                 :as (symbol . name) = (sym-name sym-name)
+                 :collect `(,symbol (gensym ,name)))
+      ,@body)))
+
 ;;; Influenced by Peter Norvig's LOOP implementation
 
 ;;; changed to CLOS objects instead of structures
@@ -345,10 +357,9 @@ on the required behaviour for SLOT."))
     ;; I believe the match function that matched no regexps was technically
     ;; correct, but this is slightly better in terms of speed and IMO clarity
     (if (and (consp match) (eq (car match) :regexp))
-        (let ((msg (gensym "MESSAGE"))
-              (matches (gensym "MATCHES"))
-              (sub-matches (gensym "SUB-MATCHES"))
-              (mmesg (gensym "MSGMSG")))
+        (with-gensyms ((msg "MESSAGE") matches
+                       sub-matches (mmesg "MSGMSG")
+                       bind (val "VALUE"))
           `(lambda (,msg)
              (multiple-value-bind (,matches ,sub-matches)
                  (let ((,mmesg (message ,msg)))
@@ -357,14 +368,10 @@ on the required behaviour for SLOT."))
                  (values
                   ,matches
                   (cons
-                   (list ',(intern "SUB-MATCHES")
-                         ,sub-matches)
-                   (loop for count from 0 
-                      below ,(length (get-object-slot rule :bind))
-                      for val in ',(get-object-slot rule :bind)
-                      while (> (length ,sub-matches) count)
-                      collect
-                        (list val (aref ,sub-matches count)))))))))
+                   (list ',(intern "SUB-MATCHES") ,sub-matches)
+                   (loop for ,bind in ',(get-object-slot rule :bind)
+                      for ,val across ,sub-matches
+                      collect (list ,bind ,val))))))))
         match)))
 
 
