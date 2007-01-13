@@ -72,7 +72,7 @@
           (list 
            "Language"
            (list
-            "rdl" "LoGS-time"))
+            "defpackage" "rdl" "LoGS-time"))
            '(()
              ("mainline"))
           ))
