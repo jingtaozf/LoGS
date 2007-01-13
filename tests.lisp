@@ -19,7 +19,7 @@
 ;;(load "CLUnit.lisp")
 
 (in-package :org.prewett.LoGS)
-(use-package :ORG.ANCAR.CLUNIT)'env
+(use-package :ORG.ANCAR.CLUNIT)
 
 ;; UGH!
 #+(or ecl allegro clisp lispworks)
