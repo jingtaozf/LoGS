@@ -34,7 +34,8 @@
     ))
 
 (defun do-exec (program args)
-  #'(lambda (message) 
+  #'(lambda (message)
+      (declare (ignore message))
       #+cmu
       (extensions:run-program (cond ((symbolp program)
                                      (symbol-value program))

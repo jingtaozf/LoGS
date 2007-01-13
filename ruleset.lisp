@@ -42,52 +42,44 @@
     rule))
 
 ;; check rule for when the rule itself is a ruleset!
-(defmethod check-rule ((ruleset ruleset) (message message))
+(defmethod check-rule ((ruleset ruleset) (message message) environment)
   (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
   (unless (dead-p ruleset)
+    (LoGS-debug "checking ruleset: ~A~%against message: ~A with environment ~A~%" 
+                (name ruleset) (message message) environment)
+    (with-slots ((ruleset-environment environment)) ruleset
+      (multiple-value-bind (matchp rule-environment)
+          (rule-matches-p ruleset message 
+                          (append environment ruleset-environment))
+        (when matchp
+          (update-relative-timeout ruleset)
+          (with-slots (delete-rule)
+              ruleset
+            (when delete-rule 
+              (when (funcall delete-rule message 
+                             (append rule-environment environment ruleset-environment))
+                (setf (dead-p ruleset) t)
+                (dll-delete *ruleset* ruleset)))
+            (let ((*ruleset* ruleset))
+              (check-rules 
+               message *ruleset* 
+               (append rule-environment environment ruleset-environment)))))))))
 
-    (LoGS-debug "checking ruleset: ~A~%against message: ~A~%" 
-                (name ruleset) (message message))
-
-    (with-slots (environment) ruleset
-      (in-given-environment
-       environment
-
-       (multiple-value-bind (matchp rule-environment)
-           (rule-matches-p ruleset message)
-         (when matchp
-           (update-relative-timeout ruleset)
-           
-           (with-slots (delete-rule)
-               ruleset
-        
-               (when delete-rule 
-                 (when (funcall delete-rule message)
-                   (setf (dead-p ruleset) t)
-                   (dll-delete *ruleset* ruleset)))
-        
-               (let ((*ruleset* ruleset))
-                 (in-given-environment
-                  (append environment rule-environment)
-                 (check-rules message *ruleset*))))))))))
-
-(defgeneric check-rules (message ruleset)
+(defgeneric check-rules (message ruleset environment)
   (:documentation
    "Check-rules checks the given message against 
 the given ruleset until it finds a rule that 
 both matches and continuep is nil."))
 
-(defmethod check-rules ((message message) (ruleset ruleset))
+(defmethod check-rules ((message message) (ruleset ruleset) environment)
   (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
   (let ((head (head ruleset))
         (*ruleset* ruleset))
-    (LoGS-debug "checking rules: ~A ~A~%" (name ruleset) (message message))
+    (LoGS-debug "checking rules: ~A ~A ~A~%" (name ruleset) (message message) environment)
     (let 
         ((didmatch
-          
           (loop with *current-rule* = head
              and found = ()
-               
              ;; there's a rule to check
              when *current-rule*
              do 
@@ -101,15 +93,13 @@ both matches and continuep is nil."))
                        (and 
                         (multiple-value-bind
                               (matchp bind-list)
-                            (check-rule data message)
+                            (check-rule data message environment)
                           (declare (ignore bind-list))
                           (LoGS-debug "match is: ~A~%" matchp)
                           (setq found matchp))
-                        
                         (unless (continuep data)
                           (return t))))))
                (setq *current-rule* (rlink *current-rule*))
-        
              ;; there are no (more) rules in this ruleset
              when (not *current-rule*)
              do

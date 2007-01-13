@@ -262,7 +262,7 @@
       (if ,context-name
           (progn
             (LoGS-debug "a context named ~A already exists at~%" 
-                        ,name ,context-name)
+                        ,context-name)
             ,context-name)
           (make-instance 'context ,@rest)))))
 

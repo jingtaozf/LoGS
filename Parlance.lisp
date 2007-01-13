@@ -34,9 +34,10 @@
    :match match-func))
 
 (defmacro match-regexp (regexp)
-  (let ((message (gensym)))
-    `(lambda (,message)
-      (declare (optimize speed (safety 0) (space 0) (debug 0) (compilation-speed 0)))
+  (let ((message (gensym "MESSAGE"))
+        (environment (gensym "ENVIRONMENT")))
+    `(lambda (,message ,environment)
+      (declare (optimize speed (safety 0) (space 0) (debug 0) (compilation-speed 0)) (ignore ,environment))
       (cl-ppcre::scan ,regexp (message ,message)))))
 
 ;; filter out messages matching the given regexp
@@ -69,10 +70,10 @@
    :continuep continuep
    :environment environment
    :match
-   (lambda (message)
+   (lambda (message environment)
      (or
-      (funcall match1 message)
-      (funcall match2 message)))
+      (funcall match1 message environment)
+      (funcall match2 message environment)))
    :delete-rule
    match2))
 
@@ -104,7 +105,8 @@
 ;; do something at a particular time
 (defun timed-event (actions-list time &key name)
   "cause something to happen at a particular time"
-  (context
+  (make-instance 
+   'context
    :name name
    :actions actions-list
    :timeout time))
@@ -112,7 +114,8 @@
 ;; do something every time seconds
 (defun periodic-event (actions-list time &key name)
   "cause something to happen periodically"
-  (context
+  (make-instance 
+   'context
    :name name
    :actions actions-list
    :relative-timeout time
@@ -128,14 +131,14 @@
    :actions
    (append
     (list
-     (lambda (message)
-       (declare (ignore message) (special env))
+     (lambda (message environment)
+       (declare (ignore message))
        (let ((ign-match1 (make-instance 'rule :match match1))
              (find-match2 (make-instance 'rule
                                          :match
                                          match2
                                          :environment
-                                         env
+                                         environment
                                          :actions actions2)))
          (rule-before find-match2)
          (rule-before ign-match1))))
@@ -148,7 +151,8 @@
   (let* ((timeout (+ *now* (* window INTERNAL-TIME-UNITS-PER-SECOND)))
          (match1-rule-name (or name1 (gensym)))
          (match2-rule-name (or name2 (gensym)))
-         (context (context
+         (context (make-instance 
+                   'context
                    :timeout timeout
                    :actions 
                    ;; XXX add stuff to delete rules to actions list
@@ -169,21 +173,21 @@
      (append
       (list
        ;; make a rule to ignore match1 until match2 is seen
-       (lambda (message)
-         (declare (ignore message))
+       (lambda (message environment)
+         (declare (ignore message environment))
          (rule-before
           (suppress-until match1 match2)))
        ;; make a rule to trigger actions2 when match2 is seen
-       (lambda (message)
-         (declare (ignore message))
+       (lambda (message environment)
+         (declare (ignore message environment))
          (rule-before
           (make-instance 
            'rule
            :name match2-rule-name
            :match match2
            :timeout timeout
-           :delete-rule (lambda (message) 
-                          (declare (ignore message))
+           :delete-rule (lambda (message environment) 
+                          (declare (ignore message environment))
                           t)
            :actions actions2))))
       actions1))))
@@ -192,7 +196,8 @@
 (defun long-message (long actions-list &key name environment continuep)
   "create a rule that matches messages longer than long.  trigger the functions in the actions list as a result."
   (Single
-   (lambda (message)
+   (lambda (message environment)
+     (declare (ignore environment))
      (> (length (message message)) long))
    actions-list
    :name name
@@ -221,7 +226,8 @@
    :continuep continuep
    :actions
    (list
-    (lambda (message)
+    (lambda (message environment)
+      (declare (ignore environment))
       (add-to-context context message)))))
                  
 (defmethod gather-into (match context &key name environment continuep)
@@ -242,7 +248,8 @@
 
 (defun gather-related (matchlist timeout actions &key names environment continuep)
   "gather messages matching one of the functions in the match list into a context.  When the timeout is exceeded, run the context actions provided."
-  (let ((context (context
+  (let ((context (make-instance 
+                  'context
                   :timeout (+ *now* (* timeout INTERNAL-TIME-UNITS-PER-SECOND))
                   :actions actions)))
     (if names
@@ -266,43 +273,47 @@
 ;; throttle action.
 (defmacro throttle (timeout &key name continuep environment)
   "filter out messages that match the match function of this rule until the timeout is exceeded"
-  (let ((message (gensym)))
-    `(lambda (,message)
-      (rule-before
-       (make-instance
-        'rule
-        :name ,name
-        :continuep ,continuep
-        :environment ,environment
-        :match (match
-                (data
-                 *current-rule*))
-        :timeout (+ *now* (* ,timeout INTERNAL-TIME-UNITS-PER-SECOND)))))))
+  (let ((message (gensym "MESSAGE"))
+        (rule-environment (gensym "ENVIRONMENT")))
+    `(lambda (,message ,rule-environment)
+       (declare (ignore ,message ,rule-environment))
+       (rule-before
+        (make-instance
+         'rule
+         :name ,name
+         :continuep ,continuep
+         :environment ,environment
+         :match (match
+                 (data
+                  *current-rule*))
+         :timeout (+ *now* (* ,timeout INTERNAL-TIME-UNITS-PER-SECOND)))))))
 
 ;;;; action function creating functions
 
 (defun print-log ()
   "print the message"
-  (lambda (message)
+  (lambda (message environment)
+    (declare (ignore environment))
     (format t "~A~%" (message message))))
 
 (defun echo ()
   "an alias for print-log"
   (print-log))
 
-(defun print-message (message)
+(defun print-message (message environment)
+  (declare (ignore environment))
   (format t "~A~%" (message message)))
 
 ;;;; match functions
 
-(defun match-all (message) 
+(defun match-all (message ENVIRONMENT) 
   "match every message"
-  (declare (ignore message)) 
+  (declare (ignore message environment)) 
   t)
 
-(defun match-none (message)
+(defun match-none (message environment)
   "do not match any message (useful for debugging)"
-  (declare (ignore message))
+  (declare (ignore message environment))
   ())
 
 (defun copy-array-add-zeroeth-element (array element)
@@ -323,7 +334,8 @@
 
 (defun match-regexp-binding-list (regexp binding-list &key use-full-match)
   "create a function that will match the given regexp and return a match value and a list of bindings"
-  (lambda (message)
+  (lambda (message environment)
+    (declare (ignore environment))
     (multiple-value-bind (matches sub-matches)
         (cl-ppcre::scan-to-strings regexp (message message))
         (when matches
@@ -357,11 +369,13 @@
 
 (defun script-return-value (scriptname &rest args)
   (let ((fn (exec-returning-value scriptname args)))
-    (lambda (message)
+    (lambda (message environment)
+      (declare (ignore environment))
       (funcall fn message))))
 
 (defmacro script-return-value-with-arglist (scriptname args)
   `(script-return-value ,scriptname ,@args))
 
 (defmacro with-message (message &body body)
-  `(lambda (,message) ,@body))
+  (let ((environment (gensym)))
+    `(lambda (,message ,environment) ,@body)))

@@ -19,7 +19,7 @@
 ;;(load "CLUnit.lisp")
 
 (in-package :org.prewett.LoGS)
-(use-package :ORG.ANCAR.CLUNIT)
+(use-package :ORG.ANCAR.CLUNIT)'env
 
 ;; UGH!
 #+(or ecl allegro clisp lispworks)
@@ -71,15 +71,6 @@
           (progn
             ,@closed-forms))
      (remove-file ,filename)))
-
-(defmacro print-to-file (filename format &rest args)
-  `(with-open-file (,stream ,filename :direction :output
-                            :if-exists :overwrite
-                            :if-does-not-exist :create)
-     (format t "filename: ~A~%" ,FILENAME)
-     (format t ,format ,@args)))
-
-
 
 (defun assert-equal (a b &key test)
   (not 
@@ -252,8 +243,8 @@
                                        :match #'match-all
                                        :actions
                                        (list
-                                        (lambda (message)
-                                          (declare (ignore message))
+                                        (lambda (message environment)
+                                          (declare (ignore message environment))
                                           (setf ran-tail-rule t))))))
       
       
@@ -447,7 +438,7 @@
       (let ((message (make-instance 'message :message "this is a message"))
             (rule (make-instance 'rule :match #'match-all)))
         (multiple-value-bind (matches sub-matches)
-            (check-rule rule message)
+            (check-rule rule message NIL)
           (declare (ignore sub-matches))
           (assert-non-nil matches)))))
 
@@ -459,7 +450,7 @@
             (rule (make-instance 'rule
                                  :match #'match-all)))
         (multiple-value-bind (matches sub-matches)
-            (check-rule rule message)
+            (check-rule rule message NIL)
           (declare (ignore sub-matches))
           (assert-non-nil matches)))))
 
@@ -481,7 +472,7 @@
             (rule (make-instance 'rule :match #'match-all))
             (message (make-instance 'message :message "test message")))
         (enqueue ruleset rule)
-        (check-rule ruleset message))))
+        (check-rule ruleset message NIL))))
 
 (deftest "empty ruleset does not match"
     :category 'ruleset-tests
@@ -490,7 +481,7 @@
       (let ((ruleset (make-instance 'ruleset :match #'match-all))
             (message (make-instance 'message :message "test message"))
             (retval ()))
-        (setf retval (not (check-rule ruleset message)))
+        (setf retval (not (check-rule ruleset message NIL)))
         retval)))
 
 (deftest "matching ruleset with non-matching rules does not match"
@@ -501,7 +492,7 @@
             (message (make-instance 'message :message "test message"))
             (r1 (make-instance 'rule :match #'match-none)))
         (enqueue ruleset r1)
-        (not (check-rule ruleset message)))))
+        (not (check-rule ruleset message NIL)))))
 
 (deftest "matching ruleset with matching rule does match"
     :category 'ruleset-tests
@@ -511,21 +502,21 @@
             (message (make-instance 'message :message "test message"))
             (r1 (make-instance 'rule :match #'match-all)))
         (enqueue ruleset r1)
-        (check-rule ruleset message))))
+        (check-rule ruleset message NIL))))
 
 (deftest "ruleset with matching no-match does not match"
     :category 'ruleset-tests
     :test-fn
     (lambda ()
       (let ((ruleset (make-instance 'ruleset 
-                                    :match (lambda (message)
-					     (and (match-all message)
-						  (not (match-all message))))))
+                                    :match (lambda (message environment)
+					     (and (match-all message environment)
+						  (not (match-all message environment))))))
             (message (make-instance 'message))
             (r1 (make-instance 'rule :match #'match-all)))
         (enqueue ruleset r1)
         (not 				; is this a fair test?
-         (check-rule ruleset message)))))
+         (check-rule ruleset message NIL)))))
 
 
 (deftest "message is added to context"
@@ -567,17 +558,26 @@
             (rule (make-instance 'rule :match #'match-all))
             (message (make-instance 'message :message "test message")))
         (enqueue ruleset rule)
-        (check-rules message ruleset))))
+        (check-rules message ruleset NIL))))
 
 (deftest "check-rules finds simple regexp match"
     :category 'rule-tests
     :test-fn
     (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule :match (lambda (message) (cl-ppcre::scan "test.*" (message message)))))
+      (let ((ruleset 
+             (make-instance 'ruleset :name 'simple-regexp-match-ruleset))
+            (rule (make-instance 
+                   'rule
+                   :name 'simple-regexp-match-rule
+                   :match 
+                   (lambda (message environment)
+                     (declare (ignore environment))
+                     (cl-ppcre::scan "test.*" 
+                                     (message message)))))
+
             (message (make-instance 'message :message "test message")))
         (enqueue ruleset rule)
-        (check-rules message ruleset))))
+        (check-rules message ruleset NIL))))
 
 (deftest "check-rules doesn't find simple non-match"
     :category 'rule-tests
@@ -587,7 +587,7 @@
             (rule (make-instance 'rule :match #'match-none))
             (message (make-instance 'message :message "test message")))
         (enqueue ruleset rule)
-        (not (check-rules message ruleset)))))
+        (not (check-rules message ruleset NIL)))))
 
 (deftest "check-rules finds match in second rule"
     :category 'rule-tests
@@ -600,16 +600,16 @@
                                    :match #'match-all
                                    :actions
                                    (list
-                                    (lambda (message)
-                                      (declare (ignore message))
+                                    (lambda (message environment)
+                                      (declare (ignore message environment))
                                       (setf xyzzy 42)))))
              (message (make-instance 'message :message "test message")))
         (enqueue ruleset rule)
         (enqueue ruleset rule2)
-        (and (check-rules message ruleset)
+        (and (check-rules message ruleset NIL)
              (assert-equal 42 xyzzy)))))
 
-(deftest "check-rules doesn't find match in several non-matching rules"
+(deftest "check-rules doesn't find match in several non-rrrmatching rules"
     :category 'rule-tests
     :test-fn
     (lambda ()
@@ -621,7 +621,7 @@
         (enqueue ruleset rule1)
         (enqueue ruleset rule2)
         (enqueue ruleset rule3)
-        (not (check-rules message ruleset)))))
+        (not (check-rules message ruleset NIL)))))
           
           
 (deftest "message is eq to same message added to context"
@@ -806,12 +806,15 @@
 
         (enqueue *root-ruleset*
                  (make-instance 'rule 
-                                :match (lambda (x) 
-                                         (declare (ignore x))
-                                         t)
-                                :actions (list (lambda (x) 
-                                                 (declare (ignore x))
-                                                 (incf counter)))))
+                                :match 
+                                (lambda (x y) 
+                                  (declare (ignore x y))
+                                  t)
+                                :actions 
+                                (list
+                                 (lambda (message environment)
+                                   (declare (ignore message environment))
+                                   (incf counter)))))
         (process-files)
         (close (filestream *messages*))
         (remove-file day1)
@@ -1112,14 +1115,14 @@
                                   :match #'match-all
                                   :actions 
                                   (list
-                                   (lambda (message)
-                                     (declare (ignore message))
+                                   (lambda (message &optional environment)
+                                     (declare (ignore message environment))
                                      (progn 
                                        (setf thing t))))))
              (message (make-instance 'message :message "test message")))
         (enqueue ruleset2 rule)
         (enqueue ruleset1 rule)
-        (check-rule ruleset1 message)
+        (check-rule ruleset1 message NIL)
         (assert-non-nil thing))))
 
 
@@ -1299,19 +1302,18 @@
     (lambda ()
       (let ((dummy ()))
         (let ((rule (make-instance 'rule
-                                   :match (lambda (msg)
-					    (if (and (match-all msg)
-						     (not (match-all msg)))
+                                   :match (lambda (msg environment)
+					    (if (and (match-all msg environment)
+						     (not (match-all msg environment)))
 						t
   					        'nil))
                                    :actions
                                    (list
-                                    (lambda (message matches sub-matches)
-                                      (declare 
-                                       (ignore message matches sub-matches))
+                                    (lambda (message environment)
+                                      (declare (ignore message environment))
                                       (setf dummy t)))))
               (message (make-instance 'message)))
-          (check-rule rule message)
+          (check-rule rule message NIL)
           (assert-nil dummy)))))
 
 (deftest "delete-rule causes a rule to be deleted"
@@ -1325,7 +1327,7 @@
             (message (make-instance 'message)))
         (assert-nil (head *ruleset*))
         (enqueue *ruleset* rule)
-        (check-rule rule message)
+        (check-rule rule message NIL)
         (head *ruleset*)
         (or (not (head *ruleset*))
             (dead-p (data (head *ruleset*)))))))
@@ -1341,12 +1343,12 @@
              (rule (make-instance 'rule :match #'match-all
                                   :actions 
                                   (list
-                                   (lambda (message)
-                                     (declare (ignore message))
+                                   (lambda (message &optional environment)
+                                     (declare (ignore message environment))
                                      (setf xyzzy 42))))))
         (enqueue  r2 rule)
         (enqueue *ruleset* r2)
-        (check-rules message *ruleset*)
+        (check-rules message *ruleset* NIL)
         (assert-equal 42 xyzzy))))
 
 (deftest "non-matching regexp rule works"
@@ -1357,10 +1359,11 @@
              (make-instance 'message :message "this is a different message"))
             (rule (make-instance 
                    'rule
-                   :match (lambda (message)
+                   :match (lambda (message environment)
+                            (declare (ignore environment))
                             (cl-ppcre::scan "this is a message" 
                                             (message message))))))
-        (not (check-rule rule message)))))
+        (not (check-rule rule message NIL)))))
 
 (deftest "exception works"
     :category 'rule-tests
@@ -1368,10 +1371,11 @@
     (lambda ()
       (let ((message (make-instance 'message :message "this is a message"))
             (rule (make-instance 'rule
-                                 :match (lambda (message) 
-                                          (declare (ignore message))
-                                          t))))
-        (check-rule rule message))))
+                                 :match 
+                                 (lambda (message environment) 
+                                   (declare (ignore message environment))
+                                   t))))
+        (assert-non-nil (check-rule rule message NIL)))))
 
 (deftest "regexp rule works"
     :category 'rule-tests
@@ -1380,20 +1384,24 @@
       (let ((message (make-instance 'message :message "this is a message"))
             (rule (make-instance 
                    'rule
-                   :match (lambda (message)
+                   :match (lambda (message environment)
+                            (declare (ignore environment))
                             (cl-ppcre::scan "this is a message" 
                                             (message message))))))
-        (assert-non-nil (check-rule rule message)))))
+        (assert-non-nil (check-rule rule message NIL)))))
 
 (deftest "anti-default style rule doesn't match message"
     :category 'rule-tests
     :test-fn
     (lambda ()
       (let ((message (make-instance 'message :message "this is a message"))
-            (rule (make-instance 'rule :match (lambda (message) 
-                                                (declare (ignore message))
-                                                ()))))
-        (not (check-rule rule message)))))
+            (rule (make-instance 
+                   'rule 
+                   :match 
+                   (lambda (message environment) 
+                     (declare (ignore message environment))
+                     ()))))
+        (not (check-rule rule message NIL)))))
 
 (deftest "get-context returns alias instead of orig context"
     :category 'context-tests
@@ -1433,32 +1441,36 @@
          (make-instance 'ruleset))
         (rule
          (filter
-          (lambda (message)
+          (lambda (message environment)
+            (declare (ignore environment))
             (equal (message message) "cat")))))
     (enqueue *root-ruleset* rule)
     (enqueue *root-ruleset*
              (Single
-              (lambda (message)
+              (lambda (message environment)
+                (declare (ignore environment))
                 (equal (message message) "the"))
               (list
-               (lambda (message)
-                 (declare (ignore message))
+               (lambda (message environment)
+                 (declare (ignore message environment))
                  (setf seen-the t)))))
     (enqueue *root-ruleset*
              (Single
-              (lambda (message)
+              (lambda (message environment)
+                (declare (ignore environment))
                 (equal (message message) "ran"))
               (list
-               (lambda (message)
-                 (declare (ignore message))
+               (lambda (message environment)
+                 (declare (ignore message environment))
                  (setf seen-ran t)))))
     (enqueue *root-ruleset*
              (Single
-              (lambda (message)
+              (lambda (message environment)
+                (declare (ignore environment))
                 (equal (message message) "cat"))
               (list
-               (lambda (message)
-                 (declare (ignore message))
+               (lambda (message environment)
+                 (declare (ignore message environment))
                  (setf seen-cat t)))))
     (process-files)
     (assert-non-nil (and seen-the (not seen-cat) seen-ran))))
@@ -1481,16 +1493,18 @@
             "the")))
          (seen-messages ())
          (save-messages (Single 
-                         (lambda (message)
-                           (declare (ignore message))
+                         (lambda (message environment)
+                           (declare (ignore message environment))
                            t)
                          (list
-                          (lambda (message)
+                          (lambda (message environment)
+                            (declare (ignore environment))
                             (setf seen-messages 
                                   (cons (message message)
                                         seen-messages))))))
          (rule (Suppress 
-                (lambda (message)
+                (lambda (message environment)
+                  (declare (ignore environment))
                   (equal (message message) "the"))
                 1)))
     
@@ -1514,20 +1528,22 @@
             "ran"
             "the")))
          (seen-messages ())
-         (foo (single (lambda (message) 
-                        (declare (ignore message))
+         (foo (single (lambda (message environment) 
+                        (declare (ignore message environment))
                         t) ()))
          (save-messages (Single 
-                         (lambda (message)
-                           (declare (ignore message))
+                         (lambda (message environment)
+                           (declare (ignore message environment))
                            t)
                          (list
-                          (lambda (message)
+                          (lambda (message environment)
+                            (declare (ignore environment))
                             (setf seen-messages 
                                   (cons (message message)
                                         seen-messages))))))
          (rule (Suppress 
-                (lambda (message)
+                (lambda (message environment)
+                  (declare (ignore environment))
                   (equal (message message) "the"))
                 0
                 :name 'foo
@@ -1539,7 +1555,7 @@
 
     (loop as x from 1 to 3 do
          (let ((*message* (get-logline *messages*)))
-           (check-rules *message* *root-ruleset*)
+           (check-rules *message* *root-ruleset* NIL)
            (check-limits *timeout-object-timeout-queue*)
            ))
 
@@ -1547,7 +1563,7 @@
     (check-limits *timeout-object-timeout-queue*)
 
     (let ((*message* (get-logline *messages*)))
-      (check-rules *message* *root-ruleset*)) 
+      (check-rules *message* *root-ruleset* NIL)) 
 
     (assert-equal 
      seen-messages
@@ -1578,9 +1594,11 @@
 
          (suppress-until-rule
           (suppress-until
-           (lambda (message)
+           (lambda (message environment)
+             (declare (ignore environment))
              (equal (message message) "the"))
-           (lambda (message)
+           (lambda (message environment)
+             (declare (ignore environment))
              (equal (message message) "ran"))
            :name 'suppress-until-rule))
 
@@ -1591,8 +1609,8 @@
                          :name 'xxx
                          :actions
                          (list
-                          (lambda (message)
-                            (declare (ignore message))
+                          (lambda (message environment)
+                            (declare (ignore message environment))
                             (incf match-count))))))
     
     (enqueue *root-ruleset* suppress-until-rule)
@@ -1621,12 +1639,12 @@
          (match-count 0)
          (catch-all-rule
           (Single
-           (lambda (message)
-             (declare (ignore message))
+           (lambda (message environment)
+             (declare (ignore message environment))
              t)
            (list 
-            (lambda (message)
-              (declare (ignore message))
+            (lambda (message environment)
+              (declare (ignore message environment))
               (incf match-count))))))
     
     (enqueue *root-ruleset* catch-all-rule)
@@ -1662,7 +1680,7 @@
     
     (loop as x from 1 to 3 do
          (let ((*message* (get-logline *messages*)))
-           (check-rules *message* *root-ruleset*)
+           (check-rules *message* *root-ruleset* NIL)
            (check-limits *timeout-object-timeout-queue*)
            ))
 
@@ -1681,35 +1699,27 @@
           (make-instance 
            'list-follower
            :message-list
-           (list 
-            "the"
-            "cat"
-            "ran"
-            "the")))
+           (list "the" "cat" "ran" "the")))
          (count 0)
          (rule
           (pair
-          
            ;; match1
-           (lambda (message)
+           (lambda (message environment)
+             (declare (ignore environment))
              (equal (message message) "the"))
-          
            ;; actions1
            ()
-          
            ;; match2
-           (lambda (message)
+           (lambda (message environment)
+             (declare (ignore environment))
              (equal (message message) "cat"))
-
            ;; actions2
            (list
-            (lambda (message)
-              (declare (ignore message))
+            (lambda (message environment)
+              (declare (ignore message environment))
               (incf count))))))
-
     (enqueue *root-ruleset* rule)
-    (process-files)
-    
+    (process-files)    
     (assert-equal count 1)))
 
 
@@ -1812,9 +1822,10 @@
     (lambda ()
       (let* ((*now* 1)
              (rule (make-instance 'rule :relative-timeout 1
-                                  :match (lambda (message)
-                                           (declare (ignore message))
-                                           t))))
+                                  :match 
+                                  (lambda (message environment)
+                                    (declare (ignore message environment))
+                                    t))))
         ;; make *now* larger than the timeout
         (setf *now* 
               (+ *now* 1
@@ -1826,10 +1837,13 @@
     :test-fn
     (lambda ()
       (let* ((*now* 1)
-             (rule (make-instance 'rule :relative-timeout 1
-                                  :match (lambda (message)
-                                           (declare (ignore message))
-                                           t))))
+             (rule (make-instance 
+                    'rule 
+                    :relative-timeout 1
+                    :match 
+                    (lambda (message environment)
+                      (declare (ignore message environment))
+                      t))))
         ;; make *now* larger than the timeout
         (setf *now* 
               (+ *now* 1
@@ -1843,14 +1857,14 @@
     (lambda ()
       (let* ((*now* 1)
              (rule (make-instance 'rule :relative-timeout 1
-                                  :match (lambda (message)
-                                           (declare (ignore message))
+                                  :match (lambda (message environment)
+                                           (declare (ignore message environment))
                                            t))))
         ;; make *now* larger than the timeout
         (setf *now* 
               (+ *now* 1
                  (* INTERNAL-TIME-UNITS-PER-SECOND 1)))
-        (check-rule rule (make-instance 'message))
+        (check-rule rule (make-instance 'message) NIL)
         (assert-nil (check-limits rule)))))
 
 (deftest "ruleset with relative timeout is updated on match"
@@ -1859,11 +1873,13 @@
     (lambda ()
       (let ((*now* 123)
             (ruleset (make-instance 'ruleset :relative-timeout 1)))
-        (enqueue ruleset (make-instance 'rule :match (lambda (message)
-                                                       (declare (ignore message))
-                                                       t)))
+        (enqueue ruleset (make-instance 
+                          'rule 
+                          :match (lambda (message environment)
+                                   (declare (ignore message environment))
+                                   t)))
         (setf *now* 456)
-        (check-rules (make-instance 'message) ruleset)
+        (check-rules (make-instance 'message) ruleset NIL)
         (assert-non-nil (> (next-timeout ruleset) 456)))))
                                       
 (deftest "ruleset with relative timeout is NOT update without match"
@@ -1872,11 +1888,14 @@
     (lambda ()
       (let ((*now* 123)
             (ruleset (make-instance 'ruleset :relative-timeout 1)))
-        (enqueue ruleset (make-instance 'rule :match (lambda (message)
-                                                       (declare (ignore message))
-                                                       NIL)))
+        (enqueue ruleset (make-instance 
+                          'rule 
+                          :match 
+                          (lambda (message environment) 
+                            (declare (ignore message environment))
+                            NIL)))
         (setf *now* (+ (next-timeout ruleset) 1))
-        (check-rules (make-instance 'message) ruleset)
+        (check-rules (make-instance 'message) ruleset NIL)
         (assert-nil (> (next-timeout ruleset) *now*)))))
 
 (deftest "ruleset that exceeds relative timeout is shown to exceed limits"
@@ -2114,11 +2133,11 @@
                     matching regexp "(.*)" 
                     binding (variable)
                     doing
-                    (lambda (message)
+                    (lambda (message environment)
                       (declare (ignore message))
-                      (setf set-me variable))))
+                      (setf set-me (cadr (assoc 'variable environment))))))
              (message (make-instance 'message :message "test")))
-        (logs::check-rule rule message)
+        (logs::check-rule rule message NIL)
         (assert-equal "test" set-me))))
 
 (deftest "ruleset match can bind variable"
@@ -2127,16 +2146,19 @@
     (lambda ()
       (let* ((set-me NIL)
              (ruleset (language::ruleset
-                       matching regexp "(.*)" 
+                       named 'ruleset
+                       matching regexp "(.*)"
                        binding (variable)
                        containing
-                       ((rule matching regexp ".*"
-                              doing
-                              (lambda (message)
-                                (declare (ignore message))
-                                (setf set-me variable))))))
+                       ((rule 
+                         named 'rule
+                         matching regexp ".*"
+                         doing
+                         (lambda (message environment)
+                           (declare (ignore message))
+                           (setf set-me (cadr (assoc 'variable environment))))))))
              (message (make-instance 'message :message "test")))
-        (logs::check-rule ruleset message)
+        (logs::check-rule ruleset message NIL)
         (assert-equal "test" set-me))))
 
 (deftest "rule match variable overrides ruleset match variable"
@@ -2151,11 +2173,11 @@
                        ((rule matching regexp "foo:(.*)"
                               binding (variable)
                               doing
-                              (lambda (message)
+                              (lambda (message environment)
                                 (declare (ignore message))
-                                (setf set-me variable))))))
+                                (setf set-me (cadr (assoc 'variable environment))))))))
              (message (make-instance 'message :message "foo:test")))
-        (logs::check-rule ruleset message)
+        (logs::check-rule ruleset message NIL)
         (assert-equal "test" set-me))))
 
 (deftest "rule environment variable overrides ruleset environment variable"
@@ -2164,18 +2186,41 @@
     (lambda ()
       (let* ((set-me NIL)
              (ruleset (language::ruleset
+                       named 'ruleset
                        with variable = 'ruleset-var
                        matching regexp ".*" 
                        containing
-                       ((rule matching regexp ".*"
-                              with variable = 'rule-var
-                              doing
-                              (lambda (message)
-                                (declare (ignore message))
-                                (setf set-me variable))))))
+                       ((rule 
+                         named 'rule
+                         matching regexp ".*"
+                         with variable = 'rule-var
+                         doing
+                         (lambda (message environment)
+                           (declare (ignore message))
+                           (setf set-me 
+                                 (cadr (assoc 'variable environment))))))))
              (message (make-instance 'message :message "test")))
-        (logs::check-rule ruleset message)
-        (assert-equal 'rule-var set-me))))
+        (logs::check-rule ruleset message NIL)
+        (assert-equal 'rule-var set-me)
+        )))
+
+(deftest "ruleset's environment variable is propogated"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let* ((set-me NIL)
+             (ruleset 
+              (language::ruleset
+               matching regexp "(.*)"
+               with variable = 42
+               containing
+               ((rule matching regexp ".*"
+                      doing
+                      (lambda (message environment)
+                        (setf set-me (cadr (assoc 'variable environment))))))))
+             (message (make-instance 'message :message "foo:test")))
+        (logs::check-rule ruleset message NIL)
+        (assert-equal 42 set-me))))
 
 (deftest "rule variable only lives for rule check"
     :category 'environment-tests
@@ -2190,16 +2235,16 @@
                               binding (variable)
                               continue
                               doing
-                              (lambda (message)
+                              (lambda (message environment)
                                 (declare (ignore message))
-                                (setf set-me variable)))
+                                (setf set-me (cadr (assoc 'variable environment)))))
                         (rule matching regexp ".*"
                               doing
-                              (lambda (message)
+                              (lambda (message environment)
                                 (declare (ignore message))
-                                (setf set-me variable))))))
+                                (setf set-me (cadr (assoc 'variable environment))))))))
              (message (make-instance 'message :message "foo:test")))
-        (logs::check-rule ruleset message)
+        (logs::check-rule ruleset message NIL)
         (assert-equal "foo:test" set-me))))
 
 (deftest "all rule variable bindings happen"
@@ -2219,13 +2264,17 @@
                          matching regexp "var3:(.*)"
                               binding (var5) ;; variable set by rule's match function
                               doing
-                              (lambda (message)
+                              (lambda (message environment)
                                 (declare (ignore message))
                                 (setf set-me 
                                       (format () "~A ~A ~A ~A ~A" 
-                                               var1 var2 var3 var4 var5))))))))
+                                               var1 
+                                               (cadr (assoc 'var2 environment))
+                                               (cadr (assoc 'var3 environment))
+                                               (cadr (assoc 'var4 environment))
+                                               (cadr (assoc 'var5 environment))))))))))
              (message (make-instance 'message :message "var3:var5")))
-        (logs::check-rule ruleset message)
+        (logs::check-rule ruleset message NIL)
         (assert-equal "var1 var2 var3 var4 var5" set-me))))
 
 ;; make sure that variable bindings aren't hanging around
@@ -2238,11 +2287,12 @@
              (rule (rule 
                     matching regexp ".*"
                     doing
-                    (lambda (message)
+                    (lambda (message environment)
                       (declare (ignore message))
-                      (setf set-me (not (boundp 'var1))))))
+                      (setf set-me (and (not (boundp 'var1))
+                                        (not (assoc 'var1 environment)))))))
              (message (make-instance 'message :message "test")))
-        (logs::check-rule rule message)
+        (logs::check-rule rule message NIL)
         (assert-non-nil set-me))))
 
 ;; a little slicker way of running all of the tests
@@ -2266,6 +2316,6 @@
   (apply #'run-categories (org.ancar.clunit::list-test-categories)))
 
 ;; load other tests
-(load "Language/rdl-tests.lisp")
+(load-logs-file "Language/rdl-tests")
 
 (run-all-categories)

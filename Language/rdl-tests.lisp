@@ -149,15 +149,6 @@ creating a rule."
          (stringp (LoGS::name rule))
          (equal "jims test string" (LoGS::name rule))))))
 
-(deftest "name can be special variable"
-    :category 'var-tests
-    :test-fn 
-    (lambda ()
-      (defvar *jims-test-testvar1* "special variable name")
-      (declaim (special *jims-test-testvar1*))
-      (let ((rule (rule named *jims-test-testvar1*)))
-        (equal (LoGS::name rule) *jims-test-testvar1*))))
-
 (deftest "name can be lexical variable"
     :category 'var-tests
     :test-fn
@@ -172,18 +163,24 @@ creating a rule."
     (lambda ()
       (let* ((new-rule NIL)
              (rule (rule matching 
-                         (lambda (message)
+                         (lambda (message environment)
                            (declare (ignore message))
                            (values t
-                                   '((jims-test-env-var "environment variable name"))))
+                                   (list (list 'jims-test-env-var "environment variable name"))
+                                   NIL
+                                   ))
                          doing 
-                         (lambda (message)
+                         (lambda (message environment)
                            (declare (ignore message))
+                           ;; ()))))
                            (setf new-rule
-                                 (rule named jims-test-env-var))))))
-        (LoGS::check-rule rule #m"some message")
+                                 (rule named
+                                       ;; "foo"))))))
+        (cadr (assoc 'jims-test-env-var environment))))))))
+        (LoGS::check-rule rule (make-instance 'message :message "some message") NIL)
         (equal (LoGS::name new-rule)
-               "environment variable name"))))
+               "environment variable name")
+        )))
 
 ;; regexp var tests
 
@@ -193,17 +190,7 @@ creating a rule."
     (lambda ()
       (let ((rule (rule matching regexp "jims test string")))
         (stringp 
-         (logs::check-rule rule #m"jims test string should match")))))
-
-(deftest "regexp can be special variable"
-    :category 'var-tests
-    :test-fn 
-    (lambda ()
-      (defvar *jims-test-testvar1* "special variable regexp")
-      (declaim (special *jims-test-testvar1*))
-      (let ((rule (rule matching regexp *jims-test-testvar1*)))
-        (stringp
-         (logs::check-rule rule #m"special variable regexp should match")))))
+         (logs::check-rule rule (make-instance 'message :message "jims test string should match") NIL)))))
 
 (deftest "regexp can be lexical variable"
     :category 'var-tests
@@ -211,7 +198,7 @@ creating a rule."
     (lambda ()
       (let ((jims-test-var "lexical variable regexp"))
         (let ((rule (rule matching regexp jims-test-var)))
-          (stringp (logs::check-rule rule #m"lexical variable regexp should match"))))))
+          (stringp (logs::check-rule rule (make-instance 'message :message "lexical variable regexp should match") NIL))))))
 
 (deftest "regexp can be set by matching rule's environment"
     :category 'complex-var-tests
@@ -219,25 +206,23 @@ creating a rule."
     (lambda ()
       (let* ((new-rule NIL)
              (rule (rule matching 
-                         (lambda (message)
+                         (lambda (message environment)
                            (declare (ignore message))
                            (values t
                                    '((test-env-var "environment variable regexp")
                                      (foo 42))))
                          doing 
-                         (lambda (message)
+                         (lambda (message environment)
                            (declare (ignore message))
-                           (format t "running action~%")
-                           (format t "env: ~A~%" LoGS::env)
-                           (format t "FOO: ~A~%" foo)
-                           (format t "test-env-var: ~A~%" test-env-var)
                            (setf new-rule
-                                 (LoGS::in-given-environment
-                                  LoGS::env
-                                  (rule matching regexp test-env-var)))))))
-        (LoGS::check-rule rule #m"some message")
+                                  (rule matching regexp 
+                                        (cadr (assoc 'test-env-var environment))))))))
+        (LoGS::check-rule rule (make-instance 'message :message "some message") NIL)
         (and new-rule
              (stringp
               (LoGS::check-rule 
                new-rule 
-               #m"environment variable regexp should match"))))))
+               (make-instance 
+                'message 
+                :message "environment variable regexp should match") 
+               NIL))))))

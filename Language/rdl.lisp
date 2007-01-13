@@ -1,11 +1,10 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
 ;;;; Copyright (C) 2006 Vijay Lakshminarayanan
 
-;;;; This file is a part of LoGS.  LoGS is free software; you can
-;;;; redistribute it and/or modify it under the terms of the GNU
-;;;; General Public License as published by the Free Software
-;;;; Foundation; either version 2 of the License, or (at your option)
-;;;; any later version.
+;;;; This program is free software; you can redistribute it and/or
+;;;; modify it under the terms of the GNU General Public License
+;;;; as published by the Free Software Foundation; either version 2
+;;;; of the License, or (at your option) any later version.
 
 ;;;; This file is a part of LoGS.  The copyright will soon be
 ;;;; transferred to the author of LoGS, James Earl Prewett
@@ -39,18 +38,6 @@ TYPE of the object passed in"))
 ;;; To use synonyms easily
 (defmacro alias (keyword)
   `(get ,keyword 'alias))
-
-;;; Peter Seibel's WITH-GENSYMS, slightly modified
-(defmacro with-gensyms ((&rest symbol-names) &body body)
-  (labels ((sym-name (sym-name)
-             (if (consp sym-name)
-                 (cons (car sym-name) (stringify (second sym-name)))
-                 (cons sym-name       (stringify sym-name))))
-           (stringify (symbol) (format () "~A" symbol)))
-    `(let ,(loop :as sym-name :in symbol-names
-                 :as (symbol . name) = (sym-name sym-name)
-                 :collect `(,symbol (gensym ,name)))
-      ,@body)))
 
 ;;; Influenced by Peter Norvig's LOOP implementation
 
@@ -124,54 +111,49 @@ on the required behaviour for SLOT."))
 (defgeneric fill-object-template (rule))
 
 (defmethod fill-object-template ((rule rule-macro))
-  (let ((rule-instance (gensym "RULE-INSTANCE")))
-    `(let ((,rule-instance
-            (make-instance
-             'rule
-             ,@(slot-contents rule
-                              '(:match :name :actions :environment :timeout
-                                :relative-timeout :filter :continuep)))))
-      (progn
-        (setf (logs::actions ,rule-instance)
-              (append (logs::actions ,rule-instance)
-                      ;; storing actions
-                      (list
-                       ,@(mapcar
-                          (lambda (context)
-                            `(lambda (message)
-                              (LoGS::add-to-context ,context message)))
-                          (get-object-slot rule :storing)))
-                      )))
-      ,rule-instance)))
+  `(let ((rule-instance 
+          (make-instance
+           'rule
+           ,@(loop as slot in '(:match :name :actions :environment :timeout
+                                :relative-timeout :filter :continuep)
+                   as res = (get-object-slot rule slot)
+                   if res append `(,slot ,res)))))
+    (progn
+      (setf (logs::actions rule-instance)
+            (append (logs::actions rule-instance)
+                    ;; storing actions
+                    (list
+                     ,@(mapcar
+                        (lambda (context)
+                          `(lambda (message environment)
+                             (LoGS::add-to-context ,context message)))
+                        (get-object-slot rule :storing)))
+                    )))
+    rule-instance
+  ))
 
 (defmethod fill-object-template ((ruleset ruleset-macro))
-  (let ((ruleset-instance (gensym "RULESET-INSTANCE")))
-    `(let ((,ruleset-instance 
-            (make-instance
-             'ruleset
-             ,@(slot-contents ruleset
-                              '(:match :name :actions :environment :timeout
-                                :relative-timeout :filter :continuep)))))
-      (progn
-        ,@(mapcar
-           (lambda (rule)
-             `(logs::enqueue ,ruleset-instance ,rule))
-           (get-object-slot ruleset :elements)))
-      ,ruleset-instance)))
+  `(let ((ruleset-instance 
+          (make-instance
+           'ruleset
+           ,@(loop as slot in '(:match :name :actions :environment :timeout
+                                :relative-timeout :filter :continuep)
+                as slot-contents = (get-object-slot ruleset slot)
+                if slot-contents append `(,slot ,slot-contents)))))
+     (progn
+       ,@(mapcar
+          (lambda (rule)
+            `(logs::enqueue ruleset-instance ,rule))
+          (get-object-slot ruleset :elements)))
+     ruleset-instance))
 
 (defmethod fill-object-template ((context context-macro))
-  (let ((context-instance (gensym "CONTEXT-INSTANCE")))
-    `(let ((,context-instance 
-            (logs::ensure-context
-             ,@(slot-contents context '(:name :actions :min-lines :max-lines
-                                        :relative-timeout :timeout
-                                        :lives-after-timeout)))))
-      ,context-instance)))
-
-(defun slot-contents (macro-object slots)
-  (loop as slot in slots
-        as slot-contents = (get-object-slot macro-object slot)
-        if slot-contents append `(,slot ,slot-contents)))
+  `(let ((context-instance 
+          (logs::ensure-context
+           ,@(loop as slot in '(:name :actions :timeout :relative-timeout :max-lines :min-lines :lives-after-timeout)
+                as slot-contents = (get-object-slot context slot)
+                if slot-contents append `(,slot ,slot-contents)))))
+     context-instance))
 
 (defgeneric parse-rule (rule exprs))
 
@@ -357,10 +339,13 @@ on the required behaviour for SLOT."))
     ;; I believe the match function that matched no regexps was technically
     ;; correct, but this is slightly better in terms of speed and IMO clarity
     (if (and (consp match) (eq (car match) :regexp))
-        (with-gensyms ((msg "MESSAGE") matches
-                       sub-matches (mmesg "MSGMSG")
-                       bind (val "VALUE"))
-          `(lambda (,msg)
+        (let ((msg (gensym "MESSAGE"))
+              (environment (gensym "ENVIRONMENT"))
+              (matches (gensym "MATCHES"))
+              (sub-matches (gensym "SUB-MATCHES"))
+              (mmesg (gensym "MSGMSG")))
+          `(lambda (,msg ,environment)
+             (declare (ignore ,environment))
              (multiple-value-bind (,matches ,sub-matches)
                  (let ((,mmesg (message ,msg)))
                    ,(parse-match (cdr match) mmesg))
@@ -368,10 +353,14 @@ on the required behaviour for SLOT."))
                  (values
                   ,matches
                   (cons
-                   (list ',(intern "SUB-MATCHES") ,sub-matches)
-                   (loop for ,bind in ',(get-object-slot rule :bind)
-                      for ,val across ,sub-matches
-                      collect (list ,bind ,val))))))))
+                   (list ',(intern "SUB-MATCHES")
+                         ,sub-matches)
+                   (loop for count from 0 
+                      below ,(length (get-object-slot rule :bind))
+                      for val in ',(get-object-slot rule :bind)
+                      while (> (length ,sub-matches) count)
+                      collect
+                        (list val (aref ,sub-matches count)))))))))
         match)))
 
 
@@ -472,7 +461,7 @@ on the required behaviour for SLOT."))
 
 (defmethod resolve-time ((seconds string))
   (calculate-timeout
-   (parse-time 
+   (cybertiggyr-time:parse-time 
     seconds 
     (list 
      #'recognize-hhmmss 
@@ -688,7 +677,7 @@ on the required behaviour for SLOT."))
       (handle-write rule (cdr exprs))
       (destructuring-bind (filename . rest) exprs
         (push
-         `(lambda (message)
+         `(lambda (message environment)
             (logs::write-to-file ',filename message))
          (macro-actions rule))
         rest)))

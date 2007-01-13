@@ -85,7 +85,7 @@
      if *message*
      do
        (LoGS-debug "got message: ~A~%" (IF *MESSAGE* (message *message*)))
-       (check-rules *message* *root-ruleset*)
+       (check-rules *message* *root-ruleset* NIL)
 
      else
      do

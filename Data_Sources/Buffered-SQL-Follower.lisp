@@ -27,6 +27,7 @@
 
   (use-package :asdf)
 
+  ;; this is munged!
   (push "/Users/dl/project-fw/clsql-3.2.1/" asdf:*central-registry*)
   (push "/Users/dl/project-fw/uffi-1.5.1/" asdf:*central-registry*)
   (asdf:operate 'asdf:load-op :clsql)
@@ -55,6 +56,7 @@
                :initarg :thequery)))
   
   (defmethod initialize-instance :after ((buffered-sql-follower buffered-sql-follower) &rest rest)
+    (declare (ignore rest))
     (when (not *default-database*)
       (connect `( 
                         ,(host buffered-sql-follower)
