@@ -2105,6 +2105,47 @@
       (let ((rule (org.prewett.LoGS.language::rule)))
         (assert-nil (match rule)))))
 
+(deftest "get-logs-env-var finds match in simple environment"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let ((environment '((FOO 42)
+                           (BAR 23)
+                           (BAZ 17))))
+        (assert-equal 
+         23
+         (get-LoGS-env-var 'bar environment)))))
+
+(deftest "get-logs-env-var finds NIL valued match in simple environment"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let ((environment '((FOO 42)
+                           (BAR NIL)
+                           (BAZ 17))))
+        (multiple-value-bind (value present-p)
+            (get-LoGS-env-var 'bar environment)
+          (and
+           (assert-non-nil
+            present-p)
+           (assert-nil
+            value))))))
+           
+(deftest "get-logs-env-var doesn't find missing match in simple environment"
+    :category 'environment-tests
+    :test-fn
+    (lambda ()
+      (let ((environment '((FOO 42)
+                           (BAR NIL)
+                           (BAZ 17))))
+        (multiple-value-bind (value present-p)
+            (get-LoGS-env-var 'quux environment)
+          (and
+           (assert-nil
+            present-p)
+           (assert-nil
+            value))))))
+
 (deftest "rule can set environment"
     :category 'environment-tests
     :test-fn
@@ -2122,7 +2163,7 @@
       (let ((ruleset (language::ruleset with var = "xxx")))
         (assert-equal
          "xxx"
-         (cadr (assoc 'var (logs::environment ruleset)))))))
+         (get-LoGS-env-var 'var (logs::environment ruleset))))))
 
 (deftest "rule match can bind variable"
     :category 'environment-tests
@@ -2135,7 +2176,7 @@
                     doing
                     (lambda (message environment)
                       (declare (ignore message))
-                      (setf set-me (cadr (assoc 'variable environment))))))
+                      (setf set-me (get-LoGS-env-var 'variable environment)))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule rule message NIL)
         (assert-equal "test" set-me))))
@@ -2156,7 +2197,7 @@
                          doing
                          (lambda (message environment)
                            (declare (ignore message))
-                           (setf set-me (cadr (assoc 'variable environment))))))))
+                           (setf set-me (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule ruleset message NIL)
         (assert-equal "test" set-me))))
@@ -2175,7 +2216,7 @@
                               doing
                               (lambda (message environment)
                                 (declare (ignore message))
-                                (setf set-me (cadr (assoc 'variable environment))))))))
+                                (setf set-me (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "foo:test")))
         (logs::check-rule ruleset message NIL)
         (assert-equal "test" set-me))))
@@ -2198,7 +2239,7 @@
                          (lambda (message environment)
                            (declare (ignore message))
                            (setf set-me 
-                                 (cadr (assoc 'variable environment))))))))
+                                 (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule ruleset message NIL)
         (assert-equal 'rule-var set-me)
@@ -2217,7 +2258,7 @@
                ((rule matching regexp ".*"
                       doing
                       (lambda (message environment)
-                        (setf set-me (cadr (assoc 'variable environment))))))))
+                        (setf set-me (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "foo:test")))
         (logs::check-rule ruleset message NIL)
         (assert-equal 42 set-me))))
@@ -2237,12 +2278,14 @@
                               doing
                               (lambda (message environment)
                                 (declare (ignore message))
-                                (setf set-me (cadr (assoc 'variable environment)))))
+                                (setf set-me 
+                                      (get-LoGS-env-var 'variable environment))))
                         (rule matching regexp ".*"
                               doing
                               (lambda (message environment)
                                 (declare (ignore message))
-                                (setf set-me (cadr (assoc 'variable environment))))))))
+                                (setf set-me 
+                                      (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "foo:test")))
         (logs::check-rule ruleset message NIL)
         (assert-equal "foo:test" set-me))))
@@ -2269,10 +2312,14 @@
                                 (setf set-me 
                                       (format () "~A ~A ~A ~A ~A" 
                                                var1 
-                                               (cadr (assoc 'var2 environment))
-                                               (cadr (assoc 'var3 environment))
-                                               (cadr (assoc 'var4 environment))
-                                               (cadr (assoc 'var5 environment))))))))))
+                                               (get-LoGS-env-var 
+                                                'var2 environment)
+                                               (get-LoGS-env-var
+                                                'var3 environment)
+                                               (get-LoGS-env-var
+                                                'var4 environment)
+                                               (get-LoGS-env-var
+                                                'var5 environment)))))))))
              (message (make-instance 'message :message "var3:var5")))
         (logs::check-rule ruleset message NIL)
         (assert-equal "var1 var2 var3 var4 var5" set-me))))
@@ -2290,7 +2337,7 @@
                     (lambda (message environment)
                       (declare (ignore message))
                       (setf set-me (and (not (boundp 'var1))
-                                        (not (assoc 'var1 environment)))))))
+                                        (not (get-LoGS-env-var 'var1 environment)))))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule rule message NIL)
         (assert-non-nil set-me))))

@@ -73,7 +73,6 @@
       (when *count-rules*
         (LoGS-debug "incrementing rule try count~%")
         (incf (match-try rule))))
-
     (multiple-value-bind (matches match-environment)
         (cond ((functionp match)
                (logs-debug "match: ~A message: ~A environment: ~A~%"
@@ -109,7 +108,6 @@
 (defgeneric check-rule (rule message environment)
   (:documentation "see if the given message matches the rule, if so, run the rule's actions."))
 
-;;; XXX i think this needs some *serious* reworking!
 (defmethod check-rule ((rule rule) (message message) inherited-environment)
   (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (unless (dead-p rule)
@@ -144,3 +142,11 @@
 
 (defmethod display-count ((rule rule) stream)
   (format stream "~A ~A ~A~%" (name rule) (match-count rule) (match-try rule)))
+
+;; not sure I like this name :P
+(defun get-LoGS-env-var (var-name environment-list)
+  (let ((val 
+         (assoc var-name environment-list)))
+    (values
+     (cadr val)
+     (not (null val)))))
