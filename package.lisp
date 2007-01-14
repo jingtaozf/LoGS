@@ -74,7 +74,9 @@
            exec-returning-value
            write-to-file ;; XXX should this be exported? XXX
            file-write
-           pipe))
+           pipe
+           get-LoGS-env-var
+           ))
 
 #-(or ecl cmu sbcl allegro openmcl lispworks clisp)
 (error "LoGS is not supported on your Lisp")

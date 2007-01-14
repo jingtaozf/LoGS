@@ -175,8 +175,8 @@ creating a rule."
                            ;; ()))))
                            (setf new-rule
                                  (rule named
-                                       ;; "foo"))))))
-        (cadr (assoc 'jims-test-env-var environment))))))))
+                                       (get-LoGS-env-var 
+                                        'jims-test-env-var environment)))))))
         (LoGS::check-rule rule (make-instance 'message :message "some message") NIL)
         (equal (LoGS::name new-rule)
                "environment variable name")
@@ -216,7 +216,8 @@ creating a rule."
                            (declare (ignore message))
                            (setf new-rule
                                   (rule matching regexp 
-                                        (cadr (assoc 'test-env-var environment))))))))
+                                        (get-LoGS-env-var
+                                         'test-env-var environment)))))))
         (LoGS::check-rule rule (make-instance 'message :message "some message") NIL)
         (and new-rule
              (stringp
