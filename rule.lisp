@@ -98,11 +98,10 @@
       (logs-debug "actions: ~A~%" actions)
       (mapcar
        (lambda (action)
-         (progn
-           (LoGS-debug "running action ~A with env ~A and args: ~A~%"
-                       action environment message)
-           (funcall action message environment)
-           (LoGS-debug "ran action for rule: ~A~%" (name rule))))
+         (LoGS-debug "running action ~A with env ~A and args: ~A~%"
+                     action environment message)
+         (funcall action message environment)
+         (LoGS-debug "ran action for rule: ~A~%" (name rule)))
        actions))))
 
 ;; check-rule should return 2 values, whether the rule matched
