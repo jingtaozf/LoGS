@@ -207,9 +207,10 @@ creating a rule."
       (let* ((new-rule NIL)
              (rule (rule matching 
                          (lambda (message environment)
-                           (declare (ignore message))
+                           (declare (ignore message environment))
                            (values t
-                                   '((test-env-var "environment variable regexp")
+                                   '((test-env-var 
+                                      "environment variable regexp")
                                      (foo 42))))
                          doing 
                          (lambda (message environment)
@@ -218,7 +219,8 @@ creating a rule."
                                   (rule matching regexp 
                                         (get-LoGS-env-var
                                          'test-env-var environment)))))))
-        (LoGS::check-rule rule (make-instance 'message :message "some message") NIL)
+        (LoGS::check-rule rule 
+                          (make-instance 'message :message "some message") NIL)
         (and new-rule
              (stringp
               (LoGS::check-rule 

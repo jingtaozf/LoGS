@@ -2258,6 +2258,7 @@
                ((rule matching regexp ".*"
                       doing
                       (lambda (message environment)
+                        (declare (ignore message))
                         (setf set-me (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "foo:test")))
         (logs::check-rule ruleset message NIL)

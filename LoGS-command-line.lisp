@@ -33,23 +33,19 @@
                      (make-instance 'org.prewett.LoGS::multi-follower))
                (mapcar (lambda (ff) (add-item *messages* ff))
                        *file-list*)))))
-
     ;; SET INITIAL TIME HERE ??? 
     (cond (*use-internal-real-time*
            (setq *now* (get-internal-real-time)))
           (t
            (warn "unknown initial time value~%")
            ))
-
-
-    (if *ruleset-list*
-        (mapcar
-         (lambda (ruleset-file)
-           (format t "loading ruleset file: ~A~%" ruleset-file)
-           (if ruleset-file
-               (load (compile-file ruleset-file))))
-         *ruleset-list*))))
-
+    (when *ruleset-list*
+      (mapcar
+       (lambda (ruleset-file)
+         (format t "loading ruleset file: ~A~%" ruleset-file)
+         (if ruleset-file
+             (load (compile-file ruleset-file))))
+       *ruleset-list*))))
 
 ;;; some helper functions
 

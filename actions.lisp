@@ -34,8 +34,9 @@
     ))
 
 (defun do-exec (program args)
-  #'(lambda (message)
-      (declare (ignore message))
+  (format t "do-exec: ~A ~A~%" program args)
+  (lambda (message environment)
+      (declare (ignore message environment))
       #+cmu
       (extensions:run-program (cond ((symbolp program)
                                      (symbol-value program))
@@ -59,7 +60,6 @@
 
 (defmacro exec (program &rest args)
   `(do-exec ,program ,args))
-
 
 ;; like exec, but wait and return the return code from the program
 ;; for when the exec is useful /for/ the return value
