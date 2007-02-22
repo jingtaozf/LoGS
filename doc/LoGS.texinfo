@@ -15,19 +15,21 @@
 @set AUTHOR James E. Prewett
 @set EDITION @logsversion 
 @set TITLE LoGS Manual
-@set UPDATED September 12, 2005
-@set COPYRIGHT Copyright @copyright{} 2003--2005 James E. Prewett
+@c @set UPDATED September 12, 2005
+@c wow, thats old!
+@set UPDATED February 21, 2007
+@set COPYRIGHT Copyright @copyright{} 2003--2007 James E. Prewett
 
 
 @copying
 This manual is for LoGS, version @logsversion{} and CL-CLI, version @clcliver{}.
 
-Copyright @copyright{} 2003--2005 James E. Prewett.
+Copyright @copyright{} 2003--2007 James E. Prewett.
 
 
 @smallexample
 @group 
-  Copyright (C)  2003-2005 James E. Prewett
+  Copyright (C)  2003-2007 James E. Prewett
   Permission is granted to copy, distribute and/or modify this document
   under the terms of the GNU Free Documentation License, Version 1.2
   or any later version published by the Free Software Foundation;
@@ -160,7 +162,7 @@ CL-PPCRE will be presented in this manual.}.
 
 Logs, as currently written@footnote{LoGS is currently evolving very
 quickly and is extend-able/modifiable by the user}, consists of six
-important components, Messages, Rules, Rulesets, Actions, Contexts,
+important components, Messages, Rules, Rulesets, Actions, Contexts, Windows,
 and Data-Sources.  These components were chosen so as to mimic the
 behavior of the (excellent) Logsurfer program written by Wolfgang Ley
 and Ewe Ellerman.   
@@ -171,6 +173,7 @@ and Ewe Ellerman.
 @cindex Rulesets
 @cindex Actions
 @cindex Contexts
+@cindex Windows
 @cindex Data-Sources
 
 An Object--Oriented approach has been taken with LoGS.  Each of the

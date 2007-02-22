@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -284,7 +284,7 @@
                       #'(lambda ()
                           (progn
                             (format t "This is LoGS version ~A~%" +LoGS-version+)
-                            (format t "Copyright (C) 2004 James E. Prewett~%This is free software; see the source for copying conditions.  There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.~%")
+                            (format t "Copyright (C) 2003-2007 James E. Prewett~%This is free software; see the source for copying conditions.  There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.~%")
                             (quit-LoGS)))
                       :description
                       "print version and Copyright information for the program")

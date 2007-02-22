@@ -1,5 +1,5 @@
 ;;;; LoGS extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2006 Vijay Lakshminarayanan
+;;;; Copyright (C) 2006-2007 Vijay Lakshminarayanan
 
 ;;;; This file is a part of LoGS.  LoGS is free software; you can
 ;;;; redistribute it and/or modify it under the terms of the GNU
