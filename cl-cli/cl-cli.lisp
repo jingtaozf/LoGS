@@ -45,19 +45,30 @@
 
 ;; process all options given on the command line
 (defun process-options (options-list args)
-  (declare (ignorable options-list))
-  (flet ((nextarg ()
-           (loop with seenflag = 'nil
-                 as arg in args
-                 if (not seenflag)
-                 do (setq seenflag t)
-                 else if (optionp arg)
-                 do (loop-finish)
-                 collect (pop args))))
-    (loop as cdr on args until (optionp (car cdr)) finally (setq args cdr))
-    (loop as nextopt = (nextarg)
-          while nextopt
-          do (process-switch nextopt options-list))))
+  (let ((default-options ()))
+    (flet ((nextarg ()
+             (loop with seenflag = 'nil
+                as arg in args
+                if (not seenflag)
+                do (setq seenflag t)
+                else if (optionp arg)
+                do (loop-finish)
+                collect (pop args))))
+      (loop as cdr on args until (optionp (car cdr)) 
+         do
+           (push (car cdr) default-options)
+         finally (setq args cdr))
+      (loop as nextopt = (nextarg)
+         while nextopt
+         do 
+           (process-switch nextopt options-list))
+      (when
+          (member :default
+                  options-list
+                  :test (lambda (x y) (equal x (name y))))
+        (process-switch (cons :default (reverse default-options))
+                      options-list))
+      args)))
 
 (defun optionp (string)
  "Is STRING a command line option?"
@@ -68,15 +79,21 @@
  (and (>= (length string1) (length string2))
       (funcall test string1 string2 :end1 (length string2))))
 
-(defun same-name-p (string name)
+(defmethod same-name-p ((string string) name)
  "Is NAME the same as STRING in terms of command line options?"
- (or (equal name (subseq string 1)) (equal name (subseq string 2))))
+ (or 
+  (equal name (subseq string 1)) 
+  (equal name (subseq string 2))))
+
+(defmethod same-name-p ((sym symbol) name)
+  (equal name sym))
 
 ;; process an individual switch
 (defun process-switch (list options-list)
- (let* ((switch (pop list))
+  (let* ((switch (pop list))
         (opt (car (member switch options-list
-                          :test #'(lambda (a b) (same-name-p a (name b)))))))
+                          :test #'(lambda (a b) 
+                                    (same-name-p a (name b)))))))
    (when opt
      (let ((numargs (length list)))
        (multiple-value-bind (minargs maxargs)
