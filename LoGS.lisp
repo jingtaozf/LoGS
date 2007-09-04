@@ -123,3 +123,11 @@
                 (file-write-date compiled-filename))) ; old compiled file
         (compile-file the-filename))
       (load compiled-filename))))
+
+(defun handle-ctrl-c (signal code scp)
+  (declare (ignore signal code scp))
+  (format t "got a ctrl-c, exiting~%")
+  (cleanup *messages*)
+  (quit-LoGS))
+
+(system:enable-interrupt Unix:SIGINT #'handle-ctrl-c)

@@ -18,7 +18,8 @@
 (in-package :org.prewett.LoGS)
 
 (defun main ()
-  (progn
+  (system:with-enabled-interrupts ((Unix:SIGINT #'handle-ctrl-c))
+    (PROGN
     ;; process any command line options
     (LoGS-debug "processing options~%")
     (let ((args (get-application-args)))
@@ -37,7 +38,7 @@
                     :if-exists :overwrite
                     :if-does-not-exist :create)
             (format file "~A~%" PID)))))
-    
+  
     ;; process any files
     (process-files)
     ;; call any exit functions
@@ -47,8 +48,7 @@
      *run-before-exit*)
     ;; exit LoGS
     (when *quit-lisp-when-done*
-      (quit-LoGS))
-    ))
+      (quit-LoGS)))))
 
 ;; pretty much the former mainline
 ;; adding the option processing to the mainline made testing more difficult

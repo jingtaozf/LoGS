@@ -20,6 +20,15 @@
 (defvar *file-list* ())
 (defvar *ruleset-list* ())
 
+(defun load-all-rulesets ()
+  (when *ruleset-list*
+      (mapcar
+       (lambda (ruleset-file)
+         (format t "loading ruleset file: ~A~%" ruleset-file)
+         (if ruleset-file
+             (load (compile-file ruleset-file))))
+       *ruleset-list*)))
+
 (defun process-command-line (opts args)
   (progn
     (LoGS-debug "processing options~%")
@@ -39,13 +48,7 @@
           (t
            (warn "unknown initial time value~%")
            ))
-    (when *ruleset-list*
-      (mapcar
-       (lambda (ruleset-file)
-         (format t "loading ruleset file: ~A~%" ruleset-file)
-         (if ruleset-file
-             (load (compile-file ruleset-file))))
-       *ruleset-list*))))
+    (load-all-rulesets)))
 
 ;;; some helper functions
 
