@@ -22,6 +22,9 @@
    (spawnprog :accessor spawnprog :initform () :initarg :spawnprog)
    (spawnargs :accessor spawnargs :initform () :initarg :spawnargs)))
 
+(defmethod cleanup ((FF Spawn))
+  (CLOSE (SpawnStream FF)))
+
 ;; generic way to launch or program
 ;; returns a stream we can do stuff with
 (defun spawn-prog (program args)

@@ -28,6 +28,12 @@
    (Inode      :accessor Inode :initform ())
    (offset     :accessor offset :initform ())))
 
+(defgeneric cleanup (FF)
+  (:documentation "clean up a file-follower"))
+
+(defmethod cleanup ((FF File-Follower))
+  (close (filestream ff)))
+
 (defgeneric start-file-follower (file-follower)
   (:documentation "get a file-follower all set up"))
 

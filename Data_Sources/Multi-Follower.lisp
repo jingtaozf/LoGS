@@ -25,14 +25,20 @@
 (defclass Multi-Follower (collection Data-Source)
   ((current-follower :initform 0 :accessor current-follower)))
 
+(defmethod cleanup ((MF Multi-Follower))
+  (loop for i from 0 below (ecount MF)
+        do
+        (cleanup (aref (data MF) i))))
+
 (defmethod get-logline ((Mf Multi-Follower))
   (when (> (Ecount Mf) 0)
     (loop
        with starting-follower = (current-follower Mf)
-       for current-follower = starting-follower then (mod (1+ current-follower) 
-                                                           (Ecount Mf))
+       with current-follower = starting-follower 
+
        for line = (get-logline (aref (data Mf) current-follower))
        do
+         (setf current-follower (mod (+ 1 current-follower) (Ecount Mf)))
          (setf (current-follower Mf)
                current-follower)
        when line
