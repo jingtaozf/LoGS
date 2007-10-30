@@ -17,8 +17,24 @@
 
 (in-package :org.prewett.LoGS)
 
+#+cmu
+(use-package :system)
+#+cmu
+(use-package :unix)
+
+#+sbcl
+(use-package :sb-sys)
+#+sbcl
+(use-package :sb-unix)
+
+(defmacro with-LoGS-interrupts (interrupts &body body)
+    #+sbcl
+    `(with-enabled-interrupts ',interrupts ,@body)
+    #+cmu
+    `(with-enabled-interrupts ,interrupts ,@body))
+
 (defun main ()
-  (system:with-enabled-interrupts ((Unix:SIGINT #'handle-ctrl-c))
+  (with-LoGS-interrupts ((SIGINT #'handle-ctrl-c))
     (PROGN
     ;; process any command line options
     (LoGS-debug "processing options~%")

@@ -22,7 +22,7 @@
     :author "James E. Prewett <Jim@Prewett.org>"
     :licence "GPL"
     :serial t
-    :depends-on (:cl-ppcre :cl-cli :cybertiggyr-time)
+    :depends-on (:cl-ppcre :cl-cli) 
     :components ((:file "package")
                  (:file "LoGS")
                  (:module "data_structures" 
@@ -65,8 +65,10 @@
                  (:file "actions")
                  (:file "Parlance")
                  (:file "LoGS-command-line")
+                 (:file "mainline")
                  (:module "Language" 
                           :components ((:file "defpackage")
                                        (:file "LoGS-time")
                                        (:file "rdl"))
-                          :depends-on ("LoGS"))))
+                          :depends-on ("LoGS"))
+                 ))

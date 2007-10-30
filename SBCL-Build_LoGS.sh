@@ -18,11 +18,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
-CL_PPCRE="cl-ppcre-1.2.16/load.lisp"
-LOGS="load-LoGS.lisp"
-CL_CLI="cl-cli/cl-cli.lisp"
 LOGS_CORE="LoGS-sbcl.core"
 CYBERTIGGYR_TIME="time.lisp"
 
-
-sbcl --eval "(and (load (compile-file \"$CYBERTIGGYR_TIME\")) (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\")) (load \"$LOGS\")(in-package :org.prewett.LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"
+sbcl --eval "(progn (load (compile-file \"$CYBERTIGGYR_TIME\")) (require 'asdf)(require 'logs) (in-package :org.prewett.LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"

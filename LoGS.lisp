@@ -130,4 +130,5 @@
   (cleanup *messages*)
   (quit-LoGS))
 
+#+cmu
 (system:enable-interrupt Unix:SIGINT #'handle-ctrl-c)
