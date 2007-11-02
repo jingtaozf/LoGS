@@ -212,5 +212,18 @@
          (funcall function (data entry) level)
          (if (typep (data entry) 'doubly-linked-list)
              (map-dll function (data entry) (+ 1 level))))))
-         
-       
+
+(defmethod map-store (function (doubly-linked-list store))
+  (map-dll function store))
+
+(defmethod find-in-store (item (doubly-linked-list store) &key test)
+  (loop as entry = (head store)
+     then (unless (equal (tail store) entry)
+            (rlink entry))
+     unless entry
+     do
+       (return)
+     when entry
+     do
+     (if (funcall test item)
+         (return item))))

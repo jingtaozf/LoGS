@@ -132,3 +132,6 @@
 
 #+cmu
 (system:enable-interrupt Unix:SIGINT #'handle-ctrl-c)
+
+(defgeneric map-store (function store))
+(defgeneric find-in-store (item store &key test))
