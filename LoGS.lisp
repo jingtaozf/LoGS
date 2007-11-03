@@ -133,5 +133,8 @@
 #+cmu
 (system:enable-interrupt Unix:SIGINT #'handle-ctrl-c)
 
+#+sbcl
+(import 'SIGINT :sb-unix)
+
 (defgeneric map-store (function store))
 (defgeneric find-in-store (item store &key test))

@@ -50,7 +50,7 @@
   #+sbcl
   (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
   #+sbcl
-  (:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly)
+  (:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly #:SIGINT)
   #+sbcl
   (:import-from :sb-sys #:make-fd-stream)
   #+openmcl

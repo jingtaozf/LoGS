@@ -17,6 +17,7 @@
 
 (in-package :org.prewett.LoGS)
 
+
 #+cmu
 (use-package :system)
 #+cmu
@@ -27,9 +28,11 @@
 #+sbcl
 (use-package :sb-unix)
 
+
+
 (defmacro with-LoGS-interrupts (interrupts &body body)
     #+sbcl
-    `(with-enabled-interrupts ',interrupts ,@body)
+    `(SB-SYS::with-enabled-interrupts ',interrupts ,@body)
     #+cmu
     `(with-enabled-interrupts ,interrupts ,@body))
 

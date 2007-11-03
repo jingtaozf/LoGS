@@ -203,15 +203,11 @@
   (loop as entry = (head doubly-linked-list)
      then (unless (equal (tail doubly-linked-list) entry)
             (rlink entry))
-     unless entry
-     do
-       (return)
-     when entry
-     do
-       (progn
-         (funcall function (data entry) level)
+     while entry collect
+       (let ((ret (funcall function (data entry) level)))
          (if (typep (data entry) 'doubly-linked-list)
-             (map-dll function (data entry) (+ 1 level))))))
+             (cons ret (map-dll function (data entry) (+ 1 level)))
+             ret))))
 
 (defmethod map-store (function (store doubly-linked-list))
   (map-dll function store))
@@ -220,10 +216,7 @@
   (loop as entry = (head store)
      then (unless (equal (tail store) entry)
             (rlink entry))
-     unless entry
+     while entry
      do
-       (return)
-     when entry
-     do
-     (if (funcall test item)
-         (return item))))
+     (if (funcall test item (data entry))
+         (return (data entry)))))

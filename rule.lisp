@@ -67,6 +67,7 @@
   (:documentation "check to see if a rule matches a message given an environment"))
 
 (defmethod rule-matches-p ((rule rule) (message message) environment)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
   (with-slots (match) rule
     ;; do bookkeeping
     (when +enable-rule-count+
@@ -96,7 +97,7 @@
     (when actions
       (logs-debug "actions: ~A~%" actions)
       (mapcar
-       (lambda (action)
+       #'(lambda (action)
          (LoGS-debug "running action ~A with env ~A and args: ~A~%"
                      action environment message)
          (funcall action message environment)
