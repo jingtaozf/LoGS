@@ -213,6 +213,7 @@
   (map-dll function store))
 
 (defmethod find-in-store (item (store doubly-linked-list) &key test)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (loop as entry = (head store)
      then (unless (equal (tail store) entry)
             (rlink entry))
