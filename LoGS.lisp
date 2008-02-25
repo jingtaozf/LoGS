@@ -31,6 +31,8 @@
 ;; this is a constant so we can optimize out the checks for production runs
 (defconstant +debug+ NIL "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
+(defvar *show-profile* NIL)
+
 (defvar *LoGS-internal-time-units-per-second* internal-time-units-per-second)
 
 (defmacro LoGS-debug (message &rest rest)
@@ -138,3 +140,11 @@
 
 (defgeneric map-store (function store))
 (defgeneric find-in-store (item store &key test))
+
+
+(defun |#$-READER| (stream subchar arg)
+  (declare (ignore subchar arg))
+  (let ((var (read stream t nil t)))
+    `(get-logs-env-var ',var *environment*)))
+
+(set-dispatch-macro-character #\# #\$ #'|#$-READER|)

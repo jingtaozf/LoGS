@@ -226,6 +226,13 @@
                           (setq org.prewett.LoGS::*run-forever* t))
                       :description "an alias for --run-forever")
        (make-instance 'cli-opt
+                      :name "show-profile"
+                      :arguments ()
+                      :action
+                      #'(lambda ()
+                          (setq org.prewett.LoGS::*show-profile* t))
+                      :description "store the name of the file that a given message came from in the from-file slot of the message if set")
+       (make-instance 'cli-opt
                       :name "remember-file"
                       :arguments ()
                       :action

@@ -46,7 +46,7 @@
           '(()
             ("message" "named-object" "timeout-object" "relative-timeout-object"
            "killable-item" "collection" "limited-collection" "context"
-             "window"))
+             "window" "environment-object"))
           
           (list 
            "Data_Sources"

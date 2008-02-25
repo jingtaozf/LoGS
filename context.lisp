@@ -17,7 +17,7 @@
 
 (in-package :org.prewett.LoGS)
 
-(defclass context (limited-collection timeout-object relative-timeout-object killable-item)
+(defclass context (limited-collection timeout-object relative-timeout-object killable-item environment-object)
   ((actions 
     :initarg :actions
     :initform ()

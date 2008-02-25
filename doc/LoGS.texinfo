@@ -1,4 +1,4 @@
-\input texinfo   @c -*-texinfo-*-
+\input texinfo
 @c Manual for the Logs extensible (common-lisp based) log/event 
 @c analysis engine/language Copyright (C) 2003-2007 James Earl Prewett
 @c

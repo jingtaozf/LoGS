@@ -17,7 +17,7 @@
 
 (in-package :org.prewett.LoGS)
 
-(defclass rule (killable-item named-object timeout-object relative-timeout-object)
+(defclass rule (killable-item named-object timeout-object relative-timeout-object environment-object)
   ((match :initarg :match
           :accessor match
           :initform ()
@@ -33,10 +33,6 @@
             :accessor actions
             :initform ()
             :type list)
-   (environment :initarg :environment
-                :accessor environment
-                :initform ()
-                :type list)
    (match-count :accessor match-count
                 :initform 0
                 :type integer)

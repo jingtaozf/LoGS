@@ -28,7 +28,8 @@
 #+sbcl
 (use-package :sb-unix)
 
-
+#+sbcl
+(require :sb-sprof)
 
 (defmacro with-LoGS-interrupts (interrupts &body body)
     #+sbcl
@@ -59,7 +60,10 @@
             (format file "~A~%" PID)))))
   
     ;; process any files
-    (process-files)
+    (if *show-profile*
+        ()
+        
+        (process-files))
     ;; call any exit functions
     (mapcar
      (lambda (function)
