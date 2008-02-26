@@ -31,15 +31,29 @@
 #+sbcl
 (require :sb-sprof)
 
+;; this is starting to become a bit of a mess!
 (defmacro with-LoGS-interrupts (interrupts &body body)
-    #+sbcl
-    `(SB-SYS::with-enabled-interrupts ',interrupts ,@body)
-    #+cmu
-    `(with-enabled-interrupts ,interrupts ,@body))
+  #+sbcl
+  `(progn ,@body)
+  #+cmu
+  `(with-enabled-interrupts ,interrupts ,@body))
 
 (defun main ()
   (with-LoGS-interrupts ((SIGINT #'handle-ctrl-c))
     (PROGN
+      #+sbcl
+      (progn       
+        (sb-sys:enable-interrupt 
+         sb-unix:sigint 
+         (lambda (sig code scp)
+           (declare (ignore sig code scp))
+           (LoGS::handle-ctrl-c)))
+        (sb-sys:enable-interrupt 
+         SB-POSIX:SIGHUP 
+         (lambda (sig code scp)
+           (declare (ignore sig code scp))
+           (LoGS::reload-all-rulesets))))
+
     ;; process any command line options
     (LoGS-debug "processing options~%")
     (let ((args (get-application-args)))

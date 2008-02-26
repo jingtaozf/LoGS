@@ -20,6 +20,11 @@
 (defvar *file-list* ())
 (defvar *ruleset-list* ())
 
+(defun reload-all-rulesets ()
+  (warn "reloading rulesets")
+  (setf *root-ruleset* (make-instance 'ruleset))
+  (load-all-rulesets))
+
 (defun load-all-rulesets ()
   (when *ruleset-list*
       (mapcar

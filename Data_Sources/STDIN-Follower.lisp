@@ -21,7 +21,9 @@
   ((FileStream :accessor FileStream 
                :initform 
                *STANDARD-INPUT*)))
-               
+
+(defmethod cleanup ((FF stdin-follower))
+  (close (filestream ff)))
 
 (defgeneric start-STDIN-follower (STDIN-follower)
   (:documentation "get a STDIN-follower all set up"))

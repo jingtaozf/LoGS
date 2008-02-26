@@ -79,6 +79,18 @@
 
 ;; these allow us to abstract writing things to files.
 ;; this should simplify our rulesets considerably
+
+(defgeneric write-to-stream (stream message)) 
+
+(defmethod write-to-stream (stream (message message))
+  (format stream "~A~%" (message message)))
+
+(defmethod write-to-stream (stream (context context))
+  (write-context context stream))
+
+(defmethod write-to-stream (stream (string string))
+  (format stream "~A~%" string))
+
 (defgeneric write-to-file (filename message))
 
 (defmethod write-to-file (filename (message message))
@@ -87,7 +99,7 @@
             :direction :output
             :if-exists :append
             :if-does-not-exist :create)
-    (format file "~A~%" (message message))))
+    (write-to-stream file message)))
 
 (defmethod write-to-file (filename (context context))
   (with-open-file
@@ -95,7 +107,7 @@
             :direction :output
             :if-exists :append
             :if-does-not-exist :create)
-    (write-context context file)))
+    (write-to-stream file context)))
 
 (defmethod write-to-file (filename (string string))
   (with-open-file
@@ -103,7 +115,7 @@
             :direction :output
             :if-exists :append
             :if-does-not-exist :create)
-    (format file "~A~%" string)))
+    (write-to-stream file string)))
 
 ;; make a function to write the message to a file
 (defun file-write (filename)
