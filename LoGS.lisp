@@ -96,6 +96,8 @@
   "should LoGS set *NOW* from the timestamp on each line?")
 (defvar *quit-lisp-when-done* t
   "Should we exit the Lisp process when we're done processing files?")
+(defvar *start-from-end* NIL
+  "Should file-followers start from the end of the file?")
 
 (defvar *opts* ()
   "a list of command-line options that LoGS understands")

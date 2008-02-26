@@ -93,7 +93,6 @@
                         (set-no-internal-time)
                         (setf LoGS::*parse-timestamp* t))
                       :description "set *NOW* using the timestamp on each line")
-
        (make-instance 'cli-opt
                       :name "file"
                       :arguments '(filename &optional position)
@@ -103,11 +102,17 @@
                                                            :FileName 
                                                            filename)))
                                     ;; if position is specified, start there
-                                    (when position
-                                      (when (not ff) (error "no ff~%"))
-                                      (org.prewett.LoGS::set-file-follower-position
-                                       ff
-                                       (read-from-string position)))
+                                    (when (or position *start-from-end*)
+                                      (cond ((not ff) (error "no ff~%"))
+                                            ((or (equal position "end")
+                                                 (equal position "END")
+                                                 *start-from-end*)
+                                             (org.prewett.LoGS::set-file-follower-position
+                                              ff
+                                              (get-file-length-from-filename (filename ff))))
+                                            (t (org.prewett.LoGS::set-file-follower-position
+                                                ff
+                                                (read-from-string position)))))
                                     (push ff *file-list*)))
                       :description "name of the file to process and optional position")
        (make-instance 'cli-opt
@@ -239,7 +244,13 @@
                       #'(lambda ()
                           (setq org.prewett.LoGS::*remember-file* t))
                       :description "store the name of the file that a given message came from in the from-file slot of the message if set")
-
+       (make-instance 'cli-opt
+                      :name "start-from-end"
+                      :arguments ()
+                      :action
+                      #'(lambda ()
+                          (setq org.prewett.LoGS::*start-from-end* t))
+                      :description "store the name of the file that a given message came from in the from-file slot of the message if set")
        (make-instance 'cli-opt
                       :name "tag-messages"
                       :arguments ()

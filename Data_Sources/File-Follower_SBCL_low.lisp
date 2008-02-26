@@ -21,6 +21,7 @@
 
 (shadowing-import '(sb-posix:o-nonblock SB-POSIX:O-RDONLY))
 
+
 (defun fifo-p (filename)
   (if
    (logand 4096 
