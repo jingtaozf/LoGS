@@ -31,6 +31,9 @@
 #+sbcl
 (require :sb-sprof)
 
+#+sbcl 
+(sb-profile:PROFILE)
+
 ;; this is starting to become a bit of a mess!
 (defmacro with-LoGS-interrupts (interrupts &body body)
   #+sbcl

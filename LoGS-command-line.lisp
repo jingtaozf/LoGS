@@ -25,13 +25,32 @@
   (setf *root-ruleset* (make-instance 'ruleset))
   (load-all-rulesets))
 
+(defgeneric load-ruleset (ruleset))
+
+
+(defvar *fasl-string*
+  #-cmucl "fasl"
+  #+cmucl "x86f"
+  )
+
+(defmethod load-ruleset ((ruleset string))
+  (let ((len (length ruleset)))
+    (if 
+     (and (> len (length *fasl-string*))
+          (equal (subseq ruleset (- len (length *fasl-string*))) *fasl-string*))
+     (load ruleset)
+     (load (compile-file ruleset)))))
+
+(defmethod load-ruleset ((ruleset pathname))
+  (load-ruleset (namestring ruleset)))
+
 (defun load-all-rulesets ()
   (when *ruleset-list*
       (mapcar
        (lambda (ruleset-file)
          (format t "loading ruleset file: ~A~%" ruleset-file)
          (if ruleset-file
-             (load (compile-file ruleset-file))))
+             (load-ruleset ruleset-file)))
        *ruleset-list*)))
 
 (defun process-command-line (opts args)
