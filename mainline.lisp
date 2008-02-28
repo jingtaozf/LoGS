@@ -58,14 +58,16 @@
     (LoGS-debug "processing options~%")
     (let ((args (get-application-args)))
       (process-command-line *opts* args))
-    
+
     ;; write out PID if necessary
     (when *write-pid-to-file*
       (progn
         (LoGS-debug "writing PID to file: ~A~%" *write-pid-to-file*)
         (let ((PID 
                #+cmu
-                (unix:unix-getpid)))
+                (unix:unix-getpid)
+                #+sbcl
+                (sb-unix:unix-getpid)))
           (with-open-file
               (file *write-pid-to-file*
                     :direction :output
@@ -73,11 +75,18 @@
                     :if-does-not-exist :create)
             (format file "~A~%" PID)))))
   
+    
     ;; process any files
-    (if *show-profile*
-        ()
-        
-        (process-files))
+    (if *do-repl*
+        (progn
+          #+sbcl
+          (SB-IMPL::TOPLEVEL-INIT)
+          #+cmu
+          (LISP::%TOP-LEVEL))
+        (if *show-profile*
+        (process-files) ;; XXX
+        (process-files)))
+
     ;; call any exit functions
     (mapcar
      (lambda (function)
@@ -93,7 +102,6 @@
 (defun process-files ()    
   (declare (OPTIMIZE (SPEED 0) (DEBUG 3) (SAFETY 3)))  
   (loop named processing as *message* = (get-logline *messages*)
-       
      when +debug+
        do (format t "processing message: ~A~%" (if *message* (message *message*)))
        

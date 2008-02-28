@@ -98,6 +98,8 @@
   "Should we exit the Lisp process when we're done processing files?")
 (defvar *start-from-end* NIL
   "Should file-followers start from the end of the file?")
+(defvar *do-repl* NIL
+  "Should we run a REPL instead of processing the files?")
 
 (defvar *opts* ()
   "a list of command-line options that LoGS understands")

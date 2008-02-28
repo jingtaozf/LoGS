@@ -26,11 +26,21 @@
    (keyfunc :initarg :keyfunc :accessor keyfunc))
   (:documentation "A class to store rules."))
 
+(defmethod check-rule ((ruleset hash-ruleset)
+                       (message message)
+                       environment)
+  (format t "checking hash rules~%")
+  (check-rules message ruleset environment))
+
 (defmethod check-rules ((message message) (ruleset hash-ruleset) environment)
   (let* ((key (funcall (keyfunc ruleset) message))
          (rule (gethash key (table ruleset))))
     (if rule
-        (check-rule rule message environment)
+        (let ((ret (check-rule rule message environment)))
+          (format t "returning: ~A~%" ret)
+          (format t "from: ~A ~A~%" rule message)
+          ret
+          )
         (warn "no such rule: ~A" key))))
 
 (defmethod add-rule ((ruleset hash-ruleset) (rule rule) key)

@@ -347,4 +347,11 @@
                       :action
                       (lambda ()
                         (setf LoGS::*quit-lisp-when-done* NIL))
-                      :description "do not terminate the Lisp process when LoGS is done")))
+                      :description "do not terminate the Lisp process when LoGS is done")
+       (make-instance 'cli-opt
+                      :name "repl"
+                      :arguments ()
+                      
+                      :action
+                      (lambda ()
+                         (setf LoGS::*do-repl* t)))))
