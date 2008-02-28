@@ -368,6 +368,12 @@
                         (setf LoGS::*quit-lisp-when-done* NIL))
                       :description "do not terminate the Lisp process when LoGS is done")
        (make-instance 'cli-opt
+                      :name "compile-only"
+                      :arguments ()
+                      :action
+                      (lambda ()
+                        (setf LoGS::*compile-only* t)))
+       (make-instance 'cli-opt
                       :name "repl"
                       :arguments ()
                       

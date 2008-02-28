@@ -29,7 +29,6 @@
 (defmethod check-rule ((ruleset hash-ruleset)
                        (message message)
                        environment)
-  (format t "checking hash rules~%")
   (check-rules message ruleset environment))
 
 (defmethod check-rules ((message message) (ruleset hash-ruleset) environment)
@@ -37,10 +36,7 @@
          (rule (gethash key (table ruleset))))
     (if rule
         (let ((ret (check-rule rule message environment)))
-          (format t "returning: ~A~%" ret)
-          (format t "from: ~A ~A~%" rule message)
-          ret
-          )
+          ret)
         (warn "no such rule: ~A" key))))
 
 (defmethod add-rule ((ruleset hash-ruleset) (rule rule) key)

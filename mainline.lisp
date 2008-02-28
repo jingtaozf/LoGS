@@ -62,6 +62,8 @@
     (let ((args (get-application-args)))
       (process-command-line *opts* args))
 
+    (if *compile-only* (quit-LoGS))
+
     ;; write out PID if necessary
     (when *write-pid-to-file*
       (progn

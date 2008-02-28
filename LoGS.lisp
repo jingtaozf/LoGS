@@ -100,6 +100,8 @@
   "Should file-followers start from the end of the file?")
 (defvar *do-repl* NIL
   "Should we run a REPL instead of processing the files?")
+(defvar *compile-only* NIL
+  "Should we only compile the ruleset?")
 
 (defvar *opts* ()
   "a list of command-line options that LoGS understands")
