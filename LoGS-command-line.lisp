@@ -34,12 +34,20 @@
   )
 
 (defmethod load-ruleset ((ruleset string))
-  (let ((len (length ruleset)))
-    (if 
-     (and (> len (length *fasl-string*))
-          (equal (subseq ruleset (- len (length *fasl-string*))) *fasl-string*))
-     (load ruleset)
-     (load (compile-file ruleset)))))
+  (let* ((c-f-p (compile-file-pathname ruleset))
+         (c-f-t (and (probe-file c-f-p)
+                     (sb-posix:stat-mtime
+                      (sb-posix:stat c-f-p))))
+         (r-t (sb-posix:stat-mtime
+               (sb-posix:stat ruleset))))
+    (if (and c-f-t (> c-f-t r-t))
+        (PROGN
+          (format t "loading compiled ruleset~%")
+          (load c-f-p))
+        (progn
+          (format t "compiling ruleset~%")
+          (load (compile-file ruleset))))))
+
 
 (defmethod load-ruleset ((ruleset pathname))
   (load-ruleset (namestring ruleset)))
