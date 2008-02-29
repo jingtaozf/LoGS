@@ -217,13 +217,14 @@
 (defmethod run-context-actions ((context context))
   "Run the actions associated with a context."
   (LoGS-debug "running context actions~%")
-  (with-slots (actions) context
-    (when actions
-      (mapcar 
-       (lambda (x) 
-         (declare (function x))
-         (funcall x context))
-       actions))))
+  (with-slots (actions environment) context
+    (let ((*environment* environment))
+      (when actions
+        (mapcar 
+         (lambda (x) 
+           (declare (function x))
+           (funcall x context))
+         actions)))))
 
  (defmethod check-limits :around ((context context))
    (or (dead-p context)

@@ -78,6 +78,7 @@
            pipe
            get-LoGS-env-var
            message
+           ensure-context
            ))
 
 #-(or ecl cmu sbcl allegro openmcl lispworks clisp)
