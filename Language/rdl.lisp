@@ -39,6 +39,13 @@ TYPE of the object passed in"))
 (defmacro alias (keyword)
   `(get ,keyword 'alias))
 
+(defun |#$-READER| (stream subchar arg)
+  (declare (ignore subchar arg))
+  (let ((var (read stream t nil t)))
+    `(LoGS::get-logs-env-var ',var *environment*)))
+
+(set-dispatch-macro-character #\# #\$ #'|#$-READER|)
+
 ;;; Influenced by Peter Norvig's LOOP implementation
 
 ;;; changed to CLOS objects instead of structures

@@ -32,6 +32,7 @@
 (defconstant +debug+ NIL "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defvar *show-profile* NIL)
+(defvar *environment* NIL)
 
 (defvar *LoGS-internal-time-units-per-second* internal-time-units-per-second)
 

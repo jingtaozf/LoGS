@@ -69,6 +69,7 @@
            rule
            enqueue
            *root-ruleset*
+           *environment*
            match-all
            exec
            exec-returning-value
@@ -76,7 +77,7 @@
            file-write
            pipe
            get-LoGS-env-var
-           
+           message
            ))
 
 #-(or ecl cmu sbcl allegro openmcl lispworks clisp)
