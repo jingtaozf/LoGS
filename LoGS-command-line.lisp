@@ -268,21 +268,21 @@
                       :action
                       #'(lambda ()
                           (setq org.prewett.LoGS::*show-profile* t))
-                      :description "store the name of the file that a given message came from in the from-file slot of the message if set")
+                      :description "profile the run and display the profile information")
        (make-instance 'cli-opt
                       :name "remember-file"
                       :arguments ()
                       :action
                       #'(lambda ()
                           (setq org.prewett.LoGS::*remember-file* t))
-                      :description "store the name of the file that a given message came from in the from-file slot of the message if set")
+                      :description "remember which file a message came from")
        (make-instance 'cli-opt
                       :name "start-from-end"
                       :arguments ()
                       :action
                       #'(lambda ()
                           (setq org.prewett.LoGS::*start-from-end* t))
-                      :description "store the name of the file that a given message came from in the from-file slot of the message if set")
+                      :description "start file-followers from the end of the file")
        (make-instance 'cli-opt
                       :name "tag-messages"
                       :arguments ()
@@ -354,6 +354,7 @@
        (make-instance 'cli-opt
                       :name "run-before-exit"
                       :arguments '(func)
+                      :description "run this function before exiting LoGS"
                       :action
                       #'(lambda (func)
                           (let ((split-func
@@ -377,6 +378,7 @@
                       :description "do not terminate the Lisp process when LoGS is done")
        (make-instance 'cli-opt
                       :name "compile-only"
+                      :description "only compile rulesets, don't process files"
                       :arguments ()
                       :action
                       (lambda ()
@@ -384,7 +386,7 @@
        (make-instance 'cli-opt
                       :name "repl"
                       :arguments ()
-                      
+                      :description "run a REPL instead of processing files"
                       :action
                       (lambda ()
                          (setf LoGS::*do-repl* t)))))
