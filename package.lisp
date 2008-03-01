@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -50,7 +50,7 @@
   #+sbcl
   (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
   #+sbcl
-  (:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly)
+  (:import-from :sb-unix #:unix-stat #:unix-open #:o_rdonly #:SIGINT)
   #+sbcl
   (:import-from :sb-sys #:make-fd-stream)
   #+openmcl
@@ -69,12 +69,17 @@
            rule
            enqueue
            *root-ruleset*
+           *environment*
            match-all
            exec
            exec-returning-value
            write-to-file ;; XXX should this be exported? XXX
            file-write
-           pipe))
+           pipe
+           get-LoGS-env-var
+           message
+           ensure-context
+           ))
 
 #-(or ecl cmu sbcl allegro openmcl lispworks clisp)
 (error "LoGS is not supported on your Lisp")

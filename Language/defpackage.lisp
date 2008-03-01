@@ -1,5 +1,5 @@
 ;;;; LoGS extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2006 Vijay Lakshminarayanan
+;;;; Copyright (C) 2006-2007 Vijay Lakshminarayanan
 
 ;;;; This file is a part of LoGS.  LoGS is free software; you can
 ;;;; redistribute it and/or modify it under the terms of the GNU
@@ -20,8 +20,8 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 (defpackage :org.prewett.LoGS.language
-  (:use #:cl #:cybertiggyr-time)
-  (:import-from #:logs #:rule #:ruleset #:message #:exec #:context)
+  (:use #:cl #:cybertiggyr-time #:logs)
+  ; (:import-from #:logs #:rule #:ruleset #:message #:exec #:context)
   (:import-from #:cybertiggyr-time #:make-broken-time)
   (:nicknames #:language))
 

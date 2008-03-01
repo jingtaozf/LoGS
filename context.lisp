@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 
 (in-package :org.prewett.LoGS)
 
-(defclass context (limited-collection timeout-object relative-timeout-object killable-item)
+(defclass context (limited-collection timeout-object relative-timeout-object killable-item environment-object)
   ((actions 
     :initarg :actions
     :initform ()
@@ -217,13 +217,14 @@
 (defmethod run-context-actions ((context context))
   "Run the actions associated with a context."
   (LoGS-debug "running context actions~%")
-  (with-slots (actions) context
-    (when actions
-      (mapcar 
-       (lambda (x) 
-         (declare (function x))
-         (funcall x context))
-       actions))))
+  (with-slots (actions environment) context
+    (let ((*environment* environment))
+      (when actions
+        (mapcar 
+         (lambda (x) 
+           (declare (function x))
+           (funcall x context))
+         actions)))))
 
  (defmethod check-limits :around ((context context))
    (or (dead-p context)
@@ -262,7 +263,7 @@
       (if ,context-name
           (progn
             (LoGS-debug "a context named ~A already exists at~%" 
-                        ,name ,context-name)
+                        ,context-name)
             ,context-name)
           (make-instance 'context ,@rest)))))
 

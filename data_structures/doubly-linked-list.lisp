@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -47,14 +47,14 @@
                        (neighbor-item doubly-linked-list-item)
                        (insert-item doubly-linked-list-item) 
                        &key direction)
-  (if (gethash 
-       (data insert-item)
-       (list-entries doubly-linked-list))
-      (format t "item already exists in list~%")
-    
-      (cond
-        ((equal direction :before)
-         (progn
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
+  (let ((already (gethash 
+                  (data insert-item)
+                  (list-entries doubly-linked-list))))
+    (if already 
+        (warn "item already exists in list~%")
+        (cond
+          ((equal direction :before)
            (LoGS-debug "inserting ~A into ~A before ~A~%" insert-item doubly-linked-list neighbor-item)
            (when (llink neighbor-item)
              (setf (rlink (llink neighbor-item)) insert-item))
@@ -63,9 +63,8 @@
            (setf (llink neighbor-item) insert-item)
            ;; if the neighbor was the head, we are now the head
            (when (eq (head doubly-linked-list) neighbor-item)
-             (setf (head doubly-linked-list) insert-item))))
-        ((equal direction :after)
-         (progn
+             (setf (head doubly-linked-list) insert-item)))
+          ((equal direction :after)
            (LoGS-debug "inserting ~A into ~A after ~A~%" 
                        insert-item doubly-linked-list neighbor-item)
            (when (rlink neighbor-item)
@@ -76,15 +75,16 @@
            ;; if the neighbor was the tail, we are now the tail
            (when (eq (tail doubly-linked-list) neighbor-item)
              (setf (tail doubly-linked-list) insert-item))
-           ))
-        (t
-         (error "unknown direction: ~A~%" direction)))))
+           )
+          (t
+           (error "unknown direction: ~A~%" direction))))))
   
 ;; unencapsulated case
 (defmethod dll-insert ((doubly-linked-list doubly-linked-list)
                        (neighbor-item doubly-linked-list-item)
                        insert-item
                        &key direction)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (unless (gethash 
            insert-item
            (list-entries doubly-linked-list))
@@ -98,6 +98,7 @@
                        (neighbor-item (eql NIL))
                        (insert-item doubly-linked-list-item)
                        &key direction)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (unless (gethash 
            (data insert-item) 
            (list-entries doubly-linked-list))
@@ -125,6 +126,7 @@
                        (neighbor-item (eql NIL))
                        insert-item
                        &key direction)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (unless (gethash insert-item
            (list-entries doubly-linked-list))
     (dll-insert doubly-linked-list
@@ -136,7 +138,8 @@
                               neighbor-item
                               (insert-item doubly-linked-list-item)
                               &key direction)
-  (declare (ignore direction neighbor-item))
+  (declare (ignore direction neighbor-item) 
+           (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (setf (gethash 
          (data insert-item) 
          (list-entries doubly-linked-list)) 
@@ -147,6 +150,7 @@
 
 (defmethod enqueue ((doubly-linked-list doubly-linked-list)
                     &rest items)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (loop for insert-item in items
         do
         (dll-insert doubly-linked-list (tail doubly-linked-list) insert-item 
@@ -157,6 +161,7 @@
 
 (defmethod dll-delete ((doubly-linked-list doubly-linked-list)
                        item-to-delete)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (let ((lookup (gethash item-to-delete (list-entries doubly-linked-list))))
     (when lookup
       (dll-delete doubly-linked-list lookup))))
@@ -165,6 +170,7 @@
   (:documentation "unlink a dlli from its neighbors; cut it  out of the list"))
 
 (defmethod remove-item ((remove-item doubly-linked-list-item))
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (with-slots ((before llink)(after rlink)) remove-item
     (when before
       (setf (rlink before) after))
@@ -173,6 +179,7 @@
 
 (defmethod dll-delete ((doubly-linked-list doubly-linked-list)
                        (item-to-delete doubly-linked-list-item))
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (progn
     (remove-item item-to-delete)
     (when (eql (head doubly-linked-list) item-to-delete) ; head
@@ -188,21 +195,29 @@
 
 (defmethod dll-delete :after ((doubly-linked-list doubly-linked-list)
                               (item-to-delete doubly-linked-list-item))
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (remhash (data item-to-delete) (list-entries doubly-linked-list)))
 
 (defmethod map-dll (function (doubly-linked-list doubly-linked-list) &optional (level 1))
-  (format t "map-dll level: ~A~%" level)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (loop as entry = (head doubly-linked-list)
      then (unless (equal (tail doubly-linked-list) entry)
             (rlink entry))
-     unless entry
-     do
-       (return)
-     when entry
-     do
-       (progn
-         (funcall function (data entry) level)
+     while entry collect
+       (let ((ret (funcall function (data entry) level)))
          (if (typep (data entry) 'doubly-linked-list)
-             (map-dll function (data entry) (+ 1 level))))))
-         
-       
+             (cons ret (map-dll function (data entry) (+ 1 level)))
+             ret))))
+
+(defmethod map-store (function (store doubly-linked-list))
+  (map-dll function store))
+
+(defmethod find-in-store (item (store doubly-linked-list) &key test)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
+  (loop as entry = (head store)
+     then (unless (equal (tail store) entry)
+            (rlink entry))
+     while entry
+     do
+     (if (funcall test item (data entry))
+         (return (data entry)))))

@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@
           '(()
             ("message" "named-object" "timeout-object" "relative-timeout-object"
            "killable-item" "collection" "limited-collection" "context"
-             "window"))
+             "window" "environment-object"))
           
           (list 
            "Data_Sources"

@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# LoGS
+#
+# chkconfig: 345
+# description: LoGS
+#
+LOGS_BIN=/root/bin/LoGS
+RULESET=/root/LoGS/ruleset.lisp
+PIDFILE=/var/run/LoGS/LoGS.pid
+export LOGS_BIN RULESET PIDFILE
+
+
+# Source the library functions
+. /etc/rc.status
+rc_reset
+
+[ -x $LOGS_BIN ] || exit 
+
+pidof_logs () {
+   pid="-1"
+   if [ -f $PIDFILE ];then
+   	pid=`cat $PIDFILE`
+   fi
+   echo $pid
+}
+
+kill_logs () {
+   pid=`pidof_logs`
+
+   if [ $pid -le 1 ];then
+      return -1;
+   fi
+   retval=1
+   while kill -0 $pid 2>/dev/null;do
+      kill -TERM $pid
+      retval=$?
+      sleep 1
+   done
+   return $retval
+}
+	
+# how were we called
+case "$1" in
+	start)
+		echo -n "Starting LoGS: "
+		detachtty /var/run/LoGS/socket \
+	                  $LOGS_BIN \
+			  --ruleset $RULESET \
+			  --file /var/log/messages \
+			  --pid $PIDFILE \
+			  --run-forever 
+		rc_status -v
+		;;
+	reload)
+		echo -n "Reloading LoGS ruleset: "
+		kill -HUP `cat $PIDFILE`
+		rc_status -v
+		;;
+	stop)
+		echo -n "Shutting down LoGS: "
+		kill_logs
+		rc_status -v
+		;;
+	status)
+		checkproc -p $PIDFILE $LOGS_BIN
+		rc_status -v
+		;;
+	restart)
+		$0 stop
+		sleep 1
+		$0 start
+		rc_status
+		;;
+	*)
+		echo "Usage: pbs_mom {start|stop|restart|reload|status|purge}"
+		exit 1
+esac
+rc_exit
+

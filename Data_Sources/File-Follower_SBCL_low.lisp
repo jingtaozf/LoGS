@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -20,6 +20,7 @@
 (require :sb-posix)
 
 (shadowing-import '(sb-posix:o-nonblock SB-POSIX:O-RDONLY))
+
 
 (defun fifo-p (filename)
   (if

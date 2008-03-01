@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -27,6 +27,12 @@
    (FileStream :accessor FileStream :initform ())
    (Inode      :accessor Inode :initform ())
    (offset     :accessor offset :initform ())))
+
+(defgeneric cleanup (FF)
+  (:documentation "clean up a file-follower"))
+
+(defmethod cleanup ((FF File-Follower))
+  (close (filestream ff)))
 
 (defgeneric start-file-follower (file-follower)
   (:documentation "get a file-follower all set up"))
@@ -86,7 +92,7 @@
 "Return the next line of this file.  We refuse to read eof.  When we 
 have reached end of the file, we check to see if there is a new inode 
 associated with our filename. if there is, we start following that filename."
-(declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
+(declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
 (if (and (filestream ff) (open-stream-p (filestream ff)))
     (if (peek-char nil (filestream ff) nil)
         (read-line (filestream ff) nil)
@@ -100,16 +106,16 @@ associated with our filename. if there is, we start following that filename."
              (read-line it nil))))))
 
 (defmethod get-logline ((ff file-follower))
-"Wrap the next line of the file associated with the file-follower inside of
+  "Wrap the next line of the file associated with the file-follower inside of
 a message."
-(declare (OPTIMIZE (SPEED 3) (DEBUG 0) (SAFETY 0)))  
-(let ((line (get-line ff)))
-  (when line
-    (cond ((and *remember-file* *tag-messages*)
-           (make-instance 'message :message line :from-file (filename ff) :tag ()))
-          (*remember-file*
-           (make-instance 'message :message line :from-file (filename ff)))
-          (*tag-messages*
-           (make-instance 'message :message line :tag ()))
-          (t
-           (make-instance 'message :message line))))))
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
+  (let ((line (get-line ff)))
+    (when line
+      (cond ((and *remember-file* *tag-messages*)
+             (make-instance 'message :message line :from-file (filename ff) :tag ()))
+            (*remember-file*
+             (make-instance 'message :message line :from-file (filename ff)))
+            (*tag-messages*
+             (make-instance 'message :message line :tag ()))
+            (t
+             (make-instance 'message :message line))))))

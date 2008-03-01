@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -76,3 +76,17 @@
         ,named-context)
       (make-instance 'window
                      ,@rest)))))
+
+(defmethod map-store (function (store window))
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
+  (map-dll
+   (lambda (item &optional level)
+     (funcall function (cadr item)))
+   (data store)))
+
+(defmethod find-in-store (item (store window) &key (test #'equal))
+  (find-in-store item (data store) 
+                 :test 
+                 (lambda (x iitem) 
+                   (funcall test 
+                            x (cadr iitem)))))

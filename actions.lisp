@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -34,7 +34,9 @@
     ))
 
 (defun do-exec (program args)
-  #'(lambda (message) 
+  (format t "do-exec: ~A ~A~%" program args)
+  (lambda (message environment)
+      (declare (ignore message environment))
       #+cmu
       (extensions:run-program (cond ((symbolp program)
                                      (symbol-value program))
@@ -59,7 +61,6 @@
 (defmacro exec (program &rest args)
   `(do-exec ,program ,args))
 
-
 ;; like exec, but wait and return the return code from the program
 ;; for when the exec is useful /for/ the return value
 (defmacro exec-returning-value (program &rest args)
@@ -78,6 +79,18 @@
 
 ;; these allow us to abstract writing things to files.
 ;; this should simplify our rulesets considerably
+
+(defgeneric write-to-stream (stream message)) 
+
+(defmethod write-to-stream (stream (message message))
+  (format stream "~A~%" (message message)))
+
+(defmethod write-to-stream (stream (context context))
+  (write-context context stream))
+
+(defmethod write-to-stream (stream (string string))
+  (format stream "~A~%" string))
+
 (defgeneric write-to-file (filename message))
 
 (defmethod write-to-file (filename (message message))
@@ -86,7 +99,7 @@
             :direction :output
             :if-exists :append
             :if-does-not-exist :create)
-    (format file "~A~%" (message message))))
+    (write-to-stream file message)))
 
 (defmethod write-to-file (filename (context context))
   (with-open-file
@@ -94,7 +107,7 @@
             :direction :output
             :if-exists :append
             :if-does-not-exist :create)
-    (write-context context file)))
+    (write-to-stream file context)))
 
 (defmethod write-to-file (filename (string string))
   (with-open-file
@@ -102,7 +115,7 @@
             :direction :output
             :if-exists :append
             :if-does-not-exist :create)
-    (format file "~A~%" string)))
+    (write-to-stream file string)))
 
 ;; make a function to write the message to a file
 (defun file-write (filename)

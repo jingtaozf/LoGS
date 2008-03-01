@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -20,6 +20,47 @@
 (defvar *file-list* ())
 (defvar *ruleset-list* ())
 
+(defun reload-all-rulesets ()
+  (warn "reloading rulesets")
+  (setf *root-ruleset* (make-instance 'ruleset))
+  (load-all-rulesets))
+
+(defgeneric load-ruleset (ruleset))
+
+
+(defvar *fasl-string*
+  #-cmucl "fasl"
+  #+cmucl "x86f"
+  )
+
+(defmethod load-ruleset ((ruleset string))
+  (let* ((c-f-p (compile-file-pathname ruleset))
+         (c-f-t (and (probe-file c-f-p)
+                     (sb-posix:stat-mtime
+                      (sb-posix:stat c-f-p))))
+         (r-t (sb-posix:stat-mtime
+               (sb-posix:stat ruleset))))
+    (if (and c-f-t (> c-f-t r-t))
+        (PROGN
+          (format t "loading compiled ruleset~%")
+          (load c-f-p))
+        (progn
+          (format t "compiling ruleset~%")
+          (load (compile-file ruleset))))))
+
+
+(defmethod load-ruleset ((ruleset pathname))
+  (load-ruleset (namestring ruleset)))
+
+(defun load-all-rulesets ()
+  (when *ruleset-list*
+      (mapcar
+       (lambda (ruleset-file)
+         (format t "loading ruleset file: ~A~%" ruleset-file)
+         (if ruleset-file
+             (load-ruleset ruleset-file)))
+       *ruleset-list*)))
+
 (defun process-command-line (opts args)
   (progn
     (LoGS-debug "processing options~%")
@@ -33,23 +74,13 @@
                      (make-instance 'org.prewett.LoGS::multi-follower))
                (mapcar (lambda (ff) (add-item *messages* ff))
                        *file-list*)))))
-
     ;; SET INITIAL TIME HERE ??? 
     (cond (*use-internal-real-time*
            (setq *now* (get-internal-real-time)))
           (t
            (warn "unknown initial time value~%")
            ))
-
-
-    (if *ruleset-list*
-        (mapcar
-         (lambda (ruleset-file)
-           (format t "loading ruleset file: ~A~%" ruleset-file)
-           (if ruleset-file
-               (load (compile-file ruleset-file))))
-         *ruleset-list*))))
-
+    (load-all-rulesets)))
 
 ;;; some helper functions
 
@@ -94,7 +125,6 @@
                         (set-no-internal-time)
                         (setf LoGS::*parse-timestamp* t))
                       :description "set *NOW* using the timestamp on each line")
-
        (make-instance 'cli-opt
                       :name "file"
                       :arguments '(filename &optional position)
@@ -104,11 +134,17 @@
                                                            :FileName 
                                                            filename)))
                                     ;; if position is specified, start there
-                                    (when position
-                                      (when (not ff) (error "no ff~%"))
-                                      (org.prewett.LoGS::set-file-follower-position
-                                       ff
-                                       (read-from-string position)))
+                                    (when (or position *start-from-end*)
+                                      (cond ((not ff) (error "no ff~%"))
+                                            ((or (equal position "end")
+                                                 (equal position "END")
+                                                 *start-from-end*)
+                                             (org.prewett.LoGS::set-file-follower-position
+                                              ff
+                                              (get-file-length-from-filename (filename ff))))
+                                            (t (org.prewett.LoGS::set-file-follower-position
+                                                ff
+                                                (read-from-string position)))))
                                     (push ff *file-list*)))
                       :description "name of the file to process and optional position")
        (make-instance 'cli-opt
@@ -227,13 +263,26 @@
                           (setq org.prewett.LoGS::*run-forever* t))
                       :description "an alias for --run-forever")
        (make-instance 'cli-opt
+                      :name "show-profile"
+                      :arguments ()
+                      :action
+                      #'(lambda ()
+                          (setq org.prewett.LoGS::*show-profile* t))
+                      :description "profile the run and display the profile information")
+       (make-instance 'cli-opt
                       :name "remember-file"
                       :arguments ()
                       :action
                       #'(lambda ()
                           (setq org.prewett.LoGS::*remember-file* t))
-                      :description "store the name of the file that a given message came from in the from-file slot of the message if set")
-
+                      :description "remember which file a message came from")
+       (make-instance 'cli-opt
+                      :name "start-from-end"
+                      :arguments ()
+                      :action
+                      #'(lambda ()
+                          (setq org.prewett.LoGS::*start-from-end* t))
+                      :description "start file-followers from the end of the file")
        (make-instance 'cli-opt
                       :name "tag-messages"
                       :arguments ()
@@ -288,7 +337,7 @@
                       #'(lambda ()
                           (progn
                             (format t "This is LoGS version ~A~%" +LoGS-version+)
-                            (format t "Copyright (C) 2004 James E. Prewett~%This is free software; see the source for copying conditions.  There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.~%")
+                            (format t "Copyright (C) 2003-2007 James E. Prewett~%This is free software; see the source for copying conditions.  There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.~%")
                             (quit-LoGS)))
                       :description
                       "print version and Copyright information for the program")
@@ -305,6 +354,7 @@
        (make-instance 'cli-opt
                       :name "run-before-exit"
                       :arguments '(func)
+                      :description "run this function before exiting LoGS"
                       :action
                       #'(lambda (func)
                           (let ((split-func
@@ -325,4 +375,18 @@
                       :action
                       (lambda ()
                         (setf LoGS::*quit-lisp-when-done* NIL))
-                      :description "do not terminate the Lisp process when LoGS is done")))
+                      :description "do not terminate the Lisp process when LoGS is done")
+       (make-instance 'cli-opt
+                      :name "compile-only"
+                      :description "only compile rulesets, don't process files"
+                      :arguments ()
+                      :action
+                      (lambda ()
+                        (setf LoGS::*compile-only* t)))
+       (make-instance 'cli-opt
+                      :name "repl"
+                      :arguments ()
+                      :description "run a REPL instead of processing files"
+                      :action
+                      (lambda ()
+                         (setf LoGS::*do-repl* t)))))

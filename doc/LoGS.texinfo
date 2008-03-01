@@ -1,33 +1,46 @@
-\input texinfo   @c -*-texinfo-*-
+\input texinfo
+@c Manual for the Logs extensible (common-lisp based) log/event 
+@c analysis engine/language Copyright (C) 2003-2007 James Earl Prewett
+@c
+@c Copyright (C)  2003-2007 James E. Prewett
+@c Permission is granted to copy, distribute and/or modify this
+@c document under the terms of the GNU Free Documentation License,
+@c Version 1.2 or any later version published by the Free Software
+@c Foundation; with no Invariant Sections, no Front-Cover Texts, and
+@c no Back-Cover Texts.  A copy of the license is included in the
+@c section entitled ``GNU Free Documentation License''.
+
+
 
 @setfilename LoGS.info
 
 @macro logsversion{}
-@include ../LoGS-version
+0.2.0
 @end macro
 
 @macro clcliver{}
-@include ../cl-cli/cl-cli-version
+0.0.3
 @end macro
-
 
 @settitle LoGS @logsversion 
 @set AUTHOR James E. Prewett
 @set EDITION @logsversion 
 @set TITLE LoGS Manual
-@set UPDATED September 12, 2005
-@set COPYRIGHT Copyright @copyright{} 2003--2005 James E. Prewett
+@c @set UPDATED September 12, 2005
+@c wow, thats old!
+@set UPDATED February 21, 2007
+@set COPYRIGHT Copyright @copyright{} 2003--2007 James E. Prewett
 
 
 @copying
 This manual is for LoGS, version @logsversion{} and CL-CLI, version @clcliver{}.
 
-Copyright @copyright{} 2003--2005 James E. Prewett.
+Copyright @copyright{} 2003--2007 James E. Prewett.
 
 
 @smallexample
 @group 
-  Copyright (C)  2003-2005 James E. Prewett
+  Copyright (C)  2003-2007 James E. Prewett
   Permission is granted to copy, distribute and/or modify this document
   under the terms of the GNU Free Documentation License, Version 1.2
   or any later version published by the Free Software Foundation;
@@ -98,7 +111,7 @@ very flexible in terms of how interesting log messages are identified
 and what is done in response to finding one, or even a set of, these
 messages. 
 
-LoGS is written in common LISP@footnote{LoGS is currently known to
+LoGS is written in Common Lisp@footnote{LoGS is currently known to
 work with the following Lisp implementations:
 @itemize
 @item CMUCL
@@ -108,40 +121,40 @@ work with the following Lisp implementations:
 @item CLISP
 @end itemize
 It is our intention to port LoGS to a wide variety of Lisp
-implementations.} and utilizes the Common LISP Object System (CLOS)
-and the Meta--Object Protocol (MOP).  Common LISP was chosen for its
+implementations.} and utilizes the Common Lisp Object System (CLOS)
+and the Meta--Object Protocol (MOP).  Common Lisp was chosen for its
 flexibility, for having an excellent (and fast!) regular expression
-engine@footnote{CL-PPCRE}, and because nesting data structures with
-CLOS is relatively simple@footnote{One of LoGS initial motivations was to be
-able to easily write rules that modify themselves and/or modify the
-ruleset.  Rules that modify the ruleset create new rules; these new
-rules should also be able to create new rules (no matter how deeply
-nested within the originally specified rule) and the specification of
-this should not be overly complex.}.
+engine@footnote{CL-PPCRE by Dr Edi Weitz}, and because nesting data
+structures with CLOS is relatively simple@footnote{One of LoGS initial
+motivations was to be able to easily write rules that modify
+themselves and/or modify the ruleset.  Rules that modify the ruleset
+create new rules; these new rules should also be able to create new
+rules (no matter how deeply nested within the originally specified
+rule) and the specification of this should not be overly complex.}. 
 
-Common LISP is the programming language used by LoGS to represent its
+Common Lisp is the programming language used by LoGS to represent its
 rules and other important structures.  This is similar to how SEC uses
 Perl, except that all of LoGS is exposed to the user for potential use
 or modification; the LoGS mainline (or any other component) can be
 rewritten at run-time by the user.
 
-This manual assumes that you are familiar with programming in LISP
+This manual assumes that you are familiar with programming in Lisp
 using CLOS as well as with Perl compatible regular expressions.  Most
-of the LISP presented in this manual is very simple, so you need not
-be a LISP expert to read this manual or use LoGS; however, at this
+of the Lisp presented in this manual is very simple, so you need not
+be a Lisp expert to read this manual or use LoGS; however, at this
 stage in LoGS' development, understanding how to create and manipulate
-CLOS objects in LISP will be very useful.  While LoGS strives not to
+CLOS objects in Lisp will be very useful.  While LoGS strives not to
 push you into a particular mechanism to discover the ``interesting''
 log messages, regular expressions are probably the most common way of
 doing so in other log analysis applications.  Strictly speaking,
 regular expressions are not at all required to use LoGS.  That being
-said, LoGS uses the CL-PPCRE package to match regular
+said, LoGS prefers to use the CL-PPCRE package for regular
 expressions@footnote{There is no reason not to use other regular
 expression packages; however, regular expressions that work with
 CL-PPCRE will be presented in this manual.}. 
 
 @cindex LoGS programming language
-@cindex Common LISP
+@cindex Common Lisp
 
 @menu
 * LoGS Components::             
@@ -159,11 +172,10 @@ CL-PPCRE will be presented in this manual.}.
 @section LoGS Components
 
 Logs, as currently written@footnote{LoGS is currently evolving very
-quickly and is extend-able/modifiable by the user}, consists of six
-important components, Messages, Rules, Rulesets, Actions, Contexts,
+quickly and is extend-able/modifiable by the user}, consists of seven
+important components, Messages, Rules, Rulesets, Actions, Contexts, Windows,
 and Data-Sources.  These components were chosen so as to mimic the
-behavior of the (excellent) Logsurfer program written by Wolfgang Ley
-and Ewe Ellerman.   
+behavior of the (excellent, albeit somewhat limiting) Logsurfer program written by Wolfgang Ley and Ewe Ellerman.
 
 @cindex LoGS components
 @cindex Messages
@@ -171,10 +183,11 @@ and Ewe Ellerman.
 @cindex Rulesets
 @cindex Actions
 @cindex Contexts
+@cindex Windows
 @cindex Data-Sources
 
 An Object--Oriented approach has been taken with LoGS.  Each of the
-six major components, with the exception of actions, are implemented
+seven major components, with the exception of actions, are implemented
 as CLOS classes and may be instantiated by calling the standard
 @code{make-instance} macro@footnote{Contexts should now be created
 using the ensure-context macro instead of make-instance whenever the
@@ -197,7 +210,7 @@ created by the user for specialized uses.
 
 Messages are units of information coming into the LoGS system
 via a Data-Source.  These messages are processed sequentially by
-LoGS.  Currently LoGS has facilities to handle arbitrary ASCII
+LoGS.  Currently, LoGS has facilities to handle arbitrary ASCII
 data separated by newlines such as a log file written by the
 system log daemon, syslogd via David Worth's @code{File-Follower} class.
 
@@ -212,6 +225,15 @@ system log daemon, syslogd via David Worth's @code{File-Follower} class.
 @cindex Worth, David
 @cindex D@@v3X0r
 
+Data sources iterate, generally line by line, across the input from an
+input source and produce Message objects with this input.
+Data-Sources generally take a single input stream (read from a single
+file). However, multiple Data-Sources may be combined together using
+an object from the Multi-Follower class.  
+
+@cindex Data-Source
+@cindex Multi-Follower
+
 Messages are encapsulated within objects of the Message class as
 they are read into the LoGS system.  Since, currently,
 development has been focused on syslog files, messages that come
@@ -223,15 +245,6 @@ right thing with the right type of message.
 @cindex Message class
 @cindex String-message class
 @cindex message object
-
-Data sources iterate, generally line by line, across the input from an
-input source and produce Message objects with this input.
-Data-Sources generally take a single input stream (read from a single
-file). However, multiple Data-Sources may be combined together using
-an object from the Multi-Follower class.  
-
-@cindex Data-Source
-@cindex Multi-Follower
 
 The only reason why other message formats are not supported is that
 there are currently no message source objects that produce anything
@@ -269,22 +282,18 @@ returned by the match function override the bindings in the rule's environment).
 @findex actions, Rule slot accessor
 @findex Rule slot accessors - actions slot
 
-A Rule object consists of these slots: match, no-match, delete-rule,
+A Rule object consists of these slots: match, delete-rule,
 no-delete-rule, timeout, continuep, actions, and environment. All of
 these slots have default values (in most cases, the default value is
 NIL).  This allows for rule specifications to be rather short for very
 simple rules. However, it is generally useful to at least specify a
 function for the match slot (otherwise the rule can never match a
-message, see below). 
+message, and is therefore useless). 
 
 @findex match, Rule slot accessor
 @findex Rule slot accessors - match slot
-@findex no-match, Rule slot accessor
-@findex Rule slot accessors - no-match slot
 @findex delete-rule, Rule slot accessor
 @findex Rule slot accessors - delete-rule slot
-@findex no-delete-rule, Rule slot accessor
-@findex Rule slot accessors - no-delete-rule slot
 @findex timeout, Rule slot accessor
 @findex Rule slot accessors - timeout slot
 @findex continuep, Rule slot accessor
@@ -296,29 +305,26 @@ message, see below).
 
 @cindex Rule slots
 @cindex match slot (Rule object)
-@cindex no-match slot (Rule object)
 @cindex delete-rule slot (Rule object)
-@cindex no-delete-rule slot (Rule object)
 @cindex timeout slot (Rule object)
 @cindex continuep slot (Rule object)
 @cindex actions slot (Rule object)
 @cindex environment slot (Rule object)
 
 In order to determine if a Message is matched by the Rule, the
-function stored in the ``match'' slot of the Rule must return
-non-nil and the function stored in the ``no-match'' slot must
-return nil when called with the message as their argument.
+function stored in the ``Match'' slot of the Rule must return
+non-nil when called with the message and the appropriate environment
+list as its arguments.
 
 @cindex rules, matching messages
 
 Rules can delete themselves when they match a Message, and the
 function stored in the delete-rule slot of the Rule returns
-non-nil and the function stored in the no-delete-rule returns nil
-when called with the matching message.  Rules can also be removed
-by timing out (if the current time is greater than the value
-stored in the timeout slot), if the timeout slot is nil, then the
-rule cannot timeout@footnote{Rules can modify themselves at
-run--time, so they may modify their timeout.}.
+non-nil when called with the matching message and environment.  Rules
+can also be removed by timing out (if the current time is greater than
+the value stored in the timeout slot), if the timeout slot is nil,
+then the rule cannot timeout@footnote{Rules can modify themselves at
+run--time, so they may modify their or another Rule's timeout.}. 
 
 @cindex rules, deleting
 @cindex deleting rules
@@ -376,21 +382,19 @@ to mimic the behavior of Logsurfer.
 @node Actions, LoGS Contexts Overview, Rulesets, LoGS Overview
 @section Actions
 
-Actions are functions or methods that take a single argument, the
-Message that is triggering the action.  Actions are run inside the
-environment returned by the match function inside the environment
-stored in the Rule's match slot.  Actions may be created at run--time
-as a result of running another action in any of the standard
-Common LISP ways.
+Actions are functions or methods that take as arguments the Message
+that is triggering the action and the environment that action is to
+use. Actions may be created at run--time as a result of running
+another action in any of the standard Common Lisp ways. 
 
 @cindex action 
 @cindex message
 
 Actions can be associated with Rules, Rulesets@footnote{Rulesets
 inherit many of their slots and much of their behavior from the Rule
-class.}, and Contexts.  Actions associated in this way will be run
+class.}, Contexts, and Windows.  Actions associated in this way will be run
 when a rule matches a message, a ruleset matches a message, or when a
-context exceeds one of its limits. 
+Context or Window exceeds one of its limits. 
 
 @cindex ruleset
 @cindex context
@@ -421,9 +425,10 @@ John P. Rouillard in a private conversation; Thanks John!)!
 @cindex John P. Rouillard
 
 In versions 0.0.0a and greater, messages can only be added to contexts
-by actions (associated with rules or other contexts).  In this way, we
-can leverage the short--circuit functionality available in LoGS rules
-to gain greater efficiency.  This is similar to how SEC handles its contexts.
+by actions (associated with rules or other Contexts or Windows).  In
+this way, we can leverage the short--circuit functionality available
+in LoGS rules to gain greater efficiency.  This is similar to how SEC
+handles its contexts. 
 
 Contexts that may already exist should now be created with the
 ensure-context macro.  This macro will return the context if it
@@ -436,8 +441,8 @@ name exists.
 @section LoGS Efficiency
 
 It is very difficult to talk about the efficiency of LoGS as it really
-depends upon the number and type of rules and contexts that a given message is
-checked against.  Currently, with no rules or contexts, LoGS can
+depends upon the number and type of rules that a given message is
+checked against.  Currently, with no rules in the ruleset, LoGS can
 examine over 95,000 messages per second on my laptop (1.8GHz Pentium
 IV).  With one ruleset (with about 40 rules with several rules and
 contexts created at runtime), I can process approximately 70,000
@@ -447,7 +452,8 @@ Often, efficiency can be improved by ordering the ruleset so that the
 most common matches are tested before less common ones.  See the
 section on nested rulesets for how they can be used to improve the
 efficiency of a ruleset.  Also see the section on rules for how they
-can be more efficient than those that only match regular expressions.
+can be made to be more efficient than those that only match regular
+expressions. 
 
 @cindex context 
 
@@ -482,6 +488,10 @@ New Mexico
 @item John P. Rouillard
 @item Jon Stearley
 @item Aron Warren
+@item Vijay Lakshminarayanan
+@item Dr. Edi Weitz
+@item Dr. Doug Pase 
+@item CL-PPCRE mailing list
 @item everyone else we forgot...
 @end itemize
 
@@ -490,7 +500,7 @@ New Mexico
 
 Certain options within LoGS are only available as compile-time
 options.  These are often for efficiency reasons (so that the
-compiler may optimize away any checks).
+compiler may optimize away any unneeded code).
 
 @cindex compile-time options
 
@@ -592,23 +602,22 @@ or may not be disabled in any particular build)
 @item @code{--expire-contexts-on-exit} @tab @tab expire all remaining contexts before exiting LoGS
 @item @code{--sleep-time} @tab <seconds> @tab how long to sleep when there are no messages to process
 @item @code{--LoGS-version} @tab @tab print version and Copyright information for the program
-@item @code{--help}  @tab  @tab display this help text
+@item @code{--help}  @tab  @tab display the help text
 @end multitable
-
 
 @node --no-internal-time, --file, Command Line Argument Summary, Command Line Arguments
 @subsection @code{--no-internal-time}
 
 Specifying the @code{--no-internal-time} option indicates that LoGS
-should not update the value of the @code{*now*} variable to the
+should not update the value of the @code{*NOW*} variable to the
 current time.  This causes the variable
-@code{*use-internal-real-time*} to be set to NIL.  If the @code{*now*}
+@code{*USE-INTERNAL-REAL-TIME*} to be set to NIL.  If the @code{*NOW*}
 variable needs to be updated with some other value, it is left to the
 user to ensure that that is done. 
 
 @cindex @code{--no-internal-time}
-@vindex *use-internal-real-time*
-@vindex *now*
+@vindex *USE-INTERNAL-REAL-TIME*
+@vindex *NOW*
 
 @node --file, --files, --no-internal-time, Command Line Arguments
 @subsection @code{--file}
@@ -720,7 +729,7 @@ matches succeeded.  This is intended to be useful when optimizing rulesets.
 
 The @code{--expire-contexts-on-exit} option causes any contexts that
 are in existence when LoGS is ready to exit to be expired.  This
-(often) causes them to run their actions, etc.  
+causes them to run their actions, if any, etc.
 
 @cindex @code{--expire-contexts-on-exit}
 @cindex contexts, expiring
@@ -802,27 +811,19 @@ also able to carry state with them in their environment slot.
 @node Rule components, Using Rules to implement Artificial Ignorance, LoGS Rules, LoGS Rules
 @section Rule components
 
-Rule objects consist of: A match function, a no-match function, a
-delete-rule function, an no-delete-rule function, a timeout, a
-continuep value, an environment list, and an actions list.  These
-components are intentionally similar to rules within the Logsurfer log
-analysis engine. 
+Rule objects consist of: A match function, a delete-rule function, a
+timeout, a continuep value, an environment list, and an actions list.
+These components are intentionally similar to rules within the
+Logsurfer log analysis engine. 
 
-The match function is a function that takes a message as its argument
-and returns non-nil (and an optional environment) if the rule does
-match the message and nil if it does not.  The no-match function is
-similar to the match function, except that it specifies exceptions to
-the match function.  If the match function returns non-nil, then the
-no-match function is tested; if, then, the no-match function returns
-non-nil, then it is determined that the rule does not match the
-message. 
+The match function is a function that takes a message and an
+environment as its arguments and returns non-nil (and an optional
+environment) if the rule does match the message and nil if it does
+not.
 
 @cindex match function
-@cindex no-match function
 @findex match, Rule slot accessor
 @findex Rule slot accessors - match slot
-@findex no-match, Rule slot accessor
-@findex Rule slot accessors - no-match slot
 
 The environment returned by the match function allows for state to be
 saved between the match function and any action functions.  An
@@ -839,16 +840,17 @@ A function in the rule's actions list could then use these variables
 (foo, bar, and baz) like this:
 @verb{+
 (lambda (message)
-        (format t ``foo: ~A bar: ~A baz: ~A~%'' foo bar baz))
+        (format t ``foo: ~A bar: ~A baz: ~A~%'' 
+          (get-LoGS-env-var 'foo)
+          (get-LoGS-env-var 'bar) 
+          (get-LoGS-env-var 'baz)))
 +}
 and @verb{+``foo: 42 bar: 23 baz: the cat ran''+} should be printed.
 
 The delete-rule function is a function that takes a message as its
 argument.  Once it has been determined that the rule matches a
 message, the delete-rule function is called to determine if the rule
-needs to be deleted (after running its actions).  Similarly to the
-no-match function, the no-delete-rule function specifies exceptions to
-the delete-rule function.
+needs to be deleted (after running its actions).
 
 @cindex delete-rule function
 @findex delete-rule, Rule slot accessor
@@ -857,11 +859,11 @@ the delete-rule function.
 @findex no-delete-rule, Rule slot accessor
 @findex Rule slot accessors - no-delete-rule slot
 
-The timeout is a value in seconds for when the rule should be
-deleted.  This value is the time in seconds such as that returned by
-get-universal-time.  Simularly, the relative-timeout value is the
-time in seconds that a rule is allowed to exist without matching a
-message.
+The timeout is a value in seconds for when the rule should be deleted.
+This value is the time in seconds such as that returned by
+get-universal-time (under normal circumstances).  Simularly, the
+relative-timeout value is the time in seconds that a rule is allowed
+to exist without matching a message. 
 
 @cindex timeout value
 @findex timeout, Rule slot accessor
@@ -967,8 +969,8 @@ system administrator.
 
 Rules match messages when the function stored in their match slot
 returns non-nil and the function stored in their no-match slot
-returns nil.  These functions can be any common LISP function (or,
-more properly, any function callable from your LISP; Imagine LoGS
+returns nil.  These functions can be any common Lisp function (or,
+more properly, any function callable from your Lisp; Imagine LoGS
 running TCL or Perl code!) that takes a single argument of a
 message object and returns non-nil when they match the message
 and nil when the do not.
@@ -1005,16 +1007,18 @@ regular expression to determine which messages it matches:
 @smalllisp
 (make-instance 'rule
                :match
-               (lambda (message)
+               (lambda (message environment)
+                 (declare (ignore environment))
                  (cl-ppcre::scan 
-                   ``.*''
+                   ``.+'
                    (message message)))
 
                :actions
                (list          
-                 (lambda (message)
-                         (format t ``Missed Message: ~A~%''
-                         (message message)))))
+                 (lambda (message environment)
+                    (declare (ignore environment))
+                    (format t ``Missed Message: ~A~%''
+                    (message message)))))
 @end smalllisp
 
 Here is another way to write that same rule:
@@ -1023,12 +1027,13 @@ Here is another way to write that same rule:
 @smalllisp
 (make-instance 'rule
                :match
-               (lambda (message)
-                 (declare (ignore message))
+               (lambda (message environment)
+                 (declare (ignore message environment))
                  t)
                :actions
                (list 
-                 (lambda (message)
+                 (lambda (message environment)
+                   (declare (ignore environment))
                    (format t ``Missed Message: ~A~%''
                    (message message)))))
 @end smalllisp
@@ -1036,8 +1041,9 @@ Here is another way to write that same rule:
 The latter way to write the catch--all rule is more intuitive in
 that the match function returns non-nil in response to every
 message, rather than ensuring that it matches the catch-all
-regular expression, ``.*''.  This also allows this strategy to be
-somewhat more efficient.
+regular expression, ``.+'' (meaning it matches any line containing 1
+or more characters).  This also allows this strategy to be somewhat
+more efficient. 
 
 LoGS attempts to allow one working to discover the hidden goodies
 in a log file to specify how to identify one rather than trying to
@@ -1318,11 +1324,11 @@ like this:
 
 @findex sequence-rule-look-for-missing
 
-Sequence-rules are really just LISP macros that write the correct rules to
+Sequence-rules are really just Lisp macros that write the correct rules to
 follow a sequence of events.  They greatly simplify the specification
 of a complex ruleset and I believe will eventually allow LoGS to be
 simple to use and still very powerful.  The last example expands into
-74 lines (or so) of LISP code which creates a rule that, when triggered
+74 lines (or so) of Lisp code which creates a rule that, when triggered
 creates two rules, one looking for the next message in the sequence
 and the other looking for messages that are not in the sequence (via a
 generated regular expression).
@@ -1334,7 +1340,7 @@ normal behavior rather than just the presence of abnormal behavior!
 @node Rules can maintain state, Extending LoGS to facilitate rule creation, Better than Ignorance, LoGS Rules
 @section Rules can maintain state
 
-Maintaining state within a LoGS rule is very simple as common LISP
+Maintaining state within a LoGS rule is very simple as common Lisp
 supplies facilities for doing so easily.  By closing a rule in an
 environment, we can easily store state.  Here is a simple example to
 illustrate this:
@@ -1366,7 +1372,7 @@ truth value indicating a match.
 @section Extending LoGS to facilitate rule creation
 
 Sequence-rules are an example of how to extend LoGS to facilitate rule
-creation.  Here is the LISP macro used to create the rule:
+creation.  Here is the Lisp macro used to create the rule:
 
 @smalllisp
 
@@ -1961,7 +1967,7 @@ in LoGS might be specified as such:
                :arguments NIL
                :action #'(lambda ()
                            (setq
-                             *use-internal-real-time* ()))
+                             *USE-INTERNAL-REAL-TIME* ()))
                :description "do not use internal time")
 @end lisp
 

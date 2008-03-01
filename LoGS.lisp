@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -29,7 +29,10 @@
   (defconstant +LoGS-version+ "0.1.2-pre"))
     
 ;; this is a constant so we can optimize out the checks for production runs
-(defconstant +debug+ () "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
+(defconstant +debug+ NIL "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
+
+(defvar *show-profile* NIL)
+(defvar *environment* NIL)
 
 (defvar *LoGS-internal-time-units-per-second* internal-time-units-per-second)
 
@@ -94,6 +97,12 @@
   "should LoGS set *NOW* from the timestamp on each line?")
 (defvar *quit-lisp-when-done* t
   "Should we exit the Lisp process when we're done processing files?")
+(defvar *start-from-end* NIL
+  "Should file-followers start from the end of the file?")
+(defvar *do-repl* NIL
+  "Should we run a REPL instead of processing the files?")
+(defvar *compile-only* NIL
+  "Should we only compile the ruleset?")
 
 (defvar *opts* ()
   "a list of command-line options that LoGS understands")
@@ -123,3 +132,26 @@
                 (file-write-date compiled-filename))) ; old compiled file
         (compile-file the-filename))
       (load compiled-filename))))
+
+(defun handle-ctrl-c (signal code scp)
+  (declare (ignore signal code scp))
+  (format t "got a ctrl-c, exiting~%")
+  (cleanup *messages*)
+  (quit-LoGS))
+
+#+cmu
+(system:enable-interrupt Unix:SIGINT #'handle-ctrl-c)
+
+#+sbcl
+(import 'SIGINT :sb-unix)
+
+(defgeneric map-store (function store))
+(defgeneric find-in-store (item store &key test))
+
+
+(defun |#$-READER| (stream subchar arg)
+  (declare (ignore subchar arg))
+  (let ((var (read stream t nil t)))
+    `(get-logs-env-var ',var *environment*)))
+
+(set-dispatch-macro-character #\# #\$ #'|#$-READER|)

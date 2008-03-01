@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -17,29 +17,81 @@
 
 (in-package :org.prewett.LoGS)
 
+
+#+cmu
+(use-package :system)
+#+cmu
+(use-package :unix)
+
+#+sbcl
+(use-package :sb-sys)
+#+sbcl
+(use-package :sb-unix)
+
+#+sbcl
+(require :sb-sprof)
+
+#+sbcl 
+(sb-profile:PROFILE)
+
+;; this is starting to become a bit of a mess!
+(defmacro with-LoGS-interrupts (interrupts &body body)
+  #+sbcl
+  `(progn ,@body)
+  #+cmu
+  `(with-enabled-interrupts ,interrupts ,@body))
+
 (defun main ()
-  (progn
+  (with-LoGS-interrupts ((SIGINT #'handle-ctrl-c))
+    (PROGN
+      #+sbcl
+      (progn       
+        (sb-sys:enable-interrupt 
+         sb-unix:sigint 
+         (lambda (sig code scp)
+           (declare (ignore sig code scp))
+           (LoGS::handle-ctrl-c)))
+        (sb-sys:enable-interrupt 
+         SB-POSIX:SIGHUP 
+         (lambda (sig code scp)
+           (declare (ignore sig code scp))
+           (LoGS::reload-all-rulesets))))
+
     ;; process any command line options
     (LoGS-debug "processing options~%")
     (let ((args (get-application-args)))
       (process-command-line *opts* args))
-    
+
+    (if *compile-only* (quit-LoGS))
+
     ;; write out PID if necessary
     (when *write-pid-to-file*
       (progn
         (LoGS-debug "writing PID to file: ~A~%" *write-pid-to-file*)
         (let ((PID 
                #+cmu
-                (unix:unix-getpid)))
+                (unix:unix-getpid)
+                #+sbcl
+                (sb-unix:unix-getpid)))
           (with-open-file
               (file *write-pid-to-file*
                     :direction :output
                     :if-exists :overwrite
                     :if-does-not-exist :create)
             (format file "~A~%" PID)))))
+  
     
     ;; process any files
-    (process-files)
+    (if *do-repl*
+        (progn
+          #+sbcl
+          (SB-IMPL::TOPLEVEL-INIT)
+          #+cmu
+          (LISP::%TOP-LEVEL))
+        (if *show-profile*
+        (process-files) ;; XXX
+        (process-files)))
+
     ;; call any exit functions
     (mapcar
      (lambda (function)
@@ -47,8 +99,7 @@
      *run-before-exit*)
     ;; exit LoGS
     (when *quit-lisp-when-done*
-      (quit-LoGS))
-    ))
+      (quit-LoGS)))))
 
 ;; pretty much the former mainline
 ;; adding the option processing to the mainline made testing more difficult
@@ -56,7 +107,6 @@
 (defun process-files ()    
   (declare (OPTIMIZE (SPEED 0) (DEBUG 3) (SAFETY 3)))  
   (loop named processing as *message* = (get-logline *messages*)
-       
      when +debug+
        do (format t "processing message: ~A~%" (if *message* (message *message*)))
        
@@ -85,7 +135,7 @@
      if *message*
      do
        (LoGS-debug "got message: ~A~%" (IF *MESSAGE* (message *message*)))
-       (check-rules *message* *root-ruleset*)
+       (check-rules *message* *root-ruleset* NIL)
 
      else
      do

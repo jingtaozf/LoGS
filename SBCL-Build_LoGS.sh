@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Logs extensible (common-lisp based) log/event analysis engine/language
-# Copyright (C) 2003-2004 James Earl Prewett
+# Copyright (C) 2003-2007 James Earl Prewett
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,9 +18,9 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
-CL_PPCRE="cl-ppcre-1.2.16/load.lisp"
-LOGS="load-LoGS.lisp"
-CL_CLI="cl-cli/cl-cli.lisp"
 LOGS_CORE="LoGS-sbcl.core"
+LOGS_EXE="LoGS"
+CYBERTIGGYR_TIME="time.lisp"
 
-sbcl --eval "(and (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\")) (load \"$LOGS\")(in-package :org.prewett.LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"
+sbcl --eval "(progn (load (compile-file \"$CYBERTIGGYR_TIME\")) (require 'asdf)(require 'logs) (in-package :org.prewett.LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"
+sbcl --core $LOGS_CORE --eval "(SB-EXT:SAVE-LISP-AND-DIE \"$LOGS_EXE\" :executable t :toplevel #'main)"

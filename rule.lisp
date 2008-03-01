@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2006 James Earl Prewett
+;;;; Copyright (C) 2003-2007 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 
 (in-package :org.prewett.LoGS)
 
-(defclass rule (killable-item named-object timeout-object relative-timeout-object)
+(defclass rule (killable-item named-object timeout-object relative-timeout-object environment-object)
   ((match :initarg :match
           :accessor match
           :initform ()
@@ -33,10 +33,6 @@
             :accessor actions
             :initform ()
             :type list)
-   (environment :initarg :environment
-                :accessor environment
-                :initform ()
-                :type list)
    (match-count :accessor match-count
                 :initform 0
                 :type integer)
@@ -60,113 +56,79 @@
   (:documentation "see if the given rule has exceeded one of its limits (currently only timeout)"))
 
 (defmethod rule-exceeded-limit-p ((rule rule) time)
-  (with-slots (timeout) rule
-    (> time timeout)))
+  (> time (timeout rule)))
 
-(defmethod rule-matches-p ((rule rule) (message message))
-  (with-slots (match)
-      rule
-    
+
+(defgeneric rule-matches-p (rule message environment)
+  (:documentation "check to see if a rule matches a message given an environment"))
+
+(defmethod rule-matches-p ((rule rule) (message message) environment)
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
+  (with-slots (match) rule
     ;; do bookkeeping
     (when +enable-rule-count+
       (when *count-rules*
         (LoGS-debug "incrementing rule try count~%")
         (incf (match-try rule))))
-
-    (multiple-value-bind (matches sub-matches)
-        (cond ((functionp match) (funcall match message))
+    (multiple-value-bind (matches match-environment)
+        (cond ((functionp match)
+               (logs-debug "match: ~A message: ~A environment: ~A~%"
+                           match message environment)
+               (funcall match message environment))
               (t match))
       (when matches
            ;; bookkeeping ; increment the count since we've matched
-           (or
-            (when +enable-rule-count+
-              (when *count-rules*
-                (LoGS-debug "incrmenting rule match count~%")
-                (incf (match-count rule))))
-              t)
-           (values matches sub-matches)))))
-
-(defgeneric add-to-environment (rule var-val)
-  (:documentation "Add the (variable value) pair to RULE's environment"))
-
-(defmethod add-to-environment ((rule rule) (var-val cons))
-  ;; Note: Add error checking
-
-  ;; We append to the environment because PROGV takes the last value
-  ;; in case of a repetition
-  ;; (progv '(a b a) '(1 2 xx) (list a b)) => (XX 2)
-  (setf (environment rule) (append (environment rule) var-val)))
-
-(defmacro in-given-environment (env body &rest args)
-  (let* ((vars (gensym))
-         (vals (gensym))
-         (body-result (gensym))
-         (funcall-body (if args 
-                           `(funcall ,body-result ,@args)
-                           `(funcall ,body-result))))
-    `(let ((,vars (mapcar #'car ,env))
-           (,vals (mapcar #'cadr ,env)))
-       (progv (cons 'env ,vars) (cons ,env ,vals)
-         (let ((,body-result ,body))
-           (cond ((functionp ,body-result)
-                  ,funcall-body)
-                 (t
-                  ,body-result)))))))
+        (when +enable-rule-count+
+          (when *count-rules*
+            (LoGS-debug "incrmenting rule match count~%")
+            (incf (match-count rule))))
+        (values matches match-environment)))))
 
 (defgeneric run-actions (rule message environment)
   (:documentation "run a rule's actions."))
 
 (defmethod run-actions ((rule rule) (message message) environment)
-  (let ((actions (actions rule)))
+  (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
+  (with-slots (actions) rule
     (when actions
-      (mapcar 
-       (lambda (action)
-         (progn
-           (LoGS-debug "running action ~A in env ~A with args: ~A~%"
-                     action 
-                     environment
-                     message)
-
-           (in-given-environment
-                environment
-                action
-                message)
-
-           (LoGS-debug "ran action for rule: ~A~%" (name rule))))
+      (logs-debug "actions: ~A~%" actions)
+      (mapcar
+       #'(lambda (action)
+           (LoGS-debug "running action ~A with env ~A and args: ~A~%"
+                       action environment message)
+           (let ((*environment* environment))
+             (funcall action message environment))
+           (LoGS-debug "ran action for rule: ~A~%" (name rule)))
        actions))))
 
 ;; check-rule should return 2 values, whether the rule matched
 ;; and whether the you should continue.
-(defgeneric check-rule (rule message)
+(defgeneric check-rule (rule message environment)
   (:documentation "see if the given message matches the rule, if so, run the rule's actions."))
 
-(defmethod check-rule ((rule rule) (message message))
+(defmethod check-rule ((rule rule) (message message) inherited-environment)
   (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))
   (unless (dead-p rule)
-
-    (LoGS-debug "checking rule: ~A~%against message: ~A~%" 
-                (name rule) (message message))
-
-    (with-slots (environment) rule
-      (in-given-environment 
-       environment
-       
-       (multiple-value-bind (matchp rule-environment)
-           (rule-matches-p rule message)
-         
-         (when matchp
-           (update-relative-timeout rule)
-           (with-slots (delete-rule environment)
-               rule
-             
-             (when (actions rule)
-               (run-actions rule message (append rule-environment environment)))
-             (when delete-rule 
-               (when (funcall delete-rule message)
-                (setf (dead-p rule) t)
-                (dll-delete *ruleset* rule)))
-             
-             (values matchp rule-environment))))))))
+    (with-slots (delete-rule actions environment) rule
+      (LoGS-debug "checking rule: ~A~%against message: ~A~% in environment: ~A"
+                  (name rule) (message message) inherited-environment)
+      (multiple-value-bind (matchp match-environment)
+          (rule-matches-p rule message 
+                          (append environment inherited-environment))
+        (when matchp
+          (update-relative-timeout rule)
+          (when actions
+            (run-actions rule message 
+                         (append match-environment environment inherited-environment)))
+          (when 
+              (and delete-rule 
+                   (funcall 
+                    delete-rule message 
+                    (append match-environment 
+                            environment inherited-environment)))
+            (setf (dead-p rule) t)
+            (dll-delete *ruleset* rule))
+          (values matchp match-environment))))))
 
 (defmethod check-limits :around ((rule rule))
   (when (call-next-method)
@@ -178,3 +140,11 @@
 
 (defmethod display-count ((rule rule) stream)
   (format stream "~A ~A ~A~%" (name rule) (match-count rule) (match-try rule)))
+
+;; not sure I like this name :P
+(defun get-LoGS-env-var (var-name environment-list)
+  (let ((val 
+         (assoc var-name environment-list)))
+    (values
+     (cadr val)
+     (not (null val)))))
