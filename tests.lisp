@@ -122,8 +122,11 @@
 
 ;; dummy test
 (deftestsuite dummy (LoGS)
-  ()
-  (:test  ((ensure (lambda (x) t)))))
+  ())
+
+(addtest (dummy)
+  true-is-true
+  (ensure t))
 
 ;; linked list tests
 
@@ -2074,4 +2077,16 @@
 ;; load other tests
 ;; (load-logs-file "Language/rdl-tests")
 
-(run-tests :suite :logs)
+(defun run-all-tests ()
+  (let ((tests (run-tests :suite :logs)))
+    (format t "~%failures: ~A~%" (failures tests)            )
+    (if (or (errors tests)
+            (failures tests))
+        (progn
+          (format t "failed 1 or more tests~%")
+          #+sbcl
+          (quit :unix-status 1))
+        (progn         
+          (format t "passed all tests~%")
+          #+sbcl
+          (quit :unix-status 0)))))
