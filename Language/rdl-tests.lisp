@@ -18,10 +18,11 @@
 ;;;; along with this program; if not, write to the Free Software
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(in-package #:language)
-(use-package :org.ancar.clunit)
-(use-package :org.prewett.logs)
+(in-package #:org.prewett.logs.test)
 
+(use-package :org.prewett.logs)
+(use-package :org.prewett.logs.language)
+(use-package :lift)
 (defun not-by-default (symbol)
   "Asserts that SYMBOL does not occur when it is not specified when
 creating a rule."
@@ -30,180 +31,159 @@ creating a rule."
                     (intern (symbol-name symbol) :keyword))))
    (not (member symbol (macroexpand-1 '(rule))))))
 
-(deftest "An empty rule generates no errors."
-    :category 'basic-rule
-    :test-fn (lambda ()
-               (eq (type-of (rule)) 'org.prewett.logs:rule)))
+(deftestsuite Language (LoGS) ())
+(deftestsuite basic-rule (Language) ())
+(addtest (basic-rule)
+  empty-rule-generates-no-errors
+  (ensure-same (type-of (rule)) 'org.prewett.logs:rule))
 
-(deftest "An unnamed rule is not named by default"
-    :category 'name
-    :test-fn (lambda () (not-by-default :name)))
+(deftestsuite name-tests (Language) ())
 
-(deftest "A named rule takes its name from the environment."
-    :category 'name
-    :test-fn (lambda ()
-               (let* ((name "string-name")
-                      (rule (rule named name)))
-                 (string-equal (logs::name rule) name))))
+(addtest (name-tests)
+  unnamed-rule-is-not-named-by-default
+  (not-by-default :name))
 
-(deftest "A named rule may be quoted."
-    :category 'name
-    :test-fn (lambda ()
-               (eq (logs::name (rule named 'some-name)) 'some-name)))
+(addtest (name-tests)
+  named-rule-takes-its-name-from-the-environment
+  (let* ((name "string-name")
+         (rule (rule named name)))
+    (ensure-same (logs::name rule) name)))
 
-(deftest "A rules name may be an evaluated value"
-    :category 'name
-    :test-fn (lambda ()
-               (let ((i 20))
-                 (= (logs::name (rule named (+ i 20))) 40))))
+(addtest (name-tests)
+  named-rule-may-be-quoted
+  (eq (logs::name (rule named 'some-name)) 'some-name))
 
-(deftest "Continue is not set by default"
-    :category 'continue
-    :test-fn (lambda () (not-by-default :continue)))
+(addtest (name-tests)
+  rules-name-may-be-an-evaluated-value
+  (let ((i 20))
+    (= (logs::name (rule named (+ i 20))) 40)))
 
-(deftest "Continue works"
-    :category 'continue
-    :test-fn (lambda ()
-               (logs::continuep (rule continuing))))
+(deftestsuite continue-tests (Language) ())
 
-(deftest "Timeout is not set by default"
-    :category 'timeout
-    :test-fn (lambda () (not-by-default :timeout)))
+(addtest (continue-tests)
+  continue-is-not-set-by-default
+  (not-by-default :continue))
 
-(deftest "Relative timeout is not set by default"
-    :category 'timeout
-    :test-fn (lambda () (not-by-default :relative-timeout)))
+(addtest (continue-tests)
+  continue-works
+  (logs::continuep (rule continuing)))
 
-(deftest "Timeout works"
-    :category 'timeout
-    :test-fn (lambda ()
-               (let ((rule (rule timeout at 12)))
-                 (and (logs::timeout rule)
-                      (= (logs::timeout rule) 12)))))
+(deftestsuite timeout-tests (Language) ())
 
-(deftest "Relative timeout works"
-    :category 'timeout
-    :test-fn (lambda ()
-               (let ((rule (rule timeout in 12)))
-                 (and (logs::relative-timeout rule)
-                      (= (logs::relative-timeout rule) 12)))))
+(addtest (timeout-tests)
+  timeout-is-not-set-by-default
+  (not-by-default :timeout))
 
-(deftest "context timeout works"
-    :category 'timeout
-    :test-fn 
-    (lambda ()
-      (let ((context (context timeout at 12)))
-        (and (logs::timeout context)
-             (= (logs::timeout context) 12)))))
+(addtest (timeout-tests)
+  relative-timeout-is-not-set-by-default
+  (not-by-default :relative-timeout))
 
-(deftest "context relative timeout works"
-    :category 'timeout
-    :test-fn 
-    (lambda ()
-      (let ((context (context timeout in 12)))
-        (and (logs::relative-timeout context)
-             (= (logs::relative-timeout context) 12)))))
+(addtest (timeout-tests)
+  timeout-works
+  (let ((rule (rule timeout at 12)))
+    (and (logs::timeout rule)
+         (= (logs::timeout rule) 12))))
 
-;; Rule evaluation tests
-(deftest "a rule's name may be specified with a variable"
-    :category 'evaluation-tests
-    :test-fn
-    (lambda ()
-      (let* ((rule-name "test rule name")
-             (rule (rule named rule-name)))
-        (equal rule-name (LoGS::name rule)))))
+(addtest (timeout-tests)
+  relative-timeout-works
+  (let ((rule (rule timeout in 12)))
+    (and (logs::relative-timeout rule)
+         (= (logs::relative-timeout rule) 12))))
 
-(deftest "a rule's match may be specified with a variable"
-    :category 'evaluation-tests
-    :test-fn
-    (lambda ()
+(addtest (timeout-tests)
+  context-timeout-works
+  (let ((context (context timeout at 12)))
+    (and (logs::timeout context)
+         (= (logs::timeout context) 12))))
+
+(addtest (timeout-tests)
+  context-relative-timeout-works
+  (let ((context (context timeout in 12)))
+    (and (logs::relative-timeout context)
+         (= (logs::relative-timeout context) 12))))
+
+(deftestsuite evaluation-tests (Language) ())
+
+(addtest (evaluation-tests)
+  rules-name-may-be-specified-with-a-variable
+  (let* ((rule-name "test rule name")
+         (rule (rule named rule-name)))
+    (equal rule-name (LoGS::name rule))))
+
+(addtest (evaluation-tests)
+  rules-match-may-be-specified-with-a-variable
       (let* ((rule-match #'LoGS::match-all)
              (rule (rule matching rule-match)))
-        (equal rule-match (LoGS::match rule)))))
+        (equal rule-match (LoGS::match rule))))
 
-(deftest "a context's name may be specified with a variable"
-    :category 'evaluation-tests
-    :test-fn
-    (lambda ()
-      (let* ((context-name "test context name")
-             (context (context named context-name)))
-        (equal context-name (LoGS::name context)))))
+(addtest (evaluation-tests)
+  contexts-name-may-be-specified-with-a-variable
+  (let* ((context-name "test context name")
+         (context (context named context-name)))
+    (equal context-name (LoGS::name context))))
 
-;; var tests
 
-(deftest "name can be simple symbol"
-    :category 'var-tests
-    :test-fn
-    (lambda ()
+(deftestsuite var-tests (Language) ())
+
+(addtest (var-tests)
+  name-can-be-simple-symbol
       (let ((rule (rule named 'jims-test-symbol)))
         (and
          (symbolp (LoGS::name rule))
-         (equal 'jims-test-symbol (LoGS::name rule))))))
+         (equal 'jims-test-symbol (LoGS::name rule)))))
 
-(deftest "name can be simple string"
-    :category 'var-tests
-    :test-fn
-    (lambda ()
+(addtest (var-tests)
+  name-can-be-simple-string
       (let ((rule (rule named "jims test string")))
         (and
          (stringp (LoGS::name rule))
-         (equal "jims test string" (LoGS::name rule))))))
+         (equal "jims test string" (LoGS::name rule)))))
 
-(deftest "name can be lexical variable"
-    :category 'var-tests
-    :test-fn
-    (lambda ()
-      (let ((jims-test-var "lexical variable name"))
-        (let ((rule (rule named jims-test-var)))
-                  (equal (LoGS::name rule) jims-test-var)))))
+(addtest (var-tests)
+  name-can-be-lexical-variable
+  (let ((jims-test-var "lexical variable name"))
+    (let ((rule (rule named jims-test-var)))
+      (equal (LoGS::name rule) jims-test-var))))
 
-(deftest "name can be set by matching rule's environment"
-    :category 'complex-var-tests
-    :test-fn
-    (lambda ()
-      (let* ((new-rule NIL)
-             (rule (rule matching 
-                         (lambda (message environment)
-                           (declare (ignore message))
-                           (values t
-                                   (list (list 'jims-test-env-var "environment variable name"))
-                                   NIL
-                                   ))
-                         doing 
-                         (lambda (message environment)
-                           (declare (ignore message))
-                           ;; ()))))
-                           (setf new-rule
-                                 (rule named
-                                       (get-LoGS-env-var 
-                                        'jims-test-env-var environment)))))))
-        (LoGS::check-rule rule (make-instance 'message :message "some message") NIL)
-        (equal (LoGS::name new-rule)
-               "environment variable name")
-        )))
+(addtest (var-tests)
+  name-can-be-set-by-matching-rules-environment
+  (let* ((new-rule NIL)
+         (rule (rule matching 
+                     (lambda (message environment)
+                       (declare (ignore message))
+                       (values t
+                               (list (list 'jims-test-env-var "environment variable name"))
+                               NIL
+                               ))
+                     doing 
+                     (lambda (message environment)
+                       (declare (ignore message))
+                       ;; ()))))
+                       (setf new-rule
+                             (rule named
+                                   (get-LoGS-env-var 
+                                    'jims-test-env-var environment)))))))
+    (LoGS::check-rule rule (make-instance 'message :message "some message") NIL)
+    (equal (LoGS::name new-rule)
+           "environment variable name")
+    ))
 
-;; regexp var tests
+(addtest (var-tests)
+  regexp-can-be-simple-string
+  (let ((rule (rule matching regexp "jims test string")))
+    (stringp 
+     (logs::check-rule rule (make-instance 'message :message "jims test string should match") NIL))))
 
-(deftest "regexp can be simple string"
-    :category 'var-tests
-    :test-fn
-    (lambda ()
-      (let ((rule (rule matching regexp "jims test string")))
-        (stringp 
-         (logs::check-rule rule (make-instance 'message :message "jims test string should match") NIL)))))
+(addtest (var-tests)
+  regexp-can-be-lexical-variable
+  (let ((jims-test-var "lexical variable regexp"))
+    (let ((rule (rule matching regexp jims-test-var)))
+      (stringp (logs::check-rule rule (make-instance 'message :message "lexical variable regexp should match") NIL)))))
 
-(deftest "regexp can be lexical variable"
-    :category 'var-tests
-    :test-fn
-    (lambda ()
-      (let ((jims-test-var "lexical variable regexp"))
-        (let ((rule (rule matching regexp jims-test-var)))
-          (stringp (logs::check-rule rule (make-instance 'message :message "lexical variable regexp should match") NIL))))))
+(deftestsuite complex-var-tests (Language) ())
 
-(deftest "regexp can be set by matching rule's environment"
-    :category 'complex-var-tests
-    :test-fn
-    (lambda ()
+(addtest (complex-var-tests)
+  regexp-can-be-set-by-matching-rules-environment
       (let* ((new-rule NIL)
              (rule (rule matching 
                          (lambda (message environment)
@@ -228,4 +208,4 @@ creating a rule."
                (make-instance 
                 'message 
                 :message "environment variable regexp should match") 
-               NIL))))))
+               NIL)))))

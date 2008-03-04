@@ -46,7 +46,9 @@
         #+lispworks :hcl
         :cl-user
         :org.prewett.cl-cli ;; my command-line processing code
-        :cl-ppcre)
+        :cl-ppcre
+        ;:org.ancar.clunit
+	)
   #+sbcl
   (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
   #+sbcl
@@ -79,6 +81,73 @@
            get-LoGS-env-var
            message
            ensure-context
+           doubly-linked-list
+           data
+           tail
+           dll-insert
+           head
+           llink
+           rlink
+           dll-delete
+           list-entries
+           check-rule
+           check-rules
+           check-limits
+           dead-p
+           file-follower
+           list-follower
+           timeout
+           environment
+           process-files
+           match
+           no-match
+           add-item
+           get-logline
+           *messages*
+           *opts*
+           process-command-line
+           filestream
+           name
+           expire-context
+           next-timeout
+           single-with-suppress
+           *timeout-object-timeout-queue*
+           pair
+           single
+           suppress-until
+           suppress
+           filter
+           alias-context
+           delete-context
+           context-exceeded-limit-p
+           *RELATIVE-TIMEOUT-OBJECT-TIMEOUT-QUEUE*
+           REMOVE-CONTEXT-IF-STALE
+           *contexts*
+           CONTEXT-EXCEEDED-LIMIT-P
+           get-rule
+           filename
+           get-line
+           RULE-EXCEEDED-LIMIT-P
+           match-none
+           elements
+           ecount
+           rule-tail
+           rule-after
+           rule-before
+           rule-head
+           priority-queue
+           data
+           *current-rule*
+           *ruleset*
+           context
+           window
+           pbs-file-follower
+           spawn
+           stdin-follower
+           multi-follower
+           *contexts-hash*
+           *contexts-alias-hash*
+           timeout
            ))
 
 #-(or ecl cmu sbcl allegro openmcl lispworks clisp)

@@ -83,7 +83,9 @@
 (in-package :org.ancar.CLUnit)
 (provide :org.ancar.CLUnit)
 
-(defconstant *not-categorized* "*UNCATEGORIZED*")
+(eval-when (:compile-toplevel)
+	(defconstant *not-categorized* "*UNCATEGORIZED*"))
+
 (defun t-func () t)
 (defun nil-func () nil)`
 (defun equal-func (x y) (funcall (symbol-function 'equal) x y))

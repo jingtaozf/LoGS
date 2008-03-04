@@ -15,11 +15,8 @@
 ;;;; along with this program; if not, write to the Free Software
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-
-;;(load "CLUnit.lisp")
-
-(in-package :org.prewett.LoGS)
-(use-package :ORG.ANCAR.CLUNIT)
+(in-package :org.prewett.LoGS.test)
+(require 'lift)
 
 ;; UGH!
 #+(or ecl allegro clisp lispworks)
@@ -119,115 +116,108 @@
         (push s lst)))
     lst))
 
+
+;; master LoGS test suite
+(deftestsuite LoGS () ())
+
 ;; dummy test
-(deftest "foo"
-    :category 'dummy-test
-    :test-fn (lambda () t))
+(deftestsuite dummy (LoGS)
+  ()
+  (:test  ((ensure (lambda (x) t)))))
+
 ;; linked list tests
 
-(deftest "item inserted into a linked list with after and () neighbor is tail"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
+(deftestsuite linked-list (LoGS) () ())
+
+(addtest (linked-list)
+  lone-item-neighbor-is-tail
+  (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll () 42 :direction :after)
-        (assert-equal
+        (ensure-same
          (data (tail dll))
-         42))))
+         42)))
 
-(deftest "item inserted into a linked-list with before and () neighbor is head"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
+(addtest (linked-list)
+  lone-item-neighhbor-is-head
+  (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll () 42 :direction :before)
-        (assert-equal
+        (ensure-same
          (data (head dll))
-         42))))
+         42)))
 
-(deftest "item inserted into linked list is inserted with item -> dlli"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
+(addtest (linked-list)
+  item-added-to-list-entries
+  (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll () 42 :direction :before)
-        (assert-non-nil (gethash 42 (list-entries dll)))
-        (assert-equal 42 (data (gethash 42 (list-entries dll)))))))
+        (ensure-different NIL (gethash 42 (list-entries dll)))
+        (ensure-same 42 (data (gethash 42 (list-entries dll))))))
 
-(deftest "only item in linked list has no rlink or llink"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
+(addtest (linked-list)
+  lone-item-has-no-rlink
+  (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll () 42 :direction :before)
         (and
-         (assert-equal () (rlink (head dll)))
-         (assert-equal () (llink (head dll)))))))
+         (ensure-null (rlink (head dll))))))
 
-(deftest "only item in linked list is head and tail"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
+(addtest (linked-list)
+  lone-item-has-no-llink
+  (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll () 42 :direction :before)
-        (assert-non-nil (head dll))
-        (assert-equal (head dll) (tail dll)))))
+        (and
+         (ensure-null (llink (head dll))))))
 
-(deftest "item removed from list is removed from list-entries"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
+(addtest (linked-list)
+  lone-item-is-head-and-tail
+  (let ((dll (make-instance 'doubly-linked-list)))
+        (dll-insert dll () 42 :direction :before)
+        (and         
+         (ensure-different NIL (head dll))
+         (ensure-same (data (head dll)) 42)
+         (ensure-same (head dll) (tail dll)))))
+
+(addtest (linked-list)
+  item-removed-is-removed-from-list-entries
+  (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll () 42 :direction :before)
         (dll-delete dll 42)
-        (assert-nil (gethash 42 (list-entries dll))))))
-    
-
-
-      
-      
-                                            
+        (ensure-null (gethash 42 (list-entries dll)))))
 
 ;; rule creation tests
+(deftestsuite rule-tests (LoGS) () ())
 
-(deftest "Rules always have names"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (assert-non-nil (name (make-instance 'rule)))))
+(addtest (rule-tests)
+  rules-always-have-names
+  (and
+   (ensure-different NIL (name (make-instance 'rule :name "foo")))
+   (ensure-different NIL (name (make-instance 'rule)))))
 
-(deftest "Rule name provided" 
-    :category 'rule-tests
-    :test-fn 
-    (lambda () 
-      (let* ((name "asdf")
-             (name-provided-rule (make-instance 'rule :name name)))
-        (assert-equal name (name name-provided-rule)))))
+(addtest (rule-tests)
+  rule-name-provided
+  (let* ((name "asdf")
+         (name-provided-rule (make-instance 'rule :name name)))
+    (ensure-same name (name name-provided-rule))))
 
-(deftest "Rule name not provided"
-    :category 'rule-tests
-    :test-fn
-    (lambda () 
-      (let ((nameless-rule (make-instance 'rule)))
-        (assert-non-nil (name nameless-rule)))))
+
+(addtest (rule-tests)
+  rule-name-not-provided
+  (let ((nameless-rule (make-instance 'rule)))
+    (ensure-different NIL (name nameless-rule))))
 
 ;; ruleset insertion tests
-(deftest "ruleset insertion test"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let* ((rule (make-instance 'rule))
-             (ruleset (make-instance 'ruleset)))
-        (progn
-          (enqueue ruleset rule)
-          (assert-equal rule (gethash (name rule) (elements ruleset)) 
-                        :test #'eq)))))
+(deftestsuite ruleset-tests (LoGS) () ())
 
-(deftest "rule that becomes head and tail is traversed"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda () 
-      (let* ((*root-ruleset* (make-instance 'ruleset))
+(addtest (ruleset-tests)
+  rule-insertion-test
+  (let* ((rule (make-instance 'rule))
+         (ruleset (make-instance 'ruleset)))
+    (progn
+      (enqueue ruleset rule)
+      (ensure-same rule (gethash (name rule) (elements ruleset)) 
+                   :test #'eq))))
+
+(addtest (ruleset-tests)
+  head-and-tail-is-traversed
+(let* ((*root-ruleset* (make-instance 'ruleset))
              (ran-tail-rule ())
              (*messages* 
               (make-instance 
@@ -252,51 +242,43 @@
         (enqueue *root-ruleset* dying-rule)
         (enqueue *root-ruleset* tail-rule)
         (process-files)
-        (assert-non-nil ran-tail-rule))))
+        (ensure-different NIL ran-tail-rule))
+)
 
-(deftest "ruleset named rule insertion test"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let* ((name "fooble")
+(addtest (ruleset-tests) 
+  ruleset-named-rule-insertion
+  (let* ((name "fooble")
              (rule (make-instance 'rule :name name))
              (ruleset (make-instance 'ruleset)))
         (progn
           (enqueue ruleset rule)
-          (assert-equal rule (gethash name (elements ruleset)) 
-                        :test #'eq)))))
+          (ensure-same rule (gethash name (elements ruleset)) 
+                       :test #'eq))))
 
+(addtest (ruleset-tests)
+  retrieving-arbitrary-rules-from-rulesets
+  (let* ((rule1 (make-instance 'rule :name 'rule1))
+         (rule2 (make-instance 'rule :name 'rule2))
+         (ruleset (make-instance 'ruleset :name "ruleset")))
+    (enqueue ruleset rule1)
+    (enqueue ruleset rule2)
+    (and
+     (ensure-same (gethash 'rule2 (elements ruleset)) rule2)
+     (ensure-same (gethash 'rule1 (elements ruleset)) rule1))))
 
-(deftest "retrieving arbitrary rules from rulesets"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let* ((rule1 (make-instance 'rule :name 'rule1))
-             (rule2 (make-instance 'rule :name 'rule2))
-             (ruleset (make-instance 'ruleset :name "ruleset")))
-        (enqueue ruleset rule1)
-        (enqueue ruleset rule2)
-        (and
-         (eq (gethash 'rule2 (elements ruleset)) rule2)
-         (eq (gethash 'rule1 (elements ruleset)) rule1)))))
-
-(deftest "retrieving arbitrary rulesets from rulesets"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let* ((ruleset1 (make-instance 'ruleset :name 'ruleset1))
+(addtest (ruleset-tests)
+  retrieving-arbitrary-rulesets-from-rulesets
+  (let* ((ruleset1 (make-instance 'ruleset :name 'ruleset1))
              (ruleset2 (make-instance 'ruleset :name 'ruleset2))
              (ruleset (make-instance 'ruleset :name "ruleset")))
         (enqueue ruleset ruleset1)
         (enqueue ruleset ruleset2)
         (and
          (eq (gethash 'ruleset2 (elements ruleset)) ruleset2)
-         (eq (gethash 'ruleset1 (elements ruleset)) ruleset1)))))
+         (eq (gethash 'ruleset1 (elements ruleset)) ruleset1))))
 
-(deftest "retrieving arbitrary unnamed rulesets from rulesets"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
+(addtest (ruleset-tests)
+  retreiving-arbitrary-unnamed-rulesets
       (let* ((ruleset1 (make-instance 'ruleset))
              (ruleset2 (make-instance 'ruleset))
              (ruleset (make-instance 'ruleset :name "ruleset")))
@@ -304,488 +286,412 @@
         (enqueue ruleset ruleset2)
         (and
          (eq (gethash (name ruleset2) (elements ruleset)) ruleset2)
-         (eq (gethash (name ruleset1) (elements ruleset)) ruleset1)))))
+         (eq (gethash (name ruleset1) (elements ruleset)) ruleset1))))
 
-(deftest "two different named rules are not equal"
-    :category 'rule-tests
-    :test-fn
-    (lambda () 
-      (let ((r1 (make-instance 'rule :name 'a))
-            (r2 (make-instance 'rule :name 'b)))
-        (not (eq r1 r2)))))
+(addtest (rule-tests)
+  two-different-named-rules-are-not-equal
+  (let ((r1 (make-instance 'rule :name 'a))
+        (r2 (make-instance 'rule :name 'b)))
+    (not (eq r1 r2))))
 
-(deftest "two different unnamed rules are not equal"
-    :category 'rule-tests
-    :test-fn
-    (lambda () 
-      (let ((r1 (make-instance 'rule))
-            (r2 (make-instance 'rule)))
-        (not (eq r1 r2)))))
+(addtest (rule-tests)
+  two-different-unnamed-rules-are-not-equal
+  (let ((r1 (make-instance 'rule))
+        (r2 (make-instance 'rule)))
+    (not (eq r1 r2))))
 
-(deftest "rule is entered into ruleset name table"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((rule (make-instance 'rule :name 'r1))
-            (ruleset (make-instance 'ruleset :name 'ruleset)))
-        (enqueue ruleset rule)
-        (assert-equal rule (gethash (name rule) (elements ruleset))))))
+(addtest (ruleset-tests)
+  rule-is-entered-into-ruleset-name-table
+  (let ((rule (make-instance 'rule :name 'r1))
+        (ruleset (make-instance 'ruleset :name 'ruleset)))
+    (enqueue ruleset rule)
+    (assert-equal rule (gethash (name rule) (elements ruleset)))))
 
-(deftest "unnamed rule is entered into ruleset name table"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((rule (make-instance 'rule))
-            (ruleset (make-instance 'ruleset :name 'ruleset)))
-        (enqueue ruleset rule)
-        (assert-equal rule (gethash (name rule) (elements ruleset))))))
+(addtest (ruleset-tests)
+  unnamed-rule-is-entered-into-ruleset-name-table
+  (let ((rule (make-instance 'rule))
+        (ruleset (make-instance 'ruleset :name 'ruleset)))
+    (enqueue ruleset rule)
+    (assert-equal rule (gethash (name rule) (elements ruleset)))))
 
-(deftest "doubly linked list with an item has a head"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
-        (enqueue dll 42)
-        (assert-non-nil (head dll)))))
+(addtest (linked-list)
+  dll-with-an-item-has-a-head
+  (let ((dll (make-instance 'doubly-linked-list)))
+    (enqueue dll 42)
+    (ensure-different NIL (head dll))))
 
-(deftest "rule-before is entered into ruleset name table"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda () 
+(addtest (ruleset-tests)
+  rule-before-is-entered-into-ruleset-name-table
       (let ((r1 (make-instance 'rule :name "r1"))
             (r2 (make-instance 'rule :name "r2"))
             (*ruleset* (make-instance 'ruleset :name 'ruleset)))
         (enqueue *ruleset* r1)
         (let ((*current-rule* (head *ruleset*)))
           (rule-before r2)
-          (assert-equal r2 (gethash (name r2) (elements *ruleset*)))))))
+          (ensure-same r2 (gethash (name r2) (elements *ruleset*))))))
 
+(addtest (ruleset-tests)
+  unnamed-rule-before-is-entered-into-ruleset-name-table
+  (let ((r1 (make-instance 'rule :name 'current))
+        (*ruleset* (make-instance 'ruleset :name 'ruleset))
+        (rule (make-instance 'rule)))
+    (enqueue *ruleset* r1)
+    (let ((*current-rule* (head *ruleset*)))
+      (rule-before rule)
+      (ensure-same rule (gethash (name rule) (elements *ruleset*))))))
 
-(deftest "unnamed rule-before is entered into ruleset name table"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((r1 (make-instance 'rule :name 'current))
-            (*ruleset* (make-instance 'ruleset :name 'ruleset))
-            (rule (make-instance 'rule)))
-        (enqueue *ruleset* r1)
-        (let ((*current-rule* (head *ruleset*)))
-          (rule-before rule)
-          (assert-equal rule (gethash (name rule) (elements *ruleset*)))))))
+(addtest (ruleset-tests)
+  rule-after-is-entered-into-ruleset-name-table
+  (let ((r1 (make-instance 'rule :name 'r1))
+        (r2 (make-instance 'rule :name 'r2))
+        (*ruleset* (make-instance 'ruleset)))
+    (enqueue *ruleset* r1)
+    (let ((*current-rule* (head *ruleset*)))
+      (rule-after r2)
+      (ensure-same r2 (gethash (name r2) (elements *ruleset*))))))
 
-(deftest "rule-after is entered into ruleset name table"
-    :category 'ruleset-tests
-    :Test-fn
-    (lambda ()
-      (let ((r1 (make-instance 'rule :name 'r1))
-            (r2 (make-instance 'rule :name 'r2))
-            (*ruleset* (make-instance 'ruleset)))
-        (enqueue *ruleset* r1)
-        (let ((*current-rule* (head *ruleset*)))
-          (rule-after r2)
-          (assert-equal r2 (gethash (name r2) (elements *ruleset*)))))))
+(addtest (ruleset-tests)
+  unnamed-rule-after-is-entered-into-ruleset-name-table
+  (let ((r1 (make-instance 'rule :name 'current))
+        (*ruleset* (make-instance 'ruleset :name 'ruleset))
+        (rule (make-instance 'rule)))
+    (enqueue *ruleset* r1)
+    (let ((*current-rule* (head *ruleset*)))
+      (rule-after rule)
+      (ensure-same rule (gethash (name rule) (elements *ruleset*))))))
 
-(deftest "unnamed rule-after is entered into ruleset name table"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda () 
-      (let ((r1 (make-instance 'rule :name 'current))
-            (*ruleset* (make-instance 'ruleset :name 'ruleset))
-            (rule (make-instance 'rule)))
-        (enqueue *ruleset* r1)
-        (let ((*current-rule* (head *ruleset*)))
-          (rule-after rule)
-          (assert-equal rule (gethash (name rule) (elements *ruleset*)))))))
+(addtest (ruleset-tests)
+  rule-tail-is-entered-into-ruleset-name-table
+  (let ((*current-rule* (make-instance 'rule :name 'r1))
+        (r2 (make-instance 'rule :name 'r2))
+        (*ruleset* (make-instance 'ruleset)))
+    (enqueue *ruleset* *current-rule*)
+    (rule-tail r2)
+    (ensure-same r2 (gethash (name r2) (elements *ruleset*)))))
 
-(deftest "rule-tail is entered into ruleset name table"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda () 
-      (let ((*current-rule* (make-instance 'rule :name 'r1))
-            (r2 (make-instance 'rule :name 'r2))
-            (*ruleset* (make-instance 'ruleset)))
-        (enqueue *ruleset* *current-rule*)
-        (rule-tail r2)
-        (assert-equal r2 (gethash (name r2) (elements *ruleset*))))))
+;; context tests
+(deftestsuite context-tests (LoGS) () ())
 
-(deftest "contexts have names"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((c (ensure-context)))
-        (assert-non-nil (name c)))))
+(addtest (context-tests)
+  contexts-have-names
+  (let ((c (ensure-context)))
+    (ensure-different NIL (name c))))
 
-(deftest "contexts are added to context hash"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let* ((c (ensure-context))
-             (c2 (get-context (name c))))
-        (assert-equal c c2 :test #'equal))))
-      
-(deftest "only one context with a given name"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  contexts-are-added-to-context-hash
+  (let* ((c (ensure-context))
+         (c2 (get-context (name c))))
+    (ensure-same c c2 :test #'equal)))
+
+(addtest (context-tests)
+  only-one-context-with-a-given-name
       (let* ((c1 (ensure-context))
              (c2 (ensure-context :name (name c1))))
-        (eq c1 c2))))
+        (ensure-same c1 c2)))
 
-(Deftest "default style rule matches message"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((message (make-instance 'message :message "this is a message"))
-            (rule (make-instance 'rule :match #'match-all)))
-        (multiple-value-bind (matches sub-matches)
-            (check-rule rule message NIL)
-          (declare (ignore sub-matches))
-          (assert-non-nil matches)))))
+(addtest (rule-tests)
+  default-style-rule-matches-message
+  (let ((message (make-instance 'message :message "this is a message"))
+        (rule (make-instance 'rule :match #'match-all)))
+    (multiple-value-bind (matches sub-matches)
+        (check-rule rule message NIL)
+      (declare (ignore sub-matches))
+      (ensure-different NIL matches))))
 
-(deftest "no exception works"
-    :category 'rule-tests
-    :test-fn
-    (lambda () 
-      (let ((message (make-instance 'message :message "asdf"))
-            (rule (make-instance 'rule
-                                 :match #'match-all)))
-        (multiple-value-bind (matches sub-matches)
-            (check-rule rule message NIL)
-          (declare (ignore sub-matches))
-          (assert-non-nil matches)))))
+(addtest (rule-tests)
+  no-exception-works
+  (let ((message (make-instance 'message :message "asdf"))
+        (rule (make-instance 'rule
+                             :match #'match-all)))
+    (multiple-value-bind (matches sub-matches)
+        (check-rule rule message NIL)
+      (declare (ignore sub-matches))
+      (ensure-different NIL matches))))
+
+(addtest (ruleset-tests)
+  ruleset-rule-insertion-works
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule)))
+    (enqueue ruleset rule)
+    (ensure-same (data (head ruleset)) rule)))
+
+(addtest (ruleset-tests)
+  ruleset-match-works
+  (let ((ruleset (make-instance 'ruleset :match #'match-all))
+        (rule (make-instance 'rule :match #'match-all))
+        (message (make-instance 'message :message "test message")))
+    (enqueue ruleset rule)
+    (check-rule ruleset message NIL)))
+
+(addtest (ruleset-tests)
+  empty-ruleset-does-not-match
+  (let ((ruleset (make-instance 'ruleset :match #'match-all))
+        (message (make-instance 'message :message "test message"))
+        (retval ()))
+    (ensure-null (check-rule ruleset message NIL))))
+
+(addtest (ruleset-tests)
+  matching-ruleseet-with-non-matching-rules-does-not-match
+  (let ((ruleset (make-instance 'ruleset :match #'match-all))
+        (message (make-instance 'message :message "test message"))
+        (r1 (make-instance 'rule :match #'match-none)))
+    (enqueue ruleset r1)
+    (not (check-rule ruleset message NIL))))
+
+(addtest (ruleset-tests)
+  matching-ruleset-with-matching-rule-does-match
+  (let ((ruleset (make-instance 'ruleset :match #'match-all))
+        (message (make-instance 'message :message "test message"))
+        (r1 (make-instance 'rule :match #'match-all)))
+    (enqueue ruleset r1)
+    (check-rule ruleset message NIL)))
+
+(addtest (ruleset-tests)
+  ruleset-with-matching-no-match-does-not-match
+  (let ((ruleset (make-instance 
+                  'ruleset 
+                  :match (lambda (message environment)
+                           (and (match-all message environment)
+                                (not (match-all message environment))))))
+        (message (make-instance 'message))
+        (r1 (make-instance 'rule :match #'match-all)))
+    (enqueue ruleset r1)
+    (not 				; is this a fair test?
+     (check-rule ruleset message NIL))))
+
+(addtest (context-tests) 
+  message-is-added-to-context
+  (let ((message (make-instance 'message))
+        (context (ensure-context)))
+    (and
+     (equal (Ecount context) 0)
+     (add-to-context context message)
+     (equal (Ecount context) 1))))
+
+(addtest (ruleset-tests)
+  removing-a-rule-from-the-ruleset-removes-it-from-elements
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule)))
+    (enqueue ruleset rule)
+    (dll-delete ruleset rule)
+    (ensure-null (gethash (name rule) (elements ruleset)))))
+
+(addtest (ruleset-tests)
+  removing-a-rule-from-the-ruleset-removes-it-from-list-entries
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule)))
+    (enqueue ruleset rule)
+    (dll-delete ruleset rule)
+    (ensure-null (gethash rule (list-entries ruleset)))))
+
+(addtest (rule-tests)
+  check-rules-finds-simple-match
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule :match #'match-all))
+        (message (make-instance 'message :message "test message")))
+    (enqueue ruleset rule)
+    (check-rules message ruleset NIL)))
+
+(addtest (rule-tests)
+  check-rules-finds-simple-regexp-match
+  (let ((ruleset 
+         (make-instance 'ruleset :name 'simple-regexp-match-ruleset))
+        (rule (make-instance 
+               'rule
+               :name 'simple-regexp-match-rule
+               :match 
+               (lambda (message environment)
+                 (declare (ignore environment))
+                 (cl-ppcre::scan "test.*" 
+                                 (message message)))))
+        (message (make-instance 'message :message "test message")))
+    (enqueue ruleset rule)
+    (check-rules message ruleset NIL)))
 
 
-(deftest "ruleset rule insertion works"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule)))
-        (enqueue ruleset rule)
-        (eq (data (head ruleset)) rule))))
+(addtest (rule-tests)
+  check-rules-doesnt-find-simple-non-match
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule :match #'match-none))
+        (message (make-instance 'message :message "test message")))
+    (enqueue ruleset rule)
+    (not (check-rules message ruleset NIL))))
 
-(deftest "ruleset match works"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset :match #'match-all))
-            (rule (make-instance 'rule :match #'match-all))
-            (message (make-instance 'message :message "test message")))
-        (enqueue ruleset rule)
-        (check-rule ruleset message NIL))))
+(addtest (rule-tests)
+  check-rules-finds-match-in-second-rule
+  (let* ((ruleset (make-instance 'ruleset))
+         (xyzzy 0)    ; a variable whose value we change in the action
+         (rule (make-instance 'rule :match #'match-none))
+         (rule2 (make-instance 'rule 
+                               :match #'match-all
+                               :actions
+                               (list
+                                (lambda (message environment)
+                                  (declare (ignore message environment))
+                                  (setf xyzzy 42)))))
+         (message (make-instance 'message :message "test message")))
+    (enqueue ruleset rule)
+    (enqueue ruleset rule2)
+    (and (check-rules message ruleset NIL)
+         (ensure-same 42 xyzzy))))
 
-(deftest "empty ruleset does not match"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset :match #'match-all))
-            (message (make-instance 'message :message "test message"))
-            (retval ()))
-        (setf retval (not (check-rule ruleset message NIL)))
-        retval)))
+(addtest (rule-tests)
+  check-rules-doesnt-find-match-in-several-non-matching-rules
+  (let ((ruleset (make-instance 'ruleset))
+        (rule1 (make-instance 'rule :match #'match-none))
+        (rule2 (make-instance 'rule :match #'match-none))
+        (rule3 (make-instance 'rule :match #'match-none))
+        (message (make-instance 'message :message "test message")))
+    (enqueue ruleset rule1)
+    (enqueue ruleset rule2)
+    (enqueue ruleset rule3)
+    (not (check-rules message ruleset NIL))))
 
-(deftest "matching ruleset with non-matching rules does not match"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset :match #'match-all))
-            (message (make-instance 'message :message "test message"))
-            (r1 (make-instance 'rule :match #'match-none)))
-        (enqueue ruleset r1)
-        (not (check-rule ruleset message NIL)))))
+(addtest (context-tests)
+  message-is-eq-to-same-message-added-to-context
+  (let ((message (make-instance 'message))
+        (context (ensure-context)))
+    (add-item context message)
+    (eq message (aref (data context) 0))))          
 
-(deftest "matching ruleset with matching rule does match"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset :match #'match-all))
-            (message (make-instance 'message :message "test message"))
-            (r1 (make-instance 'rule :match #'match-all)))
-        (enqueue ruleset r1)
-        (check-rule ruleset message NIL))))
+(addtest (ruleset-tests)
+  dll-delete-removes-a-rule-from-the-ruleset
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule)))
+    (enqueue ruleset rule)
+    (dll-delete ruleset rule)
+    (not (head ruleset))))
 
-(deftest "ruleset with matching no-match does not match"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset 
-                                    :match (lambda (message environment)
-					     (and (match-all message environment)
-						  (not (match-all message environment))))))
-            (message (make-instance 'message))
-            (r1 (make-instance 'rule :match #'match-all)))
-        (enqueue ruleset r1)
-        (not 				; is this a fair test?
-         (check-rule ruleset message NIL)))))
+(addtest (ruleset-tests)
+  rule-with-timeout-can-be-inserted
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule :timeout 1)))
+    (enqueue ruleset rule)
+    (ensure-same rule (data (head ruleset))))
+  )
 
+(addtest (ruleset-tests)
+  rule-that-has-exceeded-its-limits-is-found-to-be-so
+  (let ((rule (make-instance 'rule :timeout 1)))
+    (rule-exceeded-limit-p rule (get-universal-time))))
 
-(deftest "message is added to context"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((message (make-instance 'message))
-            (context (ensure-context)))
-        (and
-         (equal (Ecount context) 0)
-         (add-to-context context message)
-         (equal (Ecount context) 1)))))
+(addtest (rule-tests)
+  rule-that-has-timed-out-is-removed-from-the-ruleset
+  (let ((ruleset (make-instance 'ruleset))
+        (rule (make-instance 'rule :timeout 1)))
+    (setf *now* 42)
+    (enqueue ruleset rule)
+    (check-limits *timeout-object-timeout-queue*)
+    (or (null (head ruleset))
+        (dead-p (data (head ruleset)))))
+  )
 
-(deftest "removing a rule from the ruleset removes it from elements"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule)))
-        (enqueue ruleset rule)
-        (dll-delete ruleset rule)
-        (assert-nil (gethash (name rule) (elements ruleset))))))
+(addtest (rule-tests)
+  timed-out-rule-is-removed-others-are-not
+  (let ((*timeout-object-timeout-queue*
+         (make-instance 'priority-queue 
+                        :comparison-function 
+                        (lambda (x y) 
+                          (> (timeout x) 
+                             (timeout y))))))
+    (let ((ruleset (make-instance 'ruleset))
+          (r1 (make-instance 'rule))
+          (r2 (make-instance 'rule :timeout 1))
+          (r3 (make-instance 'rule :timeout 5000)))
+      (enqueue ruleset r1)
+      (enqueue ruleset r2)
+      (enqueue ruleset r3)
+      (setf *now* 42)
+      (check-limits *timeout-object-timeout-queue*) ; find and remove old rules
+      ;; make sure old rule is gone and new is not
+      (and
+       (dead-p r2)
+       (ensure-different NIL 
+                         (and (gethash r1 (list-entries ruleset))
+                              (gethash r3 (list-entries ruleset))))))))
 
-(deftest "removing a rule from the ruleset removes it from list-entries"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule)))
-        (enqueue ruleset rule)
-        (dll-delete ruleset rule)
-        (assert-nil (gethash rule (list-entries ruleset))))))
+;; file-follower tests
+(deftestsuite file-follower-tests (LoGS) () ())
 
-(deftest "check-rules finds simple match"
-    :category 'rule-tests
-    :test-fn
-    (lambda () 
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule :match #'match-all))
-            (message (make-instance 'message :message "test message")))
-        (enqueue ruleset rule)
-        (check-rules message ruleset NIL))))
-
-(deftest "check-rules finds simple regexp match"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset 
-             (make-instance 'ruleset :name 'simple-regexp-match-ruleset))
-            (rule (make-instance 
-                   'rule
-                   :name 'simple-regexp-match-rule
-                   :match 
-                   (lambda (message environment)
-                     (declare (ignore environment))
-                     (cl-ppcre::scan "test.*" 
-                                     (message message)))))
-
-            (message (make-instance 'message :message "test message")))
-        (enqueue ruleset rule)
-        (check-rules message ruleset NIL))))
-
-(deftest "check-rules doesn't find simple non-match"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule :match #'match-none))
-            (message (make-instance 'message :message "test message")))
-        (enqueue ruleset rule)
-        (not (check-rules message ruleset NIL)))))
-
-(deftest "check-rules finds match in second rule"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let* ((ruleset (make-instance 'ruleset))
-             (xyzzy 0) ; a variable whose value we change in the action
-             (rule (make-instance 'rule :match #'match-none))
-             (rule2 (make-instance 'rule 
-                                   :match #'match-all
-                                   :actions
-                                   (list
-                                    (lambda (message environment)
-                                      (declare (ignore message environment))
-                                      (setf xyzzy 42)))))
-             (message (make-instance 'message :message "test message")))
-        (enqueue ruleset rule)
-        (enqueue ruleset rule2)
-        (and (check-rules message ruleset NIL)
-             (assert-equal 42 xyzzy)))))
-
-(deftest "check-rules doesn't find match in several non-rrrmatching rules"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule1 (make-instance 'rule :match #'match-none))
-            (rule2 (make-instance 'rule :match #'match-none))
-            (rule3 (make-instance 'rule :match #'match-none))
-            (message (make-instance 'message :message "test message")))
-        (enqueue ruleset rule1)
-        (enqueue ruleset rule2)
-        (enqueue ruleset rule3)
-        (not (check-rules message ruleset NIL)))))
-          
-          
-(deftest "message is eq to same message added to context"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((message (make-instance 'message))
-            (context (ensure-context)))
-        (add-item context message)
-        (eq message (aref (data context) 0)))))
-
-(deftest "dll-delete removes a rule from the ruleset"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule)))
-        (enqueue ruleset rule)
-        (dll-delete ruleset rule)
-        (not (head ruleset)))))
-
-(deftest "rule with timeout can be inserted"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule :timeout 1)))
-        (enqueue ruleset rule)
-        (assert-equal rule (data (head ruleset))))))
-          
-     
-
-(deftest "rule that has exceeded its limits is found to be so"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((rule (make-instance 'rule :timeout 1)))
-        (rule-exceeded-limit-p rule (get-universal-time)))))
-
-(deftest "rule that has timed out is removed from the ruleset"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((ruleset (make-instance 'ruleset))
-            (rule (make-instance 'rule :timeout 1)))
-        (setf *now* 42)
-        (enqueue ruleset rule)
-        (check-limits *timeout-object-timeout-queue*)
-        (or (null (head ruleset))
-            (dead-p (data (head ruleset)))))))
-
-(deftest "timed out rule is removed, others are not"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((*timeout-object-timeout-queue*
-             (make-instance 'priority-queue 
-                            :comparison-function 
-                            (lambda (x y) 
-                              (> (timeout x) 
-                                 (timeout y))))))
-        (let ((ruleset (make-instance 'ruleset))
-              (r1 (make-instance 'rule))
-              (r2 (make-instance 'rule :timeout 1))
-              (r3 (make-instance 'rule :timeout 5000)))
-          (enqueue ruleset r1)
-          (enqueue ruleset r2)
-          (enqueue ruleset r3)
-          (setf *now* 42)
-          (check-limits *timeout-object-timeout-queue*) ; find and remove old rules
-          ;; make sure old rule is gone and new is not
-          (and
-           (dead-p r2)
-           (assert-non-nil 
-            (and (gethash r1 (list-entries ruleset))
-                 (gethash r3 (list-entries ruleset)))))))))
-
-(deftest "new file-follower gets a line"
-    :category 'file-follower-tests
-    :test-fn
-    (lambda ()
-      (let* ((testfile "testfile-new-ff")
-             ff)
-        (with-temporary-file output-stream testfile
-          ((format output-stream "this is a line~%"))
-          ((setf ff (make-instance 'file-follower :filename testfile))
-           (let ((line (get-line ff)))
-             (close (filestream ff))
-             (assert-non-nil line)))))))
-
-(deftest "file follower returns nil with no input"
-    :category 'file-follower-tests
-    :test-fn
-    (lambda () 
-      (let ((ff (make-instance 'file-follower :filename "/dev/null")))
-        (assert-nil (get-line ff)))))
-
-(deftest "file follower addition works"
-    :category 'file-follower-tests
-    :test-fn
-    (lambda ()
-      (let* ((testfile "testfile-ff-addition")
-             (ff ()))
-        ;; open the file the first time. overwrite it if it exists.
-        (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :SUPERSEDE
-                                       :if-does-not-exist :create)
-          ;; put a line into it.
-          (format output-stream "this is a line~%"))
-
-        ;; open the filefollower for input
-        (setf ff (make-instance 'file-follower :filename testfile))
-        ;; read the "this is a line line"
-        (assert-non-nil (get-line ff))
-        ;; put another line in the file
-        (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :append
-                                       :if-does-not-exist :create)
-          (not (format output-stream "here is another~%")))
-
-        (let ((line (get-line ff)))
-          (close (filestream ff))
-          (remove-file testfile)
-          (assert-non-nil line)))))
-
-(deftest "file-follower inode rollover works"
-    :category 'file-follower-tests
-    :test-fn
-    (lambda ()
-      (let* ((testfile "testfile-inode-rollover")
-             (testfile-rollover ()))
-        (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :overwrite
-                                       :if-does-not-exist :create)
-          (format output-stream "this is a line"))
-
-        (let ((ff (make-instance 'file-follower :filename testfile)))
-          (assert-non-nil
-           (and
-            (get-line ff)
-            (not (get-line ff))))
-
-          (close (filestream ff)) 
-
-          ;; ensure the rollover
-          (setq testfile-rollover (roll-over (filename ff)))
-
-          (with-open-file (output-stream testfile :direction :output 
-                                         :if-exists :error
-                                         :if-does-not-exist :create)
-            (format output-stream "here is another~%"))
-
+(addtest (file-follower-tests)
+  new-file-follower-gets-a-line
+  (let* ((testfile "testfile-new-ff")
+         ff)
+    (with-temporary-file 
+        output-stream testfile
+        ((format output-stream "this is a line~%"))
+        (
+          (setf ff (make-instance 'file-follower :filename testfile))
           (let ((line (get-line ff)))
             (close (filestream ff))
-            (remove-file testfile)
-            (when testfile-rollover (remove-file testfile-rollover))
-            (assert-non-nil line)
-            )))))
+            (ensure-different NIL line))))))
 
-(deftest "PBS File-follower file rollover works"
-    :category 'file-follower-tests
-    :test-fn
-    (lambda ()
-      (let* ((day1 "20050227")
+(addtest (file-follower-tests)
+  file-follower-returns-nil-with-no-input
+  (let ((ff (make-instance 'file-follower :filename "/dev/null")))
+    (ensure-null (get-line ff))))
+
+(addtest (file-follower-tests)
+  file-follower-addition-works
+  (let* ((testfile "testfile-ff-addition")
+         (ff ()))
+    ;; open the file the first time. overwrite it if it exists.
+    (with-open-file (output-stream testfile :direction :output 
+                                   :if-exists :SUPERSEDE
+                                   :if-does-not-exist :create)
+      ;; put a line into it.
+      (format output-stream "this is a line~%"))
+
+    ;; open the filefollower for input
+    (setf ff (make-instance 'file-follower :filename testfile))
+    ;; read the "this is a line line"
+    (ensure-different NIL (get-line ff))
+    ;; put another line in the file
+    (with-open-file (output-stream testfile :direction :output 
+                                   :if-exists :append
+                                   :if-does-not-exist :create)
+      (not (format output-stream "here is another~%")))
+
+    (let ((line (get-line ff)))
+      (close (filestream ff))
+      (remove-file testfile)
+      (ensure-different NIL line))))
+
+(addtest (file-follower-tests)
+  file-follower-inode-rollover-works
+  (let* ((testfile "testfile-inode-rollover")
+         (testfile-rollover ()))
+    (with-open-file (output-stream testfile :direction :output 
+                                   :if-exists :overwrite
+                                   :if-does-not-exist :create)
+      (format output-stream "this is a line"))
+
+    (let ((ff (make-instance 'file-follower :filename testfile)))
+      (ensure-different NIL
+                        (and
+                         (get-line ff)
+                         (not (get-line ff))))
+
+      (close (filestream ff)) 
+
+      ;; ensure the rollover
+      (setq testfile-rollover (roll-over (filename ff)))
+
+      (with-open-file (output-stream testfile :direction :output 
+                                     :if-exists :error
+                                     :if-does-not-exist :create)
+        (format output-stream "here is another~%"))
+
+      (let ((line (get-line ff)))
+        (close (filestream ff))
+        (remove-file testfile)
+        (when testfile-rollover (remove-file testfile-rollover))
+        (ensure-different NIL line)
+        ))))
+
+(addtest (file-follower-tests)
+  PBS-file-follower-file-rollover-works
+  (let* ((day1 "20050227")
              (day2 "20050228")
              (day3 "20050301")
              (counter 0)
@@ -820,139 +726,110 @@
         (remove-file day1)
         (remove-file day2)
         (remove-file day3)
-        (assert-equal 3 counter))))
+        (ensure-same 3 counter)))
 
-      
+(addtest (file-follower-tests)
+  file-follower-makes-correct-series-of-messages
+  (let* ((testfile "testfile-correct-series")
+         (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
+    (with-temporary-file 
+        output-stream testfile 
+        ((mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
+        ((let* ((ff (make-instance 'file-follower :filename testfile))
+                (messages 
+                 (mapcar 
+                  (lambda (x) 
+                    (declare (ignore x))
+                    (get-logline ff)) 
+                  file-lines)))
+           (let ((result
+                  (loop as q in 
+                       (mapcar (lambda (x y) (equal X (message Y)))
+                               file-lines messages)
+                       do
+                       (or q (return ()))
+                       finally
+                       (return t))))
+             (close (filestream ff))
+             (ensure-different NIL result)))))))
 
-(deftest "file follower makes correct series of messages"
-    :category 'file-follower-tests
-    :test-fn
-    (lambda ()
-      (let* ((testfile "testfile-correct-series")
-             (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
-        (with-temporary-file 
-            output-stream testfile 
-            ((mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
-            ((let* ((ff (make-instance 'file-follower :filename testfile))
-                    (messages 
-                     (mapcar 
-                      (lambda (x) 
-                        (declare (ignore x))
-                        (get-logline ff)) 
-                      file-lines)))
-               (let ((result
-                      (loop as q in 
-                           (mapcar (lambda (x y) (equal X (message Y)))
-                                   file-lines messages)
-                         do
-                           (or q (return ()))
-                         finally
-                           (return t))))
-                 (close (filestream ff))
-            (assert-non-nil result))))))))
+(addtest (rule-tests)
+  get-rule-returns-the-rule
+  (let ((rule (make-instance 'rule))
+        (ruleset (make-instance 'ruleset)))
+    (enqueue ruleset rule)
+    (ensure-same rule (get-rule ruleset (name rule)))))
 
-(deftest "get-rule returns the rule"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((rule (make-instance 'rule))
-            (ruleset (make-instance 'ruleset)))
-        (enqueue ruleset rule)
-        (assert-equal rule (get-rule ruleset (name rule))))))
-      
+(addtest (context-tests)
+  contests-that-have-expired-are-shown-to-exceed-limit
+  (let ((context (ensure-context :name 'test-context :timeout 47))
+        (now 48))
+    (context-exceeded-limit-p context now)))
 
-(deftest "contexts that have expired are shown to exceed limit"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context :name 'test-context :timeout 47))
-            (now 48))
-        (context-exceeded-limit-p context now))))
+(addtest (context-tests)
+  contexts-that-have-expired-their-relative-timeout-are-shown-to-exceed-limit
+  (let* ((*now* 48)
+         (context (ensure-context :relative-timeout 1)))
+    (context-exceeded-limit-p 
+     context 
+     (+ *now* 1
+        (* INTERNAL-TIME-UNITS-PER-SECOND 1))))) 
 
-(deftest "contexts that have expired their relative timeout are shown to exceed limit"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let* ((*now* 48)
-             (context (ensure-context :relative-timeout 1)))
-        (context-exceeded-limit-p 
-         context 
-         (+ *now* 1
-            (* INTERNAL-TIME-UNITS-PER-SECOND 1))))))
+(addtest (context-tests)
+  contexts-that-dont-have-timeouts-dont-exceed-limits
+  (let ((context (ensure-context))
+        (now 48))
+    (ensure-null (context-exceeded-limit-p context now))))
 
-(deftest "contexts that don't have timeouts don't exceed limits"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context))
-            (now 48))
-        (assert-nil (context-exceeded-limit-p context now)))))
+(addtest (context-tests)
+  contexts-that-have-expired-are-removed-from-hash-with-remove-context-if-stale
+  (let ((context (ensure-context :timeout 47))
+        (now 48))
+    (remove-context-if-stale context now)
+    (ensure-null (get-context (name context)))))
 
-(deftest "contexts that have expired are removed from hash with remove-context-if-stale"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context :timeout 47))
-            (now 48))
-        (remove-context-if-stale context now)
-        (assert-nil (get-context (name context))))))
+(addtest (context-tests)
+  contexts-that-havent-expired-are-not-removed-from-hash
+  (let ((context (ensure-context :timeout 49))
+        (now 48))
+    (remove-context-if-stale context now)
+    (ensure-different NIL (get-context (name context)))))
 
-(deftest "contexts that haven't expired are not removed from hash"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context :timeout 49))
-            (now 48))
-        (remove-context-if-stale context now)
-        (assert-non-nil (get-context (name context))))))
-        
-(deftest "get-context returns proper context"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context)))
-        (assert-equal 
-         context
-         (get-context (name context))))))
+(addtest (context-tests)
+  get-context-returns-proper-context
+  (let ((context (ensure-context)))
+    (ensure-same 
+     context
+     (get-context (name context)))))
 
-(deftest "context is added to *contexts* list when created"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context)))
-        (assert-non-nil (gethash context (list-entries *contexts*))))))
+(addtest (context-tests)
+  context-is-added-to-contexts-list-when-created
+  (let ((context (ensure-context)))
+    (ensure-different NIL (gethash context (list-entries *contexts*)))))
 
-(deftest "context is removed from *contexts* list when deleted"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context :timeout 47)))
-        (and
-         (gethash context (list-entries *contexts*)))
-        (remove-context-if-stale context 1)
-        t)))
+(addtest (context-tests)
+  context-is-removed-from-contexts-list-when-deleted
+  (let ((context (ensure-context :timeout 47)))
+    (and
+     (gethash context (list-entries *contexts*)))
+    (remove-context-if-stale context 1)
+    t))
 
-(deftest "old context exceeds limits"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context :timeout 47))
-            (now 48))
-        (context-exceeded-limit-p context now))))
+(addtest (context-tests)
+  old-context-exceeds-limits
+  (let ((context (ensure-context :timeout 47))
+        (now 48))
+    (context-exceeded-limit-p context now)))
 
-(deftest "full context exceeds limits"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let ((context (ensure-context :name 'context :max-lines 1)))
-        (add-to-context 'context (make-instance 'message :message "this is a line"))
-        (add-to-context 'context (make-instance 'message :message "this is a line"))
-        (assert-non-nil (context-exceeded-limit-p context 42)))))
-      
-(deftest "full context runs actions"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  full-context-exceeds-limits
+  (let ((context (ensure-context :name 'context :max-lines 1)))
+    (add-to-context 'context (make-instance 'message :message "this is a line"))
+    (add-to-context 'context (make-instance 'message :message "this is a line"))
+    (ensure-different NIL (context-exceeded-limit-p context 42))))
+
+(addtest (context-tests)
+  full-context-runs-actions
       (let* ((fooble ())
              (context (ensure-context
                        :max-lines 1
@@ -966,53 +843,47 @@
         ;; context should exceed limit here and run actions
         (add-to-context (name context) (make-instance 'message))
         (check-limits context)
-        (assert-non-nil fooble))))
+        (ensure-different NIL fooble)))
 
-(deftest "context runs actions exactly once"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let* ((fooble 0)
-             (context (ensure-context
-                       :max-lines 1
-                       :actions
-                       (list
-                        (lambda (context)
-                          (declare (ignore context))
-                          (incf fooble))))))
-        (add-to-context (name context) (make-instance 'message))
-        (check-limits context)
+(addtest (context-tests)
+  context-runs-actions-exactly-once
+  (let* ((fooble 0)
+         (context (ensure-context
+                   :max-lines 1
+                   :actions
+                   (list
+                    (lambda (context)
+                      (declare (ignore context))
+                      (incf fooble))))))
+    (add-to-context (name context) (make-instance 'message))
+    (check-limits context)
 
-        ;; context should exceed limit here and run actions
-        (add-to-context (name context) (make-instance 'message))
-        (check-limits context)
-        (assert-equal fooble 1))))
+    ;; context should exceed limit here and run actions
+    (add-to-context (name context) (make-instance 'message))
+    (check-limits context)
+    (ensure-same fooble 1)))
 
-(deftest "un-killable context runs actions exactly once"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let* ((fooble 0)
-             (context (ensure-context
-                       :max-lines 1
-                       :lives-after-timeout t
-                       :actions
-                       (list
-                        (lambda (context)
-                          (declare (ignore context))
-                          (incf fooble))))))
-        (add-to-context (name context) (make-instance 'message))
-        (check-limits context)
+(addtest (context-tests)
+  unkillable-context-runs-actions-exactly-once
+  (let* ((fooble 0)
+         (context (ensure-context
+                   :max-lines 1
+                   :lives-after-timeout t
+                   :actions
+                   (list
+                    (lambda (context)
+                      (declare (ignore context))
+                      (incf fooble))))))
+    (add-to-context (name context) (make-instance 'message))
+    (check-limits context)
 
-        ;; context should exceed limit here and run actions
-        (add-to-context (name context) (make-instance 'message))
-        ;; calling check-limits here wouldn't be right!
-        (assert-equal fooble 1))))
+    ;; context should exceed limit here and run actions
+    (add-to-context (name context) (make-instance 'message))
+    ;; calling check-limits here wouldn't be right!
+    (ensure-same fooble 1)))
 
-(deftest "timed-out context runs actions"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  timed-out-context-runs-actions
       (let* ((fooble ())
              (context (ensure-context
                        :timeout 1
@@ -1024,12 +895,10 @@
         (declare (ignore context))      ; we use it, just not here
         (let ((*now* 2))
           (check-limits *timeout-object-timeout-queue*)
-          (assert-non-nil fooble)))))
+          (ensure-different NIL fooble))))
 
-(deftest "relative timed-out context runs actions"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  relative-timed-out-context-runs-actions
       (let* ((fooble ())
              (context (ensure-context
                        :timeout (+ *now* (* INTERNAL-TIME-UNITS-PER-SECOND 100))
@@ -1041,12 +910,10 @@
                           (setf fooble t))))))
         (let ((*now* (+ (next-timeout context) 1)))
           (check-limits *RELATIVE-TIMEOUT-OBJECT-TIMEOUT-QUEUE*)
-          (assert-non-nil fooble)))))
+          (ensure-different NIL fooble))))
 
-(deftest "deleted context is removed from *contexts* list"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  deleted-context-is-removed-from-contexts-list
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1056,14 +923,12 @@
         (let ((context (ensure-context :timeout 0))
               (*now* 1))
           (declare (ignore context))
-          (assert-non-nil (head *timeout-object-timeout-queue*))
+          (ensure-different NIL (head *timeout-object-timeout-queue*))
           (check-limits *timeout-object-timeout-queue*)
-          (assert-nil (head *timeout-object-timeout-queue*))))))
+          (ensure-null (head *timeout-object-timeout-queue*)))))
 
-(deftest "deleted context is removed from *contexts* list when pq is searched"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  deleted-context-is-removed-from-contexts-list-when-pq-is-searched
       (let ((*contexts* (make-instance 'doubly-linked-list))
             (*timeout-object-timeout-queue*
              (make-instance 'priority-queue
@@ -1074,16 +939,14 @@
         (let* ((*now* 42)
                (context (ensure-context :timeout (- *now* 1))))
           (declare (ignore context))
-          (assert-non-nil (head *contexts*))
-          (assert-non-nil (head *timeout-object-timeout-queue*))
+          (ensure-different NIL (head *contexts*))
+          (ensure-different NIL (head *timeout-object-timeout-queue*))
           (check-limits *timeout-object-timeout-queue*)
-          (assert-nil (head *contexts*))
-          (assert-nil (head *timeout-object-timeout-queue*))))))
+          (ensure-null (head *contexts*))
+          (ensure-null (head *timeout-object-timeout-queue*)))))
 
-(deftest "deleted context runs actions"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  deleted-context-runs-actions
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1099,14 +962,12 @@
                                            (declare (ignore context))
                                            (setf *fooble* t))))))
 
-          (assert-non-nil (context-exceeded-limit-p context *now*))
+          (ensure-different NIL (context-exceeded-limit-p context *now*))
           (check-limits *timeout-object-timeout-queue*)
-          (assert-non-nil *fooble*)))))
+          (ensure-different NIL *fooble*))))
 
-(deftest "nested rulesets are run"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
+(addtest (ruleset-tests)
+  nested-rulesets-are-run
     
       (let* ((thing ())
              (ruleset1 (make-instance 'ruleset :match #'match-all))
@@ -1123,37 +984,32 @@
         (enqueue ruleset2 rule)
         (enqueue ruleset1 rule)
         (check-rule ruleset1 message NIL)
-        (assert-non-nil thing))))
+        (ensure-different NIL thing)))
 
-
-(deftest "insert after inserts after in doubly-linked-list"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
+(addtest (linked-list)
+  insert-after-inserts-after-in-dll
       (let ((lst (make-instance 'doubly-linked-list))
             (item1 (make-instance 'rule))
             (item2 (make-instance 'rule)))
         (enqueue lst item1)
         (dll-insert lst (head lst) item2 :direction :after)
-        (assert-equal item1 (data (head lst)))
-        (assert-equal item2 (data (rlink (head lst)))))))
+        (ensure-same item1 (data (head lst)))
+        (ensure-same item2 (data (rlink (head lst))))))
 
-(deftest "insert before inserts before in doubly-linked-list"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
+(addtest (linked-list)
+  insert-before-inserts-before-in-dll
       (let ((lst (make-instance 'doubly-linked-list))
             (item1 (make-instance 'rule))
             (item2 (make-instance 'rule)))
         (enqueue lst item1)
         (dll-insert lst (head lst) item2 :direction :before)
-        (assert-equal item2 (data (head lst)))
-        (assert-equal item1 (data (rlink (head lst)))))))
+        (ensure-same item2 (data (head lst)))
+        (ensure-same item1 (data (rlink (head lst))))))
 
-(deftest "rule with timeout is inserted into priority queue"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(deftestsuite pq-tests (LoGS) () ())
+
+(addtest (pq-tests)
+  rule-with-timeout-is-inserted-into-pq
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue 
                             :comparison-function 
@@ -1162,12 +1018,10 @@
                                  (timeout y))))))
         (let ((rule (make-instance 'rule :timeout 1)))
           (declare (ignore rule))
-          (assert-non-nil (head *timeout-object-timeout-queue*))))))
+          (ensure-different NIL (head *timeout-object-timeout-queue*)))))
 
-(deftest "context with timeout is inserted into priority queue"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(addtest (pq-tests)
+  context-with-timeout-is-inserted-into-pq
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1176,20 +1030,16 @@
                                  (timeout y))))))
         (let ((context (ensure-context :timeout 1)))
           (declare (ignore context))
-          (assert-non-nil (head *timeout-object-timeout-queue*))))))
+          (ensure-different NIL (head *timeout-object-timeout-queue*)))))
 
-(deftest "item is entered into priority queue's list-entries"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(addtest (pq-tests)
+  item-is-entered-into-priority-queues-list-entries
       (let ((pq (make-instance 'priority-queue)))
         (enqueue pq 42)
-        (assert-non-nil (gethash 42 (list-entries pq))))))
+        (ensure-different NIL (gethash 42 (list-entries pq)))))
 
-(deftest "timed-out rule is removed from priority queue"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(addtest (pq-tests)
+  timed-out-rule-is-removed-from-pq
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1198,15 +1048,13 @@
                                  (timeout y))))))
         (let ((rule (make-instance 'rule :timeout 1)))
           (declare (ignore rule))
-          (assert-non-nil (head *timeout-object-timeout-queue*))
+          (ensure-different NIL (head *timeout-object-timeout-queue*))
           (check-limits *timeout-object-timeout-queue*)
-          (assert-nil (head *timeout-object-timeout-queue*))))))
+          (ensure-null (head *timeout-object-timeout-queue*)))))
 
-(deftest "timed-out-rule is removed from pq hash"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
-      (let ((*timeout-object-timeout-queue*
+(addtest (pq-tests)
+  timed-out-rule-is-removed-from-pq-hash
+        (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
                             (lambda (x y)
@@ -1215,12 +1063,10 @@
         (let ((rule (make-instance 'rule :timeout 1))
               (*now* 42))
           (check-limits *timeout-object-timeout-queue*)
-          (assert-nil (gethash rule (list-entries *timeout-object-timeout-queue*)))))))
+          (ensure-null (gethash rule (list-entries *timeout-object-timeout-queue*))))))
 
-(deftest "contexts end up in right order in priority queue"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(addtest (pq-tests)
+  contexts-end-up-in-right-order-in-pq
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1230,19 +1076,16 @@
         (let ((c3 (ensure-context :timeout 46))
               (c1 (ensure-context :timeout 42))
               (c2 (ensure-context :timeout 43)))
-          (assert-non-nil (head *timeout-object-timeout-queue*))
-          (assert-equal (data (head *timeout-object-timeout-queue*))
+          (ensure-different NIL (head *timeout-object-timeout-queue*))
+          (ensure-same (data (head *timeout-object-timeout-queue*))
                         c1)
-          (assert-equal (data (rlink (head *timeout-object-timeout-queue*)))
+          (ensure-same (data (rlink (head *timeout-object-timeout-queue*)))
                         c2)
-          (assert-equal (data (rlink (rlink (head *timeout-object-timeout-queue*))))
-                        c3)))
-      ))
+          (ensure-same (data (rlink (rlink (head *timeout-object-timeout-queue*))))
+                        c3))))
 
-(deftest "rules end up in right order in priority queue"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(addtest (pq-tests)
+  rules-end-up-in-right-order-in-pq
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1252,18 +1095,16 @@
         (let ((r3 (make-instance 'rule :timeout 46))
               (r1 (make-instance 'rule :timeout 42))
               (r2 (make-instance 'rule :timeout 43)))
-          (assert-non-nil (head *timeout-object-timeout-queue*))
-          (assert-equal (data (head *timeout-object-timeout-queue*))
+          (ensure-different NIL (head *timeout-object-timeout-queue*))
+          (ensure-same (data (head *timeout-object-timeout-queue*))
                         r1)
-          (assert-equal (data (rlink (head *timeout-object-timeout-queue*)))
+          (ensure-same (data (rlink (head *timeout-object-timeout-queue*)))
                         r2)
-          (assert-equal (data (rlink (rlink (head *timeout-object-timeout-queue*))))
-                        r3)))))
+          (ensure-same (data (rlink (rlink (head *timeout-object-timeout-queue*))))
+                        r3))))
 
-(deftest "context priority queue is updated"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(addtest (pq-tests)
+  context-pq-is-updated
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1272,16 +1113,14 @@
                                  (timeout y))))))
         (let ((c1 (ensure-context :timeout 42))
               (c2 (ensure-context :timeout 43)))
-          (assert-equal (data (head *timeout-object-timeout-queue*))
+          (ensure-same (data (head *timeout-object-timeout-queue*))
                         c1)
           (setf (timeout c2) 40)
-          (assert-equal (data (head *timeout-object-timeout-queue*))
-                        c2)))))
+          (ensure-same (data (head *timeout-object-timeout-queue*))
+                        c2))))
 
-(deftest "rule priority queue is updated"
-    :category 'priority-queue-tests
-    :test-fn
-    (lambda ()
+(addtest (pq-tests)
+  rule-pq-is-updated
       (let ((*timeout-object-timeout-queue*
              (make-instance 'priority-queue
                             :comparison-function
@@ -1290,16 +1129,14 @@
                                  (timeout y))))))
         (let ((r1 (make-instance 'rule :timeout 42))
               (r2 (make-instance 'rule :timeout 43)))
-          (assert-equal (data (head *timeout-object-timeout-queue*))
+          (ensure-same (data (head *timeout-object-timeout-queue*))
                         r1)
           (setf (timeout r2) 40)
-          (assert-equal (data (head *timeout-object-timeout-queue*))
-                        r2)))))
+          (ensure-same (data (head *timeout-object-timeout-queue*))
+                        r2))))
 
-(deftest "nomatch negates match in rule"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
+(addtest (rule-tests)
+  nomatch-negates-match-in-rule
       (let ((dummy ()))
         (let ((rule (make-instance 'rule
                                    :match (lambda (msg environment)
@@ -1314,28 +1151,24 @@
                                       (setf dummy t)))))
               (message (make-instance 'message)))
           (check-rule rule message NIL)
-          (assert-nil dummy)))))
+          (ensure-null dummy))))
 
-(deftest "delete-rule causes a rule to be deleted"
-    :category 'rule-tests
-    :test-fn
-    (lambda () 
+(addtest (rule-tests)
+  delete-rule-causes-a-rule-to-be-deleted
       (let ((rule (make-instance 'rule
                                  :match #'match-all
                                  :delete-rule #'match-all))
             (*ruleset* (make-instance 'ruleset))
             (message (make-instance 'message)))
-        (assert-nil (head *ruleset*))
+        (ensure-null (head *ruleset*))
         (enqueue *ruleset* rule)
         (check-rule rule message NIL)
         (head *ruleset*)
         (or (not (head *ruleset*))
-            (dead-p (data (head *ruleset*)))))))
+            (dead-p (data (head *ruleset*))))))
 
-(deftest "rule inside ruleset inside ruleset"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
+(addtest (ruleset-tests)
+  rule-inside-ruleset-inside-ruleset
       (let* ((*ruleset* (make-instance 'ruleset :match #'match-all))
              (r2 (make-instance 'ruleset :match #'match-all))
              (xyzzy 0)
@@ -1349,12 +1182,10 @@
         (enqueue  r2 rule)
         (enqueue *ruleset* r2)
         (check-rules message *ruleset* NIL)
-        (assert-equal 42 xyzzy))))
+        (ensure-same 42 xyzzy)))
 
-(deftest "non-matching regexp rule works"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
+(addtest (rule-tests)
+  non-matching-regexp-rule-works
       (let ((message 
              (make-instance 'message :message "this is a different message"))
             (rule (make-instance 
@@ -1363,24 +1194,20 @@
                             (declare (ignore environment))
                             (cl-ppcre::scan "this is a message" 
                                             (message message))))))
-        (not (check-rule rule message NIL)))))
+        (not (check-rule rule message NIL))))
 
-(deftest "exception works"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
+(addtest (rule-tests)
+  exception-works
       (let ((message (make-instance 'message :message "this is a message"))
             (rule (make-instance 'rule
                                  :match 
                                  (lambda (message environment) 
                                    (declare (ignore message environment))
                                    t))))
-        (assert-non-nil (check-rule rule message NIL)))))
+        (ensure-different NIL (check-rule rule message NIL))))
 
-(deftest "regexp rule works"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
+(addtest (rule-tests)
+  regexp-rule-works
       (let ((message (make-instance 'message :message "this is a message"))
             (rule (make-instance 
                    'rule
@@ -1388,44 +1215,39 @@
                             (declare (ignore environment))
                             (cl-ppcre::scan "this is a message" 
                                             (message message))))))
-        (assert-non-nil (check-rule rule message NIL)))))
+        (ensure-different NIL (check-rule rule message NIL))))
 
-(deftest "anti-default style rule doesn't match message"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
-      (let ((message (make-instance 'message :message "this is a message"))
+(addtest (rule-tests)
+  anti-default-style-rule-doesnt-match-message
+        (let ((message (make-instance 'message :message "this is a message"))
             (rule (make-instance 
                    'rule 
                    :match 
                    (lambda (message environment) 
                      (declare (ignore message environment))
                      ()))))
-        (not (check-rule rule message NIL)))))
+        (not (check-rule rule message NIL))))
 
-(deftest "get-context returns alias instead of orig context"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  get-context-returns-alias-instead-of-orig-context
       (let ((c1 (ensure-context :name 'c1))
             (c2 (ensure-context :name 'c2)))
         (declare (ignore c1))
         (alias-context c2 'c1)
-        (assert-equal c2 (get-context 'c1)))))
+        (ensure-same c2 (get-context 'c1))))
 
-(deftest "delete-context deletes alias"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
-      (let* ((*contexts-hash* (make-hash-table :test #'equal))
+(addtest (context-tests)
+  delete-context-deletes-alias
+        (let* ((*contexts-hash* (make-hash-table :test #'equal))
              (*contexts-alias-hash* (make-hash-table :test #'equal))
              (c1 (ensure-context :name 'c1))
              (c2 (ensure-context :name 'c2)))
         (alias-context c2 'c1)
         (delete-context 'c1)
-        (assert-equal c1 (get-context 'c1)))))
+        (ensure-same c1 (get-context 'c1))))
 
-(defun test-filter ()
+(addtest (rule-tests)
+  filter-function-works
   (let ((*messages* 
          (make-instance 
           'list-follower
@@ -1473,13 +1295,12 @@
                  (declare (ignore message environment))
                  (setf seen-cat t)))))
     (process-files)
-    (assert-non-nil (and seen-the (not seen-cat) seen-ran))))
+    (ensure-different NIL (and seen-the (not seen-cat) seen-ran))))
 
-(deftest "filter function works"
-    :category 'rule-tests
-    :test-fn #'test-filter)
 
-(defun test-suppress ()
+    
+(addtest (rule-tests)
+  suppress-function-works
   (let* ((*now* (get-internal-real-time))
          (*root-ruleset* (make-instance 'ruleset))
          (*messages* 
@@ -1511,11 +1332,12 @@
     (enqueue *root-ruleset* rule)
     (enqueue *root-ruleset* save-messages)
     (process-files)
-    (assert-equal 
+    (ensure-same 
      seen-messages
      '("ran" "cat"))))
 
-(defun test-suppress2 ()
+(addtest (rule-tests)
+  suppress-function-stops-after-timeout
   (let* ((*now* (get-internal-real-time))
          (*root-ruleset* (make-instance 'ruleset))
          (*messages* 
@@ -1565,21 +1387,13 @@
     (let ((*message* (get-logline *messages*)))
       (check-rules *message* *root-ruleset* NIL)) 
 
-    (assert-equal 
+    (ensure-same 
      seen-messages
      '("the" "ran" "cat"))))
-    
-
-(deftest "suppress function works"
-    :category 'rule-tests
-    :test-fn #'test-suppress)
-
-(deftest "suppress function stops after timeout"
-    :category 'rule-tests
-    :test-fn #'test-suppress2)
 
 
-(defun test-suppress-until ()
+(addtest (rule-tests)
+  suppress-until
   (let* ((*root-ruleset* (make-instance 'ruleset))
          (*messages* 
           (make-instance 
@@ -1618,14 +1432,10 @@
     
     (process-files)
     
-    (assert-equal match-count 2)))
+    (ensure-same match-count 2)))
 
-(deftest "test suppress-until"
-    :category 'rule-tests
-    :test-fn #'test-suppress-until)
-
-
-(defun test-single ()
+(addtest (rule-tests)
+  test-single-rule-type
   (let* ((*root-ruleset* (make-instance 'ruleset))
          (*messages* 
           (make-instance 
@@ -1649,12 +1459,39 @@
     
     (enqueue *root-ruleset* catch-all-rule)
     (process-files)
-    (assert-equal match-count 4)))
+    (ensure-same match-count 4)))
 
-(deftest "test single rule type"
-    :category 'rule-tests
-    :test-fn #'test-single)
+(addtest (rule-tests)
+  test-pair-rule-type
+  (let* ((*root-ruleset* (make-instance 'ruleset))
+         (*messages* 
+          (make-instance 
+           'list-follower
+           :message-list
+           (list "the" "cat" "ran" "the")))
+         (count 0)
+         (rule
+          (pair
+           ;; match1
+           (lambda (message environment)
+             (declare (ignore environment))
+             (equal (message message) "the"))
+           ;; actions1
+           ()
+           ;; match2
+           (lambda (message environment)
+             (declare (ignore environment))
+             (equal (message message) "cat"))
+           ;; actions2
+           (list
+            (lambda (message environment)
+              (declare (ignore message environment))
+              (incf count))))))
+    (enqueue *root-ruleset* rule)
+    (process-files)    
+    (ensure-same count 1)))
 
+;;; XXX 
 (defun test-single-with-suppress ()
   (let* ((*root-ruleset* (make-instance 'ruleset))
          (*messages* 
@@ -1692,41 +1529,6 @@
     
     count))
 
-
-(defun test-pair-finding-match2 ()
-  (let* ((*root-ruleset* (make-instance 'ruleset))
-         (*messages* 
-          (make-instance 
-           'list-follower
-           :message-list
-           (list "the" "cat" "ran" "the")))
-         (count 0)
-         (rule
-          (pair
-           ;; match1
-           (lambda (message environment)
-             (declare (ignore environment))
-             (equal (message message) "the"))
-           ;; actions1
-           ()
-           ;; match2
-           (lambda (message environment)
-             (declare (ignore environment))
-             (equal (message message) "cat"))
-           ;; actions2
-           (list
-            (lambda (message environment)
-              (declare (ignore message environment))
-              (incf count))))))
-    (enqueue *root-ruleset* rule)
-    (process-files)    
-    (assert-equal count 1)))
-
-
-(deftest "test pair rule type"
-    :category 'rule-tests
-    :test-fn #'test-pair-finding-match2)
-
 ;; 5 inserts:
 ;;
 ;; insert empty list
@@ -1734,60 +1536,47 @@
 ;; insert tail of list
 ;; insert between 2 elements
 
-
-(deftest "insert empty list"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
+(addtest (linked-list)
+  insert-empty-list
       (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll (head dll) 42 :direction :before)
-        (assert-equal 42 (data (head dll)))
-        (assert-equal 42 (data (tail dll))))))
+        (ensure-same 42 (data (head dll)))
+        (ensure-same 42 (data (tail dll)))))
 
-(deftest "insert head of list"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
+(addtest (linked-list)
+  insert-head-of-list
       (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll (head dll) 42 :direction :before)
         (dll-insert dll (head dll) 43 :direction :before)
-        (assert-equal 43 (data (head dll)))
-        (assert-equal 42 (data (tail dll))))))
+        (and (ensure-same 43 (data (head dll)))
+             (ensure-same 42 (data (tail dll))))))
 
-(deftest "insert head of list, rlink & llinks are right"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
-        (dll-insert dll (head dll) 42 :direction :before)
-        (dll-insert dll (head dll) 43 :direction :before)
-        (assert-equal 42 (data (rlink (head dll))))
-        (assert-equal 43 (data (llink (tail dll)))))))
-      
-(deftest "insert tail of list"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
+(addtest (linked-list)
+  insert-head-of-list-rlink-and-llink-are-right
+  (let ((dll (make-instance 'doubly-linked-list)))
+    (dll-insert dll (head dll) 42 :direction :before)
+    (dll-insert dll (head dll) 43 :direction :before)
+    (and (ensure-same 42 (data (rlink (head dll))))
+         (ensure-same 43 (data (llink (tail dll)))))))
+
+(addtest (linked-list)
+  insert-tail-of-list
       (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll (head dll) 42 :direction :before)
         (dll-insert dll (tail dll) 43 :direction :after)
-        (assert-equal 42 (data (head dll)))
-        (assert-equal 43 (data (tail dll))))))
+        (ensure-same 42 (data (head dll)))
+        (ensure-same 43 (data (tail dll)))))
 
-(deftest "insert tail of list, rlinks & llinks are right"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
+(addtest (linked-list)
+  insert-tail-of-list-rlink-and-llinks-are-right
       (let ((dll (make-instance 'doubly-linked-list)))
         (dll-insert dll (head dll) 42 :direction :before)
         (dll-insert dll (tail dll) 43 :direction :after)
-        (assert-equal 43 (data (rlink (head dll))))
-        (assert-equal 42 (data (llink (tail dll)))))))
+        (ensure-same 43 (data (rlink (head dll))))
+        (ensure-same 42 (data (llink (tail dll))))))
 
-(deftest "insert after head (before tail) of list"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
+(addtest (linked-list)
+  insert-after-head-before-tail-of-list
       (let ((dll (make-instance 'doubly-linked-list)))
         ;; head is 42
         (dll-insert dll (head dll) 42 :direction :before)
@@ -1795,31 +1584,26 @@
         (dll-insert dll (tail dll) 43 :direction :after)
         ;; insert between head and tail, after head
         (dll-insert dll (head dll) 44 :direction :after)
-        (assert-equal 42 (data (head dll)))
-        (assert-equal 43 (data (tail dll)))
-        (assert-equal 44 (data (rlink (head dll))))
-        (assert-equal 44 (data (llink (tail dll))))) 
-      ))
+        (ensure-same 42 (data (head dll)))
+        (ensure-same 43 (data (tail dll)))
+        (ensure-same 44 (data (rlink (head dll))))
+        (ensure-same 44 (data (llink (tail dll))))))
 
-(deftest "insert before tail (after head) of list"
-    :category 'linked-list-tests
-    :test-fn
-    (lambda ()
-      (let ((dll (make-instance 'doubly-linked-list)))
+(addtest (linked-list)
+  insert-before-tail-after-head-of-list
+  (let ((dll (make-instance 'doubly-linked-list)))
         ;; head is 42
         (dll-insert dll (head dll) 42 :direction :before)
         ;; tail is 43
         (dll-insert dll (tail dll) 43 :direction :after)
         ;; insert between head and tail, before tail
         (dll-insert dll (tail dll) 44 :direction :before)
-        (assert-equal 42 (data (head dll)))
-        (assert-equal 43 (data (tail dll)))
-        (assert-equal 44 (data (llink (tail dll)))))))
+        (ensure-same 42 (data (head dll)))
+        (ensure-same 43 (data (tail dll)))
+        (ensure-same 44 (data (llink (tail dll))))))
 
-(deftest "rule that exceeds relative-timeout is shown to have exceeded limits"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
+(addtest (rule-tests)
+  rule-that-exceeds-relative-timeout-is-shown-to-have-exceeded-limits
       (let* ((*now* 1)
              (rule (make-instance 'rule :relative-timeout 1
                                   :match 
@@ -1830,12 +1614,10 @@
         (setf *now* 
               (+ *now* 1
                  (* INTERNAL-TIME-UNITS-PER-SECOND 1)))
-        (assert-non-nil (check-limits rule)))))
+        (ensure-different NIL (check-limits rule))))
 
-(deftest "rule that exceeds relative-timeout is marked as dead"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
+(addtest (rule-tests)
+  rule-that-exceeds-relative-timeout-is-marked-as-dead
       (let* ((*now* 1)
              (rule (make-instance 
                     'rule 
@@ -1849,12 +1631,10 @@
               (+ *now* 1
                  (* INTERNAL-TIME-UNITS-PER-SECOND 1)))
         (check-limits rule)
-        (assert-non-nil (dead-p rule)))))
+        (ensure-different NIL (dead-p rule))))
 
-(deftest "rule relative-timeouts are updated on match"
-    :category 'rule-tests
-    :test-fn
-    (lambda ()
+(addtest (rule-tests)
+  rule-relative-timeouts-are-updated-on-match
       (let* ((*now* 1)
              (rule (make-instance 'rule :relative-timeout 1
                                   :match (lambda (message environment)
@@ -1865,12 +1645,10 @@
               (+ *now* 1
                  (* INTERNAL-TIME-UNITS-PER-SECOND 1)))
         (check-rule rule (make-instance 'message) NIL)
-        (assert-nil (check-limits rule)))))
+        (ensure-null (check-limits rule))))
 
-(deftest "ruleset with relative timeout is updated on match"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
+(addtest (ruleset-tests)
+  ruleset-with-relative-timeout-is-updated-on-match
       (let ((*now* 123)
             (ruleset (make-instance 'ruleset :relative-timeout 1)))
         (enqueue ruleset (make-instance 
@@ -1880,12 +1658,10 @@
                                    t)))
         (setf *now* 456)
         (check-rules (make-instance 'message) ruleset NIL)
-        (assert-non-nil (> (next-timeout ruleset) 456)))))
-                                      
-(deftest "ruleset with relative timeout is NOT update without match"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
+        (ensure-different NIL (> (next-timeout ruleset) 456))))
+
+(addtest (ruleset-tests)
+  ruleset-with-relative-timeout-is-not-updated-without-match
       (let ((*now* 123)
             (ruleset (make-instance 'ruleset :relative-timeout 1)))
         (enqueue ruleset (make-instance 
@@ -1896,34 +1672,27 @@
                             NIL)))
         (setf *now* (+ (next-timeout ruleset) 1))
         (check-rules (make-instance 'message) ruleset NIL)
-        (assert-nil (> (next-timeout ruleset) *now*)))))
+        (ensure-null (> (next-timeout ruleset) *now*))))
 
-(deftest "ruleset that exceeds relative timeout is shown to exceed limits"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
+(addtest (ruleset-tests)
+  ruleset-that-exceeds-relative-timeout-is-shown-to-exceed-limits
       (let ((*now* 123)
             (ruleset (make-instance 'ruleset :relative-timeout 1)))
       
         (setf *now* (+ (next-timeout ruleset) 1))
-        (assert-non-nil (check-limits ruleset)))))
+        (ensure-different NIL (check-limits ruleset))))
 
-(deftest "ruleset that exceeds relative timeout is marked as dead"
-    :category 'ruleset-tests
-    :test-fn
-    (lambda ()
+(addtest (ruleset-tests)
+  ruleset-that-exceeds-relative-timeout-is-marked-as-dead
       (let ((*now* 123)
             (ruleset (make-instance 'ruleset :relative-timeout 1)))
       
         (setf *now* (+ (next-timeout ruleset) 1))
         (check-limits ruleset)
-        (assert-non-nil (dead-p ruleset)))))
+        (ensure-different NIL (dead-p ruleset))))
 
-
-(deftest "context that should live after timeout isnt destroyed"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  context-that-should-live-after-timeout-isnt-destroyed
       (let* ((*now* 123)
              (context (make-instance 'context
                                      :name 'foop
@@ -1931,27 +1700,23 @@
                                      :lives-after-timeout t)))
         (setf *now* 125)
         (check-limits context)
-        (let ((retval (assert-non-nil (get-context (name context)))))
+        (let ((retval (ensure-different NIL (get-context (name context)))))
           (expire-context context)
-          retval))))
+          retval)))
 
-(deftest "context that shouldnt live after timeout is destroyed"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  context-that-shouldnt-live-after-timeout-is-destroyed
       (let* ((*now* 123)
              (context (make-instance 'context
                                      :name 'foop
                                      :timeout 124
                                      :lives-after-timeout ())))
         (setf *now* 125)
-        (assert-non-nil (check-limits context))
-        (assert-nil (get-context (name context))))))
+        (ensure-different NIL (check-limits context))
+        (ensure-null (get-context (name context)))))
 
-(deftest "min-lines context test"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  min-lines-context-test
       (let* ((*now* 123)
              (testvar t)
              (context (make-instance 'context
@@ -1964,12 +1729,10 @@
                                         (setf testvar ()))))))
         (add-to-context context (make-instance 'message :message "test"))
         (check-limits context)
-        (assert-non-nil testvar))))
+        (ensure-different NIL testvar)))
 
-(deftest "min-lines exceeded context test"
-    :category 'context-tests
-    :test-fn
-    (lambda ()
+(addtest (context-tests)
+  min-lines-exceeded-context-test
       (let* ((*now* 123)
              (testvar ())
              (context (make-instance 'context
@@ -1987,33 +1750,28 @@
                                             (format () "test message ~A~%" x))))
         (setf *now* 125)
         (check-limits context)
-        (assert-non-nil testvar))))
-
+        (ensure-different NIL testvar)))
 
 ;; some option tests
 
-(deftest "--no-internal-time option test"
-    :category 'cli-tests
-    :test-fn
-    (lambda ()
-      (progn
-        (setq org.prewett.LoGS::*use-internal-real-time* t) ;; make sure its in true state
-        (process-options *opts* '("--no-internal-time"))
-        (assert-nil org.prewett.LoGS::*use-internal-real-time*))))
+(deftestsuite cli-tests (LoGS) () ())
 
-(deftest "--file option test"
-    :category 'cli-tests
-    :test-fn
-    (lambda ()
+(addtest (cli-tests)
+  no-internal-time-option-test
+  (progn
+    (setq org.prewett.LoGS::*use-internal-real-time* t) ;; make sure its in true state
+    (process-options *opts* '("--no-internal-time"))
+    (ensure-null org.prewett.LoGS::*use-internal-real-time*)))
+
+(addtest (cli-tests)
+  file-option-test
       (let ((*file-list* ()))
         (declare (special *file-list*))
         (process-command-line *opts* '("--file" "foo.txt"))
-        (typep *messages* 'file-follower))))
+        (typep *messages* 'file-follower)))
 
-(deftest "--file option with position test"
-    :category 'cli-tests
-    :test-fn
-    (lambda ()
+(addtest (cli-tests)
+  file-option-with-position-test
       (let* ((*file-list* ())
              (testfile "testfile-position-test")
              (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
@@ -2027,15 +1785,13 @@
         (process-command-line *opts* `("--file" ,testfile "42"))
         (and 
          (typep *messages* 'file-follower)
-         (let ((ret (assert-equal 42 (file-position (filestream *messages*)))))
+         (let ((ret (ensure-same 42 (file-position (filestream *messages*)))))
            (close (filestream *messages*))
            (remove-file testfile)
-           ret)))))
+           ret))))
 
-(deftest "spawn works"
-    :category 'cli-tests
-    :test-fn
-    (lambda ()
+(addtest (cli-tests)
+  spawn-works
       (let* ((testfile "testfile-spawn")
              (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
       
@@ -2060,24 +1816,21 @@
                                      (or (equal (message message) x)
                                          (setq testval ()))))
                                  file-lines)
-                                (assert-non-nil testval)))))))
+                                (ensure-different NIL testval))))))
 
+(deftestsuite window-tests (LoGS) () ())
 
-(deftest "old items are removed from window"
-    :category 'window-tests
-    :test-fn
-    (lambda ()
+(addtest (window-tests)
+  old-items-are-removed-from-window
       (let ((window (make-instance 'window :window-length 1)))
         (add-item window (make-instance 'message))
         (add-item window (make-instance 'message))
         (setf *now* (+ *now* (* 10 INTERNAL-TIME-UNITS-PER-SECOND)))
         (check-limits window)
-        (assert-nil (head (data window))))))
+        (ensure-null (head (data window)))))
 
-(deftest "non-old items are not removed from window"
-    :category 'window-tests
-    :test-fn
-    (lambda ()
+(addtest (window-tests)
+  non-old-items-are-not-removed-from-window
       (let ((window (make-instance 'window :window-length 1)))
         (add-item window (make-instance 'message))
         (add-item window (make-instance 'message))
@@ -2086,89 +1839,77 @@
           (add-item window save-message)
           (check-limits window)
           (and 
-           (assert-equal (cadr (data (head (data window)))) save-message)
-           (assert-nil (rlink (head (data window)))))))))
+           (ensure-same (cadr (data (head (data window)))) save-message)
+           (ensure-null (rlink (head (data window))))))))
 
-(deftest "window with too many non-old entries is shown to exceed limits"
-    :category 'window-tests
-    :test-fn
-    (lambda ()
+(addtest (window-tests)
+  window-with-too-many-non-old-entries-is-shown-to-exceed-limits
       (let ((window (make-instance 'window :max-lines 1)))
         (add-item window (make-instance 'message))
         (add-item window (make-instance 'message))
-        (assert-non-nil (check-limits window)))))
+        (ensure-different NIL (check-limits window))))
 
-(deftest "empty rule has no match"
-    :category 'language-tests
-    :test-fn
-    (lambda ()
-      (let ((rule (org.prewett.LoGS.language::rule)))
-        (assert-nil (match rule)))))
+(deftestsuite language-tests (LoGS) () ())
 
-(deftest "get-logs-env-var finds match in simple environment"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (language-tests)
+  empty-rule-has-no-match
+  (let ((rule (org.prewett.LoGS.language::rule)))
+    (ensure-null (match rule))))
+
+(deftestsuite environment-tests (LoGS) () ())
+
+(addtest (environment-tests)
+  get-logs-env-var-finds-match-in-simple-environment
       (let ((environment '((FOO 42)
                            (BAR 23)
                            (BAZ 17))))
-        (assert-equal 
+        (ensure-same 
          23
-         (get-LoGS-env-var 'bar environment)))))
+         (get-LoGS-env-var 'bar environment))))
 
-(deftest "get-logs-env-var finds NIL valued match in simple environment"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+
+(addtest (environment-tests)
+  get-logs-env-var-finds-NIL-valued-match-in-simple-environment
       (let ((environment '((FOO 42)
                            (BAR NIL)
                            (BAZ 17))))
         (multiple-value-bind (value present-p)
             (get-LoGS-env-var 'bar environment)
           (and
-           (assert-non-nil
+           (ensure-different NIL
             present-p)
-           (assert-nil
-            value))))))
-           
-(deftest "get-logs-env-var doesn't find missing match in simple environment"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+           (ensure-null
+            value)))))
+
+(addtest (environment-tests)
+  get-logs-env-var-doesnt-find-missing-match-in-simple-environment
       (let ((environment '((FOO 42)
                            (BAR NIL)
                            (BAZ 17))))
         (multiple-value-bind (value present-p)
             (get-LoGS-env-var 'quux environment)
           (and
-           (assert-nil
+           (ensure-null
             present-p)
-           (assert-nil
-            value))))))
+           (ensure-null
+            value)))))
 
-(deftest "rule can set environment"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (environment-tests)
+  rule-can-set-environment
       (let ((rule (org.prewett.LoGS.language::rule with foo = "one")))
-        (assert-equal
+        (ensure-same
          "one"
-         (cadar (member 'foo (environment rule) :key #'car))))))
+         (cadar (member 'foo (environment rule) :key #'car)))))
 
-
-(deftest "ruleset can set environment"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (environment-tests)
+  ruleset-can-set-environment
       (let ((ruleset (language::ruleset with var = "xxx")))
-        (assert-equal
+        (ensure-same
          "xxx"
-         (get-LoGS-env-var 'var (logs::environment ruleset))))))
+         (get-LoGS-env-var 'var (logs::environment ruleset)))))
 
-(deftest "rule match can bind variable"
-    :category 'environment-tests
-    :test-fn 
-    (lambda ()
+(addtest (environment-tests)
+  rule-match-can-bind-variable
       (let* ((set-me NIL)
              (rule (language::rule 
                     matching regexp "(.*)" 
@@ -2179,12 +1920,10 @@
                       (setf set-me (get-LoGS-env-var 'variable environment)))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule rule message NIL)
-        (assert-equal "test" set-me))))
+        (ensure-same "test" set-me)))
 
-(deftest "ruleset match can bind variable"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (environment-tests)
+  ruleset-match-can-bind-variable
       (let* ((set-me NIL)
              (ruleset (language::ruleset
                        named 'ruleset
@@ -2200,12 +1939,10 @@
                            (setf set-me (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule ruleset message NIL)
-        (assert-equal "test" set-me))))
+        (ensure-same "test" set-me)))
 
-(deftest "rule match variable overrides ruleset match variable"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (environment-tests)
+  rule-match-variable-overrides-ruleset-match-variable
       (let* ((set-me NIL)
              (ruleset (language::ruleset
                        matching regexp "(.*)" 
@@ -2219,12 +1956,10 @@
                                 (setf set-me (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "foo:test")))
         (logs::check-rule ruleset message NIL)
-        (assert-equal "test" set-me))))
+        (ensure-same "test" set-me)))
 
-(deftest "rule environment variable overrides ruleset environment variable"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (environment-tests)
+  rule-environment-variable-overrides-ruleset-environment-variable
       (let* ((set-me NIL)
              (ruleset (language::ruleset
                        named 'ruleset
@@ -2242,13 +1977,11 @@
                                  (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule ruleset message NIL)
-        (assert-equal 'rule-var set-me)
-        )))
+        (ensure-same 'rule-var set-me)
+        ))
 
-(deftest "ruleset's environment variable is propogated"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (environment-tests)
+  rulesets-environment-variable-is-propogated
       (let* ((set-me NIL)
              (ruleset 
               (language::ruleset
@@ -2262,12 +1995,10 @@
                         (setf set-me (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "foo:test")))
         (logs::check-rule ruleset message NIL)
-        (assert-equal 42 set-me))))
+        (ensure-same 42 set-me)))
 
-(deftest "rule variable only lives for rule check"
-    :category 'environment-tests
-    :test-fn
-    (lambda ()
+(addtest (environment-tests)
+  rule-variable-only-lives-for-rule-check
       (let* ((set-me NIL)
              (ruleset (language::ruleset
                        matching regexp "(.*)" 
@@ -2289,12 +2020,10 @@
                                       (get-LoGS-env-var 'variable environment)))))))
              (message (make-instance 'message :message "foo:test")))
         (logs::check-rule ruleset message NIL)
-        (assert-equal "foo:test" set-me))))
+        (ensure-same "foo:test" set-me)))
 
-(deftest "all rule variable bindings happen"
-    :category 'environment-tests
-    :test-fn 
-    (lambda ()
+(addtest (environment-tests)
+  all-rule-variable-bindings-happen
       (let* ((set-me NIL)
              (ruleset 
               (let ((var1 "var1")) ;; variable set lexically
@@ -2323,14 +2052,13 @@
                                                 'var5 environment)))))))))
              (message (make-instance 'message :message "var3:var5")))
         (logs::check-rule ruleset message NIL)
-        (assert-equal "var1 var2 var3 var4 var5" set-me))))
+        (ensure-same "var1 var2 var3 var4 var5" set-me)))
+
 
 ;; make sure that variable bindings aren't hanging around
 ;; from a previous test
-(deftest "unbound variable test"
-    :category 'environment-tests
-    :test-fn 
-    (lambda ()
+(addtest (environment-tests)
+  unbound-variable-test
       (let* ((set-me NIL)
              (rule (rule 
                     matching regexp ".*"
@@ -2341,29 +2069,9 @@
                                         (not (get-LoGS-env-var 'var1 environment)))))))
              (message (make-instance 'message :message "test")))
         (logs::check-rule rule message NIL)
-        (assert-non-nil set-me))))
-
-;; a little slicker way of running all of the tests
-(defun run-categories (&rest rest)
-  (let ((passcount 0)
-         (failcount 0))
-     (mapcar
-      (lambda (category)
-        (progn
-          (format t "running test category: ~A~%" category)
-          (multiple-value-bind (all-passed failed passed)
-              (run-category category)
-            (declare (ignore all-passed))
-            (incf passcount passed)
-            (incf failcount failed))))
-      rest)
-     (format t "TOTALS: ~A ~[tests~;test~:;tests~] run; ~A ~[tests~;test~:;tests~] passed; ~A ~[tests~;test~:;tests~] failed.~%"
-             (+ passcount failcount) (+ passcount failcount) passcount passcount failcount failcount)))
-
-(defun run-all-categories ()
-  (apply #'run-categories (org.ancar.clunit::list-test-categories)))
+        (ensure-different NIL set-me)))
 
 ;; load other tests
-(load-logs-file "Language/rdl-tests")
+;; (load-logs-file "Language/rdl-tests")
 
-(run-all-categories)
+(run-tests :suite :logs)

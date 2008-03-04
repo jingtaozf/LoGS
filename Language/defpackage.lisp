@@ -23,6 +23,7 @@
   (:use #:cl #:cybertiggyr-time #:logs)
   ; (:import-from #:logs #:rule #:ruleset #:message #:exec #:context)
   (:import-from #:cybertiggyr-time #:make-broken-time)
-  (:nicknames #:language))
+  (:nicknames #:language)
+  (:export timeout))
 
 ;;; *eof*
