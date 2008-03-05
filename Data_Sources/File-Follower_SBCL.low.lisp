@@ -19,7 +19,7 @@
 
 (require :sb-posix)
 
-(shadowing-import '(sb-posix:o-nonblock SB-POSIX:O-RDONLY))
+(import '(sb-posix:o-nonblock SB-POSIX:O-RDONLY))
 
 (defun fifo-p (filename)
   (if

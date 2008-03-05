@@ -47,7 +47,8 @@
         :cl-user
         :org.prewett.cl-cli ;; my command-line processing code
         :cl-ppcre
-        ;:org.ancar.clunit
+        :sb-sys
+        :sb-unix
 	)
   #+sbcl
   (:import-from :SB-EXT #:QUIT #:RUN-PROGRAM)
@@ -63,7 +64,8 @@
   (:shadowing-import-from :pcl #:standard-class #:built-in-class
                           #:find-class #:class-name #:class-of)
   (:export main
-           get-context add-to-context
+           get-context 
+           add-to-context
            *now*
            *LoGS-internal-time-units-per-second*
            mail
