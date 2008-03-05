@@ -43,8 +43,7 @@
 
 (defmethod print-object ((obj context) stream)
   (print-unreadable-object (obj stream :type t :identity t)
-    (with-slots (name) obj
-      (format stream "~A" name))))
+    (format stream "~A" (name obj))))
 
 ;;; context name/alias related stuff
 (defvar *contexts-hash* (make-hash-table :test #'equal)
@@ -280,4 +279,5 @@
      else
      do
        (return t)))
+
 

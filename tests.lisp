@@ -1780,19 +1780,16 @@
              (testfile "testfile-position-test")
              (file-lines '("this is a line" "this is another" "this is the third" "yet another")))
         (declare (special *file-list*))
-        (with-open-file (output-stream testfile :direction :output 
-                                       :if-exists :SUPERSEDE
-                                       :if-does-not-exist :create)
-          (mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
-      
-      
-        (process-command-line *opts* `("--file" ,testfile "42"))
-        (and 
-         (typep *messages* 'file-follower)
-         (let ((ret (ensure-same 42 (file-position (filestream *messages*)))))
-           (close (filestream *messages*))
-           (remove-file testfile)
-           ret))))
+    (with-temporary-file 
+        output-stream testfile 
+        ((mapcar (lambda (x) (format output-stream "~A~%" x)) file-lines))
+        ((progn
+           (process-command-line *opts* `("--file" ,testfile "42"))
+           (and 
+            (typep *messages* 'file-follower)
+            (let ((ret (ensure-same 42 (file-position (filestream *messages*)))))
+              (close (filestream *messages*))
+              ret)))))))
 
 (addtest (cli-tests)
   spawn-works
