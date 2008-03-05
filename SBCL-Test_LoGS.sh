@@ -17,12 +17,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-sbcl --core ./LoGS-sbcl.core --eval '(require :logs-tests)' --eval '(test::run-all-tests)' 
+# sbcl --core ./LoGS-sbcl.core --eval '(require :logs-tests)' --eval '(test::run-all-tests)' 
+./LoGS --eval '(require :logs-tests)' --eval '(test::run-all-tests)' --repl
 RET=$?
 
 echo
 if (( $RET )) ; then
-echo no
+echo SOME TESTS FAILED! BAH!
 else
-echo yes
+echo ALL TESTS PASSED!
 fi

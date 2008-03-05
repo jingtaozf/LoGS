@@ -47,7 +47,9 @@
         :cl-user
         :org.prewett.cl-cli ;; my command-line processing code
         :cl-ppcre
+        #+sbcl
         :sb-sys
+        #+sbcl
         :sb-unix
 	)
   #+sbcl

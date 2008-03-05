@@ -16,6 +16,8 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 (in-package :org.prewett.LoGS.test)
+
+#+sbcl
 (require 'lift)
 
 ;; UGH!
@@ -623,8 +625,7 @@
     (with-temporary-file 
         output-stream testfile
         ((format output-stream "this is a line~%"))
-        (
-          (setf ff (make-instance 'file-follower :filename testfile))
+        ((setf ff (make-instance 'file-follower :filename testfile))
           (let ((line (get-line ff)))
             (close (filestream ff))
             (ensure-different NIL line))))))
@@ -2083,7 +2084,9 @@
     (if (or (errors tests)
             (failures tests))
         (progn
-          (format t "failed 1 or more tests~%")
+          (format t "~A errors and ~A failures~%" 
+                  (length (errors tests))
+                  (length (failures tests)))
           #+sbcl
           (quit :unix-status 1))
         (progn         

@@ -128,8 +128,8 @@
     (let ((compiled-filename (compile-file-pathname the-filename)))
       (when (or 
              (not (probe-file compiled-filename)) ; no compiled file
-             (> (file-write-date the-filename)
-                (file-write-date compiled-filename))) ; old compiled file
+             (> (the fixnum (file-write-date the-filename))
+                (the fixnum (file-write-date compiled-filename)))) ; old compiled file
         (compile-file the-filename))
       (load compiled-filename))))
 

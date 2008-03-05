@@ -36,10 +36,18 @@
 (defmethod load-ruleset ((ruleset string))
   (let* ((c-f-p (compile-file-pathname ruleset))
          (c-f-t (and (probe-file c-f-p)
+                     #+sbcl
                      (sb-posix:stat-mtime
-                      (sb-posix:stat c-f-p))))
-         (r-t (sb-posix:stat-mtime
-               (sb-posix:stat ruleset))))
+                      (sb-posix:stat c-f-p))
+                     #-sbcl
+                     (error "FIXME")))
+         (r-t 
+          #+sbcl
+           (sb-posix:stat-mtime
+            (sb-posix:stat ruleset))
+           #-sbcl
+           (error "FIXME")
+           ))
     (if (and c-f-t (> c-f-t r-t))
         (PROGN
           (format t "loading compiled ruleset~%")
