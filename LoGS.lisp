@@ -25,8 +25,7 @@
 #+CMU19
 (declaim (EXTENSIONS:FREEZE-TYPE NAMED-OBJECT RULESET TIMEOUT-OBJECT RULE DOUBLY-LINKED-LIST PRIORITY-QUEUE RELATIVE-TIMEOUT-OBJECT MESSAGE MULTI-FOLLOWER PRIORITY-QUEUE-ITEM COLLECTION PBS-FILE-FOLLOWER CONTEXT LIST-FOLLOWER STRING-MESSAGE KILLABLE-ITEM FILE-FOLLOWER DATA-SOURCE DOUBLY-LINKED-LIST-ITEM LIMITED-COLLECTION WINDOW))
 
-(eval-when (:compile-toplevel)
-  (defconstant +LoGS-version+ "0.2.0"))
+(defvar *LoGS-version* "0.2.0")
     
 ;; this is a constant so we can optimize out the checks for production runs
 (defconstant +debug+ NIL "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")

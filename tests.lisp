@@ -21,6 +21,7 @@
 (require 'lift)
 
 ;; UGH!
+
 #+(or ecl allegro clisp lispworks)
 (set-dispatch-macro-character #\# #\$
                               (lambda (s c n)

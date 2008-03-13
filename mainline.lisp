@@ -80,6 +80,9 @@
                     :if-does-not-exist :create)
             (format file "~A~%" PID)))))
   
+    ;; thread for watching timeouts
+    #+sb-thread
+    (sb-thread:make-thread #'watch-timeouts-thread-func)
     
     ;; process any files
     (if *do-repl*
@@ -87,10 +90,12 @@
           #+sbcl
           (SB-IMPL::TOPLEVEL-INIT)
           #+cmu
-          (LISP::%TOP-LEVEL))
+          (LISP::%TOP-LEVEL)
+          #+allegro
+          (TPL:TOP-LEVEL-READ-EVAL-PRINT-LOOP))
         (if *show-profile*
         (process-files) ;; XXX
-        (process-files)))
+        (Process-files)))
 
     ;; call any exit functions
     (mapcar
@@ -101,6 +106,15 @@
     (when *quit-lisp-when-done*
       (quit-LoGS)))))
 
+
+(defun watch-timeouts-thread-func ()
+  (loop
+     (check-limits *timeout-object-timeout-queue*)
+     (check-limits *relative-timeout-object-timeout-queue*)  
+     ;; sleep a bit
+     (sleep *LoGS-sleep-time*)
+     ))
+
 ;; pretty much the former mainline
 ;; adding the option processing to the mainline made testing more difficult
 ;; so I broke the processing out to a separate function.
@@ -109,7 +123,7 @@
   (loop named processing as *message* = (get-logline *messages*)
      when +debug+
        do (format t "processing message: ~A~%" (if *message* (message *message*)))
-       
+
      ;; update the internal time
      if *use-internal-real-time*
      do
@@ -137,6 +151,11 @@
        (LoGS-debug "got message: ~A~%" (IF *MESSAGE* (message *message*)))
        (check-rules *message* *root-ruleset* NIL)
 
+     when t
+     do
+       (check-limits *timeout-object-timeout-queue*)
+       (check-limits *relative-timeout-object-timeout-queue*)  
+
      else
      do
        (LoGS-debug "no message~%")
@@ -144,9 +163,4 @@
            ;; sleep a bit
            (sleep *LoGS-sleep-time*)
            ;; exit if there is no message and we're not running forever
-           (return-from processing))
-
-     when t
-     do
-       (check-limits *timeout-object-timeout-queue*)
-       (check-limits *relative-timeout-object-timeout-queue*)))
+           (return-from processing))))

@@ -344,7 +344,7 @@
                       :action
                       #'(lambda ()
                           (progn
-                            (format t "This is LoGS version ~A~%" +LoGS-version+)
+                            (format t "This is LoGS version ~A~%" *LoGS-version*)
                             (format t "Copyright (C) 2003-2007 James E. Prewett~%This is free software; see the source for copying conditions.  There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.~%")
                             (quit-LoGS)))
                       :description

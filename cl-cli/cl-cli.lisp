@@ -24,7 +24,7 @@
 	#+lispworks :hcl
         :cl-user
         )
-  (:export process-options cli-opt get-application-args))
+  (:export process-options cli-opt get-application-args help process-switch same-name-p))
 
 (in-package :org.prewett.cl-cli)
 
@@ -78,6 +78,8 @@
  "Does STRING1 start with STRING2?"
  (and (>= (length string1) (length string2))
       (funcall test string1 string2 :end1 (length string2))))
+
+(defgeneric same-name-p (name1 name2))
 
 (defmethod same-name-p ((string string) name)
  "Is NAME the same as STRING in terms of command line options?"
@@ -159,6 +161,11 @@
     ;; FIXME: openmcl version missing
     #-(or lispworks cmu allegro gcl sbcl clisp)
        (error "unimplemented"))
+
+(defmethod print-object ((obj cli-opt) stream)
+  (print-unreadable-object (obj stream :type t :identity t)
+    (with-slots (name arguments) obj
+      (format stream "~A [ ~A ]" name arguments))))
 
 ;; display option help
 (defun help (opts)

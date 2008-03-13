@@ -17,4 +17,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-alisp -I ./LoGS.dxl -e '(progn (load "CLUnit")(load "tests.lisp")(exit))'
+alisp -I ./LoGS.dxl -e "(progn (push #p\"/Users/dl/.sbcl/systems\" asdf:*central-registry*) (asdf:operate 'asdf:load-op :lift)(asdf:operate 'asdf:load-op :logs-tests))"
+RET=$?
+
+echo
+if (( $RET )) ; then
+echo SOME TESTS FAILED! BAH!
+else
+echo ALL TESTS PASSED!
+fi
+

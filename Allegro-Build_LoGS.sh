@@ -18,9 +18,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
-CL_PPCRE="cl-ppcre-1.3.2/load.lisp"
-LOGS="load-LoGS.lisp"
-CL_CLI="cl-cli/cl-cli.lisp"
 LOGS_CORE="LoGS.dxl"
+TIME="time.lisp"
 
-alisp -e "(progn (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_CLI\")) (load (compile-file \"$LOGS\")) (load (compile-file \"$LOGS\")) (in-package :org.prewett.LoGS) (load \"sysloghelp\") (dumplisp :name \"$LOGS_CORE\") (exit))"
+alisp -e "(progn (load (compile-file \"$TIME\")) (require :asdf) (push #p\"/Users/dl/.sbcl/systems/\" asdf:*central-registry*) (asdf:operate 'asdf:load-op :cl-ppcre) (asdf:operate 'asdf:load-op :cl-cli) (asdf:operate 'asdf:load-op :logs)(dumplisp :name \"$LOGS_CORE\") (exit))" 
