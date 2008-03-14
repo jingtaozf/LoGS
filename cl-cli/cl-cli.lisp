@@ -90,6 +90,19 @@
 (defmethod same-name-p ((sym symbol) name)
   (equal name sym))
 
+(define-condition bad-args-for-flag (error)
+  ((flag :initarg :flag :reader flag)
+   (maxargs :initarg :maxargs :reader maxargs)
+   (minargs :initarg :minargs :reader minargs)
+   (given :initarg :given :reader given))
+  (:documentation "Bad arguments for this flag"))
+
+(define-condition too-few-args-for-flag (bad-args-for-flag)
+  () (:documentation "Not enough arguments for this flag"))
+
+(define-condition too-many-args-for-flag (bad-args-for-flag)
+  () (:documentation "Too many arguments for this flag"))
+
 ;; process an individual switch
 (defun process-switch (list options-list)
   (let* ((switch (pop list))
@@ -102,11 +115,17 @@
            (option-lengths opt)
          (cond
            ((< numargs minargs)
-            (error "too few arguments for flag: ~A expecting ~A to ~A, given ~A~%"
-                   (name opt) minargs maxargs numargs))
+            (error 'too-few-args-for-flag 
+                   :flag (name opt)
+                   :given numargs
+                   :maxargs maxargs
+                   :minargs minargs))
            ((and (numberp maxargs) (> numargs maxargs))
-            (error "too many arguments for flag: ~A expecting ~A to ~A, given ~A~%"
-                   (name opt) minargs maxargs numargs))
+            (error 'too-many-args-for-flag
+                   :flag (name opt)
+                   :minargs minargs 
+                   :maxargs maxargs 
+                   :given numargs))
            ((action opt)
             (apply (action opt) list))))))))
 
