@@ -24,7 +24,7 @@
 	#+lispworks :hcl
         :cl-user
         )
-  (:export process-options cli-opt get-application-args help process-switch same-name-p))
+  (:export process-options cli-opt get-application-args help process-switch same-name-p BAD-ARGS-FOR-FLAG TOO-FEW-ARGS-FOR-FLAG TOO-MANY-ARGS-FOR-FLAG flag minargs maxargs given))
 
 (in-package :org.prewett.cl-cli)
 
