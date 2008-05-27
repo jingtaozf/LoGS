@@ -156,11 +156,13 @@
        (check-limits *timeout-object-timeout-queue*)
        (check-limits *relative-timeout-object-timeout-queue*)  
 
-     else
+     when (not *message*)
      do
        (LoGS-debug "no message~%")
        (if *run-forever*
            ;; sleep a bit
-           (sleep *LoGS-sleep-time*)
+           (progn
+             (sleep *LoGS-sleep-time*)
+             (format t "sleeping~%"))
            ;; exit if there is no message and we're not running forever
            (return-from processing))))

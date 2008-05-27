@@ -84,10 +84,7 @@
                        *file-list*)))))
     ;; SET INITIAL TIME HERE ??? 
     (cond (*use-internal-real-time*
-           (setq *now* (get-internal-real-time)))
-          (t
-           (warn "unknown initial time value~%")
-           ))
+           (setq *now* (get-internal-real-time))))
     (load-all-rulesets)))
 
 ;;; some helper functions
