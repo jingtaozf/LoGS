@@ -1,8 +1,8 @@
 \input texinfo
 @c Manual for the Logs extensible (common-lisp based) log/event 
-@c analysis engine/language Copyright (C) 2003-2007 James Earl Prewett
+@c analysis engine/language Copyright (C) 2003-2008 James Earl Prewett
 @c
-@c Copyright (C)  2003-2007 James E. Prewett
+@c Copyright (C)  2003-2008 James E. Prewett
 @c Permission is granted to copy, distribute and/or modify this
 @c document under the terms of the GNU Free Documentation License,
 @c Version 1.2 or any later version published by the Free Software
@@ -28,19 +28,19 @@
 @set TITLE LoGS Manual
 @c @set UPDATED September 12, 2005
 @c wow, thats old!
-@set UPDATED February 21, 2007
-@set COPYRIGHT Copyright @copyright{} 2003--2007 James E. Prewett
+@set UPDATED February 21, 2008
+@set COPYRIGHT Copyright @copyright{} 2003--2008 James E. Prewett
 
 
 @copying
 This manual is for LoGS, version @logsversion{} and CL-CLI, version @clcliver{}.
 
-Copyright @copyright{} 2003--2007 James E. Prewett.
+Copyright @copyright{} 2003--2008 James E. Prewett.
 
 
 @smallexample
 @group 
-  Copyright (C)  2003-2007 James E. Prewett
+  Copyright (C)  2003-2008 James E. Prewett
   Permission is granted to copy, distribute and/or modify this document
   under the terms of the GNU Free Documentation License, Version 1.2
   or any later version published by the Free Software Foundation;
