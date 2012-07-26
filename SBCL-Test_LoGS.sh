@@ -18,7 +18,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 # sbcl --core ./LoGS-sbcl.core --eval '(require :logs-tests)' --eval '(test::run-all-tests)' 
-./LoGS --eval '(require :logs-tests)' --eval '(test::run-all-tests)' --repl
+sbcl --core ./LoGS-sbcl.core --eval '(require :lift)' --load test-package --load tests --eval '(test::run-all-tests)' --repl
 RET=$?
 
 echo

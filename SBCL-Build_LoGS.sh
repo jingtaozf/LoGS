@@ -20,7 +20,6 @@
 
 LOGS_CORE="LoGS-sbcl.core"
 LOGS_EXE="LoGS"
-# CYBERTIGGYR_TIME="time.lisp"
 
-sbcl --eval "(progn (require 'asdf) (require 'cybertiggyr-time) (require 'logs) (in-package :org.prewett.LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"
-sbcl --core $LOGS_CORE --eval "(SB-EXT:SAVE-LISP-AND-DIE \"$LOGS_EXE\" :executable t :toplevel #'main)"
+sbcl --eval "(progn (require 'asdf) (require 'logs) (in-package :org.prewett.LoGS) (SAVE-LISP-AND-DIE \"$LOGS_CORE\"))"
+sbcl --core $LOGS_CORE --eval "(SB-EXT:SAVE-LISP-AND-DIE \"$LOGS_EXE\" :executable t :save-runtime-options t :toplevel #'main)"

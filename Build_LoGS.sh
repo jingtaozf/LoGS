@@ -17,12 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-
-CL_PPCRE="cl-ppcre-1.3.2/load.lisp"
-CL_INTERPOL="cl-interpol-0.1.2/load.lisp" 
-CYBERTIGGYR_TIME="time.lisp"
 LOGS="load-LoGS"
-CL_CLI="cl-cli/cl-cli"
 LOGS_CORE="LoGS.core"
 
-lisp -eval "(progn (load (compile-file \"$CYBERTIGGYR_TIME\")) (load (compile-file \"$CL_PPCRE\")) (load (compile-file \"$CL_INTERPOL\"))(load (compile-file \"$CL_CLI\"))  (load (compile-file \"$LOGS\"))(load (compile-file \"$LOGS\"))(in-package :org.prewett.LoGS) (load \"sysloghelp\") (cl-user::save-lisp \"$LOGS_CORE\"))"
+sbcl -eval "(progn (require 'logs) (in-package :org.prewett.LoGS) (load \"sysloghelp\") (cl-user::save-lisp \"$LOGS_CORE\"))"

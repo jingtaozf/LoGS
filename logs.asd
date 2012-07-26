@@ -22,7 +22,7 @@
     :author "James E. Prewett <Jim@Prewett.org>"
     :licence "GPL"
     :serial t
-    :depends-on (:cl-ppcre :cl-cli) 
+    :depends-on (:cl-ppcre :cl-cli :cybertiggyr-time) 
     :components ((:file "package")
                  (:file "LoGS")
                  (:module "data_structures" 

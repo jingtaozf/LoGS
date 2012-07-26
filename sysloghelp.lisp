@@ -60,3 +60,4 @@
 
 (defun syslog-date-time-string-to-decoded-time (string &optional (year (multiple-value-bind (a b c d e year f g h) (get-decoded-time) (declare (ignore a b c d e f g h)) year)))
   (decode-universal-time (syslog-date-time-string-to-encoded-time string year)))
+
