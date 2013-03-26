@@ -109,12 +109,14 @@ associated with our filename. if there is, we start following that filename."
   "Wrap the next line of the file associated with the file-follower inside of
 a message."
   (declare (OPTIMIZE SPEED (DEBUG 0) (SAFETY 0)))  
-  (let ((line (get-line ff)))
+  (let* ((position (file-position (filestream ff)))
+         (line (get-line ff)))
     (when line
+      (setf (offset ff) (file-position (filestream ff)))
       (cond ((and *remember-file* *tag-messages*)
-             (make-instance 'message :message line :from-file (filename ff) :tag ()))
+             (make-instance 'message :message line :from-file (filename ff) :file-inode (inode ff) :position-in-file position :tag ()))
             (*remember-file*
-             (make-instance 'message :message line :from-file (filename ff)))
+             (make-instance 'message :message line :from-file (filename ff) :file-inode (inode ff) :position-in-file position))
             (*tag-messages*
              (make-instance 'message :message line :tag ()))
             (t
