@@ -55,7 +55,7 @@
   (do ((remaining list
                   (let ((what (car remaining))
                         (rest (cdr remaining)))
-                    (let ((func (get what 'fo-fn)))
+                    (let ((func (get what 'foo-fn)))
                       (if func
                           (funcall func rest)
                           (error "unknown keyword: ~A~%" what))))))
