@@ -205,12 +205,12 @@
    :continuep continuep))
 
 
-(defun print-context (context)
+(defun print-context (context &optional prefix)
   "print out the contents of a context"
   (when (> (ecount context) 0)
     (map-into 
      (make-array (list (ecount context)))
-     (lambda (x) (format t "~A~%" (message x)))
+     (lambda (x) (format t "~:[~;~:*~A~]~A~%" prefix (message x)))
      (data context))))
 
 
