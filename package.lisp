@@ -108,6 +108,7 @@
            add-item
            get-logline
            *messages*
+           *message*
            *opts*
            process-command-line
            filestream

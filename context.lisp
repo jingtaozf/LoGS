@@ -38,7 +38,11 @@
    (lives-after-timeout 
     :initarg :lives-after-timeout
     :initform ()
-    :accessor lives-after-timeout))
+    :accessor lives-after-timeout)
+   (creation-time
+    :initarg :creation-time
+    :initform *now*
+    :accessor creation-time))
   (:documentation "A data structure that stores messages."))
 
 (defmethod print-object ((obj context) stream)
@@ -188,6 +192,14 @@
     (when (and max-lines (> ecount max-lines))
       (expire-context context))))
 
+(defgeneric count-context (context))
+
+(defmethod count-context ((context context))
+  (loop with count = 0 for i from 0 below (length (data context))
+     when  (not (equal 0 (aref (data context) i)))
+     do (incf count)
+     finally (return count)))
+
 ;; run a context's actions then delete it.
 (defgeneric expire-context (context)
   (:documentation "cause a context to run its actions, then be deleted"))
@@ -251,6 +263,11 @@
                   (data context)
                   i)))))
 
+(defgeneric get-context (name))
+
+(defmethod get-context ((name t))
+  (gethash name *contexts-hash*))
+
 ;; ensure-context is the new replacement for the fooky make-instance
 ;; apparently the standard frowns upon not returning a *NEW* instance from
 ;; make-instance.  Sometimes compilers are too smart and cause a new instance
@@ -259,12 +276,32 @@
 (defmacro ensure-context (&rest rest &key name &allow-other-keys)
   (let ((context-name (gensym)))
     `(let ((,context-name (get-context ,name)))
-      (if ,context-name
-          (progn
-            (LoGS-debug "a context named ~A already exists at~%" 
-                        ,context-name)
-            ,context-name)
-          (make-instance 'context ,@rest)))))
+       ;; maybe check here to see if the found context is already dead?
+       
+       ;; (if ,context-name
+       ;;     (progn
+       ;;       (LoGS-debug "a context named ~A already exists at~%" 
+       ;;                   ,context-name)
+       ;;       ,context-name)
+       ;;     (make-instance 'context ,@rest))
+       (cond ((and ,context-name
+                   (not (dead-p ,context-name)))
+               (progn
+                 (LoGS-debug "a context named ~A already exists~%" 
+                             ,context-name)
+                 ,context-name))
+             ((and ,context-name
+                  (dead-p ,context-name))
+               (progn
+                 (LoGS-debug "a context named ~A already exists, but it is dead-p~%"
+                             ,context-name)
+                 (let ((,context-name (make-instance 'context ,@rest)))
+                   (LoGS-debug "returning new context: ~A~%"
+                               ,context-name)
+                   ,context-name)
+                 ))
+             (t
+              (make-instance 'context ,@rest))))))
 
 ;; expire all remaining contexts
 
