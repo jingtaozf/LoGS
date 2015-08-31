@@ -109,7 +109,6 @@
            get-logline
            *messages*
            *message*
-           *opts*
            process-command-line
            filestream
            name
@@ -153,6 +152,7 @@
            *contexts-hash*
            *contexts-alias-hash*
            timeout
+           with-LoGS-env-vars
            ))
 
 #-(or ecl cmu sbcl allegro openmcl lispworks clisp)
