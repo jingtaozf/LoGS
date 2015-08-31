@@ -163,6 +163,6 @@
            ;; sleep a bit
            (progn
              (sleep *LoGS-sleep-time*)
-             (format t "sleeping~%"))
+             (LoGS-debug "sleeping~%"))
            ;; exit if there is no message and we're not running forever
            (return-from processing))))
