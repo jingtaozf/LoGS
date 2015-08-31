@@ -148,3 +148,10 @@
     (values
      (cadr val)
      (not (null val)))))
+
+(defmacro with-LoGS-env-vars ((&rest vars) environment &body body)
+  `(let (,@(mapcar 
+            (lambda (var)
+              (list var `(get-logs-env-var ',var ,environment)))
+            vars))
+     ,@body))
