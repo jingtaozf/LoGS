@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2008 James Earl Prewett
+;;;; Copyright (C) 2003-2015 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -70,11 +70,11 @@
 
 (defmethod set-file-follower-position ((file-follower file-follower)
                                        (position string))
-  (cond ((equal position "end")
+  (cond ((or (eql position :end) (equal position "end"))
          (set-file-follower-position
           file-follower
           (get-file-length-from-filename (filename file-follower))))
-        ((equal position "start")
+        ((or (eql position :start) (equal position "start"))
          (set-file-follower-position
           file-follower
           0))
