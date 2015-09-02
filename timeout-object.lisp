@@ -21,7 +21,11 @@
   ((timeout :initarg :timeout
             :accessor timeout
             :initform ()
-            :type (or null integer))))
+            :type (or null integer))
+   (timeout-fn :initarg :timeout-fn
+               :accessor timeout-fn
+               :initform ()
+               :type (or null function))))
 
 (defmethod sort-timeouts ((x timeout-object) (y timeout-object))
   (let ((t-x (timeout x))
