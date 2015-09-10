@@ -78,6 +78,9 @@
                 (return)
               else when (not (check-limits (data dlli)))
               do 
+                (logs-debug "removing ~A (~A) from priority queue~%" (data dlli) (dead-p (data dlli)))
+                (dll-delete pq dlli)
+                (setf (dead-p (data dlli)) t)
                 (return)
               else when t
               do

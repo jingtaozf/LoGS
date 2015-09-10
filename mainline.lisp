@@ -110,7 +110,7 @@
 (defun watch-timeouts-thread-func ()
   (loop
      (check-limits *timeout-object-timeout-queue*)
-     (check-limits *relative-timeout-object-timeout-queue*)  
+     (check-limits *relative-timeout-object-timeout-queue*)
      ;; sleep a bit
      (sleep *LoGS-sleep-time*)
      ))

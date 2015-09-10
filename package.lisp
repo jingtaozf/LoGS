@@ -101,6 +101,7 @@
            file-follower
            list-follower
            timeout
+           timeout-fn
            environment
            process-files
            match
@@ -143,6 +144,7 @@
            data
            *current-rule*
            *ruleset*
+           *rule*
            context
            window
            pbs-file-follower

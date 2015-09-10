@@ -35,6 +35,9 @@
   (:documentation "Returns the requested handler function depending on the 
 TYPE of the object passed in"))
 
+(defmethod handle-fn ((keyword t) (type t))
+  (error "default handle-fn called with keyword: ~A (Lisp type ~A) type: ~A (Lisp type ~A)" keyword (type-of keyword) type (type-of type)))
+
 ;;; To use synonyms easily
 (defmacro alias (keyword)
   `(get ,keyword 'alias))
@@ -56,6 +59,7 @@ TYPE of the object passed in"))
    (actions :initform '() :accessor MACRO-ACTIONS)
    (environment :initform '() :accessor MACRO-ENVIRONMENT)
    (timeout :initform '() :accessor MACRO-TIMEOUT)
+   (timeout-fn :initform '() :accessor MACRO-TIMEOUT-FN)
    (relative-timeout :initform '() :accessor MACRO-RELATIVE-TIMEOUT)
    (filter :initform '() :accessor MACRO-FILTER)
    (continuep :initform '() :accessor MACRO-CONTINUEP)
@@ -122,7 +126,7 @@ on the required behaviour for SLOT."))
           (make-instance
            'rule
            ,@(loop as slot in '(:match :name :actions :environment :timeout
-                                :relative-timeout :filter :continuep)
+                                :relative-timeout :timeout-fn :filter :continuep)
                    as res = (get-object-slot rule slot)
                    if res append `(,slot ,res)))))
     (progn
@@ -144,7 +148,7 @@ on the required behaviour for SLOT."))
           (make-instance
            'ruleset
            ,@(loop as slot in '(:match :name :actions :environment :timeout
-                                :relative-timeout :filter :continuep)
+                                :relative-timeout :timeout-fn :filter :continuep)
                 as slot-contents = (get-object-slot ruleset slot)
                 if slot-contents append `(,slot ,slot-contents)))))
      (progn
@@ -157,7 +161,7 @@ on the required behaviour for SLOT."))
 (defmethod fill-object-template ((context context-macro))
   `(let ((context-instance 
           (logs::ensure-context
-           ,@(loop as slot in '(:name :actions :timeout :relative-timeout :max-lines :min-lines :lives-after-timeout)
+           ,@(loop as slot in '(:name :actions :timeout :timeout-fn :relative-timeout :max-lines :min-lines :lives-after-timeout)
                 as slot-contents = (get-object-slot context slot)
                 if slot-contents append `(,slot ,slot-contents)))))
      context-instance))
@@ -478,6 +482,9 @@ on the required behaviour for SLOT."))
 (defmethod resolve-time ((seconds number))
   seconds)
 
+(defmethod resolve-time ((seconds list))
+  (eval seconds))
+
 ;; is this right?
 (defun handle-timeout (rule exprs)
   (destructuring-bind (preposition seconds &rest rest) exprs
@@ -495,11 +502,28 @@ on the required behaviour for SLOT."))
            rest)
           (t (error "Unexpected keyword ~S" preposition)))))
 
+(defun handle-timeout-fn (rule exprs)
+  (destructuring-bind ( function &rest rest) exprs
+    (setf (macro-timeout-fn rule) function)
+    rest))
+
 (defmethod handle-fn ((keyword (eql :timeout)) (type rule-macro))
   #'handle-timeout)
 
 (defmethod handle-fn ((keyword (eql :timeout)) (type context-macro))
   #'handle-timeout)
+
+(defmethod handle-fn ((keyword (eql :timeout-fn)) (type rule-macro))
+  #'handle-timeout-fn)
+
+(defmethod handle-fn ((keyword (eql :timeout-fn)) (type context-macro))
+  #'handle-timeout-fn)
+
+(defmethod get-object-slot ((r rule-macro) (slot (eql :timeout-fn)))
+  (macro-timeout-fn r))
+
+(defmethod get-object-slot ((c context-macro) (slot (eql :timeout-fn)))
+    (macro-timeout-fn c))
 
 (defmethod get-object-slot ((r rule-macro) (slot (eql :timeout)))
   "By default just return the slot value"

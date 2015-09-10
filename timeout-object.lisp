@@ -62,6 +62,8 @@
       (> time timeout))))
 
 (defmethod check-limits OR ((timeout-object timeout-object)) 
-           (let ((ret (exceeded-timeout-p timeout-object *now*)))
-             (LoGS-debug "checking timeout object limit.  ret: ~A~%" ret)
-             ret))
+  (let ((ret (exceeded-timeout-p timeout-object *now*)))
+    (LoGS-debug "checking timeout object limit.  ret: ~A~%" ret)
+    (when (timeout-fn timeout-object)
+      (funcall (timeout-fn timeout-object)))
+    ret))

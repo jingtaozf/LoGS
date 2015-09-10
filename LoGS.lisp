@@ -81,6 +81,8 @@
   "The top-most ruleset; kinda like / in the filesystem")
 (defvar *ruleset* *root-ruleset*
   "The current ruleset.  It may be nested within another ruleset")
+(defvar *rule* nil
+  "The current rule.")
 (defvar *message* ()
   "The message currently being considered.")
 (defvar *current-rule* () 
