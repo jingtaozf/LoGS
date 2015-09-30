@@ -144,7 +144,7 @@
            data
            *current-rule*
            *ruleset*
-           *rule*
+           ;; *rule*
            context
            window
            pbs-file-follower

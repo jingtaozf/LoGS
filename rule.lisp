@@ -126,13 +126,15 @@
                     delete-rule message 
                     (append match-environment 
                             environment inherited-environment)))
-            (setf (dead-p rule) t)
+            (warn "killing rule in ~A" 'check-rule)
+            (kill rule)
             (dll-delete *ruleset* rule))
           (values matchp match-environment))))))
 
 (defmethod check-limits :around ((rule rule))
   (when (call-next-method)
-    (setf (dead-p rule) t)))
+    (LoGS-debug "killing rule ~A in ~A" (name rule) 'check-limits)
+    (kill rule)))
 
 (defmethod (setf dead-p) :after (new-value (rule rule))
   (when (eq new-value t)

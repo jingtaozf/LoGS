@@ -81,8 +81,18 @@
     (when next-timeout 
       (> time next-timeout))))
 
+(defmethod exceeded-relative-timeout-p :around ((relative-timeout-object relative-timeout-object) time)
+  (LoGS-debug "checking relative timeout for ~A (relative timeout ~A) against time: ~A" (name relative-timeout-object) (relative-timeout relative-timeout-object) time)
+  (let ((result (call-next-method)))
+    (LoGS-debug "result: ~A" result)
+    result
+    ))
+
 (defmethod check-limits OR ((relative-timeout-object relative-timeout-object))
-           (let ((ret (exceeded-relative-timeout-p relative-timeout-object *now*)))
-             (LoGS-debug "checking relative-timeout-object limits. ret: ~A~%" ret)
-             ret))
+  (let ((ret (exceeded-relative-timeout-p relative-timeout-object *now*)))
+    (LoGS-debug "checking relative-timeout-object limits. ret: ~A~%" ret)
+    ret))
+
+ 
+
 

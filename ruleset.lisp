@@ -58,7 +58,7 @@
             (when delete-rule 
               (when (funcall delete-rule message 
                              (append rule-environment environment ruleset-environment))
-                (setf (dead-p ruleset) t)
+                (kill ruleset)
                 (dll-delete *ruleset* ruleset)))
             (let ((*ruleset* ruleset))
               (check-rules 

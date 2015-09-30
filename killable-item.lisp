@@ -33,4 +33,5 @@
   ()) 
 
 (defmethod kill ((killable-item killable-item))
+  (LoGS-debug "killing item: ~A" killable-item)
   (setf (dead-p killable-item) t))

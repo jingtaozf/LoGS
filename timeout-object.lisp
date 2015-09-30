@@ -61,9 +61,17 @@
     (when timeout 
       (> time timeout))))
 
+(defmethod exceeded-timeout-p :around ((timeout-object timeout-object) time)
+  (LoGS-debug "checking timeout for ~A (timeout ~A) against time: ~A" (name timeout-object) (timeout timeout-object) time)
+  (let ((result (call-next-method)))
+    (LoGS-debug "result: ~A deadp: ~A" result (dead-p timeout-object))
+    result
+    ))
+
 (defmethod check-limits OR ((timeout-object timeout-object)) 
   (let ((ret (exceeded-timeout-p timeout-object *now*)))
-    (LoGS-debug "checking timeout object limit.  ret: ~A~%" ret)
-    (when (timeout-fn timeout-object)
-      (funcall (timeout-fn timeout-object)))
+    (when ret
+      (LoGS-debug "checking timeout object limit.  ret: ~A~%" ret)
+      (when (timeout-fn timeout-object)
+        (funcall (timeout-fn timeout-object))))
     ret))

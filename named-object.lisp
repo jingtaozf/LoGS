@@ -32,3 +32,7 @@
     NIL))
 ;; cmucl 19c doesn't like the after method returning anything!
 ;; named-object))
+
+#-nil-logs-objects-trigger-errors
+(defmethod name ((object (eql NIL)))
+  nil)
