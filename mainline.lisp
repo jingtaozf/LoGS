@@ -153,8 +153,11 @@
 
      when t
      do
-       (check-limits *timeout-object-timeout-queue*)
-       (check-limits *relative-timeout-object-timeout-queue*)  
+       #+sb-thread
+       (progn
+         (check-limits *timeout-object-timeout-queue*)
+         (check-limits *relative-timeout-object-timeout-queue*))
+       #-sb-thread ()
 
      when (not *message*)
      do
