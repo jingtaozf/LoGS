@@ -214,12 +214,11 @@
            (> ecount min-lines))
       (run-context-actions context))
            
-    (if
-     (lives-after-timeout context)
-     (update-relative-timeout context)
-     (progn
-       (LoGS-debug "deleteing context: ~A" context)
-       (delete-context context)))))
+    (if (lives-after-timeout context)
+        (update-relative-timeout context)
+        (progn
+          (LoGS-debug "deleteing context: ~A" context)
+          (delete-context context)))))
 
 (defgeneric run-context-actions (context)
   (:documentation

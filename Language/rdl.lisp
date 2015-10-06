@@ -1,5 +1,6 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
 ;;;; Copyright (C) 2006-2008 Vijay Lakshminarayanan
+;;;; Copyright (C) 2006-2015 Vijay Lakshminarayanan, James E. Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -59,8 +60,9 @@ TYPE of the object passed in"))
    (actions :initform '() :accessor MACRO-ACTIONS)
    (environment :initform '() :accessor MACRO-ENVIRONMENT)
    (timeout :initform '() :accessor MACRO-TIMEOUT)
-   (timeout-fn :initform '() :accessor MACRO-TIMEOUT-FN)
+   (exceeded-timeout-fn :initform '() :accessor MACRO-EXCEEDED-TIMEOUT-FN)
    (relative-timeout :initform '() :accessor MACRO-RELATIVE-TIMEOUT)
+   (exceeded-relative-timeout-fn :initform '() :accessor MACRO-EXCEEDED-RELATIVE-TIMEOUT-FN)
    (filter :initform '() :accessor MACRO-FILTER)
    (continuep :initform '() :accessor MACRO-CONTINUEP)
    (storing :initform () :accessor MACRO-STORING)
@@ -126,7 +128,7 @@ on the required behaviour for SLOT."))
           (make-instance
            'rule
            ,@(loop as slot in '(:match :name :actions :environment :timeout
-                                :relative-timeout :timeout-fn :filter :continuep)
+                                :relative-timeout :exceeded-timeout-fn :exceeded-relative-timeout-fn :filter :continuep)
                    as res = (get-object-slot rule slot)
                    if res append `(,slot ,res)))))
     (progn
@@ -148,7 +150,7 @@ on the required behaviour for SLOT."))
           (make-instance
            'ruleset
            ,@(loop as slot in '(:match :name :actions :environment :timeout
-                                :relative-timeout :timeout-fn :filter :continuep)
+                                :relative-timeout :exceeded-timeout-fn :exceeded-relative-timeout-fn :filter :continuep)
                 as slot-contents = (get-object-slot ruleset slot)
                 if slot-contents append `(,slot ,slot-contents)))))
      (progn
@@ -161,7 +163,7 @@ on the required behaviour for SLOT."))
 (defmethod fill-object-template ((context context-macro))
   `(let ((context-instance 
           (logs::ensure-context
-           ,@(loop as slot in '(:name :actions :timeout :timeout-fn :relative-timeout :max-lines :min-lines :lives-after-timeout)
+           ,@(loop as slot in '(:name :actions :timeout :exceeded-timeout-fn :exceeded-relative-timeout-fn :relative-timeout :max-lines :min-lines :lives-after-timeout)
                 as slot-contents = (get-object-slot context slot)
                 if slot-contents append `(,slot ,slot-contents)))))
      context-instance))
@@ -502,9 +504,9 @@ on the required behaviour for SLOT."))
            rest)
           (t (error "Unexpected keyword ~S" preposition)))))
 
-(defun handle-timeout-fn (rule exprs)
+(defun handle-exceeded-timeout-fn (rule exprs)
   (destructuring-bind ( function &rest rest) exprs
-    (setf (macro-timeout-fn rule) function)
+    (setf (macro-exceeded-timeout-fn rule) function)
     rest))
 
 (defmethod handle-fn ((keyword (eql :timeout)) (type rule-macro))
@@ -513,17 +515,35 @@ on the required behaviour for SLOT."))
 (defmethod handle-fn ((keyword (eql :timeout)) (type context-macro))
   #'handle-timeout)
 
-(defmethod handle-fn ((keyword (eql :timeout-fn)) (type rule-macro))
-  #'handle-timeout-fn)
+(defmethod handle-fn ((keyword (eql :exceeded-timeout-fn)) (type rule-macro))
+  #'handle-exceeded-timeout-fn)
 
-(defmethod handle-fn ((keyword (eql :timeout-fn)) (type context-macro))
-  #'handle-timeout-fn)
+(defmethod handle-fn ((keyword (eql :exceeded-timeout-fn)) (type context-macro))
+  #'handle-exceeded-timeout-fn)
 
-(defmethod get-object-slot ((r rule-macro) (slot (eql :timeout-fn)))
-  (macro-timeout-fn r))
+(defmethod get-object-slot ((r rule-macro) (slot (eql :exceeded-timeout-fn)))
+  (macro-exceeded-timeout-fn r))
 
-(defmethod get-object-slot ((c context-macro) (slot (eql :timeout-fn)))
-    (macro-timeout-fn c))
+(defmethod get-object-slot ((c context-macro) (slot (eql :exceeded-timeout-fn)))
+    (macro-exceeded-timeout-fn c))
+
+(defun handle-exceeded-relative-timeout-fn (rule exprs)
+  (destructuring-bind ( function &rest rest) exprs
+    (setf (macro-exceeded-relative-timeout-fn rule) function)
+    rest))
+
+(defmethod handle-fn ((keyword (eql :exceeded-relative-timeout-fn)) (type rule-macro))
+  #'handle-exceeded-relative-timeout-fn)
+
+(defmethod handle-fn ((keyword (eql :exceeded-relative-timeout-fn)) (type context-macro))
+  #'handle-exceeded-relative-timeout-fn)
+
+(defmethod get-object-slot ((r rule-macro) (slot (eql :exceeded-relative-timeout-fn)))
+  (macro-exceeded-relative-timeout-fn r))
+
+(defmethod get-object-slot ((c context-macro) (slot (eql :exceeded-relative-timeout-fn)))
+    (macro-exceeded-relative-timeout-fn c))
+
 
 (defmethod get-object-slot ((r rule-macro) (slot (eql :timeout)))
   "By default just return the slot value"

@@ -26,11 +26,18 @@
   ((max-lines :initarg :max-lines
               :initform ()
               :accessor max-lines
-              :documentation "An artificial limit on the number of lines this context can hold")))
+              :documentation "An artificial limit on the number of lines this context can hold.")
+   (exceeded-max-lines-fn :initarg :exceeded-max-lines-fn
+                          :initform ()
+                          :accessor exceeded-max-lines-fn
+                          :documentation "A function to call when the maximum number of lines has been exceeded."
+                          )))
 
 (defmethod check-limits OR ((limited-collection limited-collection))
            (let ((ret (with-slots (ecount max-lines) limited-collection
                         (when (and max-lines ecount)
                           (> ecount max-lines)))))
              (LoGS-debug "checking limited-collection limits. ret: ~A~%" ret)
+             (when (exceeded-max-lines-fn limited-collection)
+               (funcall (exceeded-max-lines-fn limited-collection) limited-collection))
              ret))

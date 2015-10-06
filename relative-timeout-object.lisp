@@ -24,7 +24,11 @@
                      :type (or null integer))
    (next-timeout :accessor next-timeout
                  :initform ()
-                 :type (or null integer))))
+                 :type (or null integer))
+   (exceeded-relative-timeout-fn :initarg :exceeded-relative-timeout-fn
+                                 :accessor exceeded-relative-timeout-fn
+                                 :initform nil
+                                 :type (or null function))))
 
 
 
@@ -91,6 +95,8 @@
 (defmethod check-limits OR ((relative-timeout-object relative-timeout-object))
   (let ((ret (exceeded-relative-timeout-p relative-timeout-object *now*)))
     (LoGS-debug "checking relative-timeout-object limits. ret: ~A~%" ret)
+    (when (exceeded-relative-timeout-fn relative-timeout-object)
+      (funcall (exceeded-relative-timeout-fn limited-collection) limited-collection))
     ret))
 
  

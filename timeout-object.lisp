@@ -22,10 +22,10 @@
             :accessor timeout
             :initform ()
             :type (or null integer))
-   (timeout-fn :initarg :timeout-fn
-               :accessor timeout-fn
-               :initform ()
-               :type (or null function))))
+   (exceeded-timeout-fn :initarg :exceeded-timeout-fn
+                        :accessor exceeded-timeout-fn
+                        :initform ()
+                        :type (or null function))))
 
 (defmethod sort-timeouts ((x timeout-object) (y timeout-object))
   (let ((t-x (timeout x))
@@ -72,6 +72,6 @@
   (let ((ret (exceeded-timeout-p timeout-object *now*)))
     (when ret
       (LoGS-debug "checking timeout object limit.  ret: ~A~%" ret)
-      (when (timeout-fn timeout-object)
-        (funcall (timeout-fn timeout-object))))
+      (when (exceeded-timeout-fn timeout-object)
+        (funcall (exceeded-timeout-fn timeout-object))))
     ret))
