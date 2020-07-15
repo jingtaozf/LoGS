@@ -16,14 +16,15 @@
 ;;;; along with this program; if not, write to the Free Software
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(defsystem "logs"
+(asdf:defsystem "logs"
     :description "Log analysis engine"
-    :version "0.1.2-pre"
+    :version "0.1.2"
     :author "James E. Prewett <Jim@Prewett.org>"
     :licence "GPL"
     :serial t
-    :depends-on (:cl-ppcre :cl-cli :cybertiggyr-time) 
-    :components ((:file "package")
+    :depends-on (:cl-ppcre :cl-cli)
+    :components ((:file "time");  :cybertiggyr-time 
+                 (:file "package")
                  (:file "LoGS")
                  (:module "data_structures" 
                           :components ((:file "doubly-linked-list")
@@ -63,7 +64,6 @@
 		 (:file "environment-object")
                  (:file "rule")
                  (:file "ruleset")
-                 (:file "hash-ruleset")
                  (:file "actions")
                  (:file "Parlance")
                  (:file "LoGS-command-line")

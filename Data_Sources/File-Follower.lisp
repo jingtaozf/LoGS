@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2015 James Earl Prewett
+;;;; Copyright (C) 2003-2018 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -37,6 +37,8 @@
 (defgeneric start-file-follower (file-follower)
   (:documentation "get a file-follower all set up"))
 
+(defvar *decoding-error-replacement* "DECODING ERROR")
+
 (defmethod start-file-follower ((ff file-follower))
   "Associate the file follower with the file it is supposed to be following."
   (and
@@ -53,7 +55,7 @@
             (setf (Filestream ff)
                   (open-fifo (filename ff)))
             (setf (Filestream ff) 
-                  (open (Filename ff) :direction :input)))
+                  (open (Filename ff) :external-format  `(:utf-8 :replacement ,*decoding-error-replacement*) :direction :input)))
          #+cmu
          (KERNEL:SIMPLE-FILE-ERROR () (warn "no access to file"))
          #+sbcl
@@ -97,13 +99,13 @@ associated with our filename. if there is, we start following that filename."
     (if (peek-char nil (filestream ff) nil)
         (read-line (filestream ff) nil)
         (let ((stat-inode (get-inode-from-filename (filename ff))))
-          (and (not (eql (inode ff) stat-inode))
-               (read-line (start-file-follower ff) nil))))
-    (let ((stat-inode (get-inode-from-filename (filename ff))))
-      (when (or (not (eql (inode ff) stat-inode))
-                (not (filestream ff)))
-        (aif (start-file-follower ff)
-             (read-line it nil))))))
+              (and (not (eql (inode ff) stat-inode))
+	      (read-line (start-file-follower ff) nil))))
+  (let ((stat-inode (get-inode-from-filename (filename ff))))
+        (when (or (not (eql (inode ff) stat-inode))
+	          (not (filestream ff)))
+          (aif (start-file-follower ff)
+               (read-line it nil))))))
 
 (defmethod get-logline ((ff file-follower))
   "Wrap the next line of the file associated with the file-follower inside of

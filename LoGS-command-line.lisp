@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2008 James Earl Prewett
+;;;; Copyright (C) 2003-2018 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -96,7 +96,7 @@
    org.prewett.LoGS::*LoGS-internal-time-units-per-second* 1))
 
 ;; The options list
-(setf *opts*
+'(setf *opts*
       (list
        (defopt ("no-internal-time") () () "do not use internal time"
            (setq
@@ -243,7 +243,7 @@
        (defopt ("help") () ()
            "display this help text"
          (progn
-           (org.prewett.cl-cli::help org.prewett.LoGS::*opts*)
+           (cl-cli::help org.prewett.LoGS::*opts*)
            (quit-LoGS)))
        (defopt ("run-before-exit") (func) ()
            "run this function before exiting LoGS"
@@ -524,7 +524,7 @@
 ;;                       :action
 ;;                       #'(lambda ()
 ;;                           (progn
-;;                             (org.prewett.cl-cli::help org.prewett.LoGS::*opts*)
+;;                             (cl-cli::help org.prewett.LoGS::*opts*)
 ;;                             (quit-LoGS)))
 ;;                       :description "display this help text")
 ;;        (make-instance 'cli-opt

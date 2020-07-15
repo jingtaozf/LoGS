@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2008 James Earl Prewett
+;;;; Copyright (C) 2003-2018 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -23,12 +23,12 @@
 
 
 (defun fifo-p (filename)
-  (if
+  (equal 4096
    (logand 4096 
            (SB-POSIX:STAT-MODE 
             (sb-posix:stat
              filename)))
-   t ()))
+   ))
 
 (defun open-fifo (filename)
   (let ((fifofd 

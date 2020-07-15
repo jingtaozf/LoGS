@@ -28,6 +28,11 @@
    (llink :initform ()
           :accessor llink)))
 
+(defstruct doubly-linked-list-item
+  (data nil)
+  (rlink nil)
+  (llink nil))
+
 ;;;; The Doubly-linked-list class
 
 (defclass doubly-linked-list ()

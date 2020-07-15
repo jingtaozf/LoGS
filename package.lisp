@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2008 James Earl Prewett
+;;;; Copyright (C) 2003-2018 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -45,7 +45,7 @@
         #+sbcl :sb-mop
         #+lispworks :hcl
         :cl-user
-        :org.prewett.cl-cli ;; my command-line processing code
+        :cl-cli ;; my command-line processing code
         :cl-ppcre
         #+sbcl
         :sb-sys

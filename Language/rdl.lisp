@@ -1,6 +1,6 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
 ;;;; Copyright (C) 2006-2008 Vijay Lakshminarayanan
-;;;; Copyright (C) 2006-2015 Vijay Lakshminarayanan, James E. Prewett
+;;;; Copyright (C) 2006-2018 Vijay Lakshminarayanan, James E. Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License

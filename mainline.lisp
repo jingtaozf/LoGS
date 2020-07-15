@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2008 James Earl Prewett
+;;;; Copyright (C) 2003-2018 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -112,7 +112,7 @@
      (check-limits *timeout-object-timeout-queue*)
      (check-limits *relative-timeout-object-timeout-queue*)
      ;; sleep a bit
-     (sleep *LoGS-sleep-time*)
+     (sleep (* 10 *LoGS-sleep-time*))
      ))
 
 ;; pretty much the former mainline
@@ -120,7 +120,8 @@
 ;; so I broke the processing out to a separate function.
 (defun process-files ()    
   (declare (OPTIMIZE (SPEED 0) (DEBUG 3) (SAFETY 3)))  
-  (loop named processing as *message* = (get-logline *messages*)
+  (loop named processing
+        as *message* = (get-logline *messages*)
      when +debug+
        do (format t "processing message: ~A~%" (if *message* (message *message*)))
 
@@ -151,14 +152,15 @@
        (LoGS-debug "got message: ~A~%" (IF *MESSAGE* (message *message*)))
        (check-rules *message* *root-ruleset* NIL)
 
+       #+sb-thread
+       #+sb-thread
      when t
+       #+sb-thread
      do
        #+sb-thread
        (progn
          (check-limits *timeout-object-timeout-queue*)
          (check-limits *relative-timeout-object-timeout-queue*))
-       #-sb-thread ()
-
      when (not *message*)
      do
        (LoGS-debug "no message~%")
@@ -168,4 +170,5 @@
              (sleep *LoGS-sleep-time*)
              (LoGS-debug "sleeping~%"))
            ;; exit if there is no message and we're not running forever
-           (return-from processing))))
+           (return-from processing))
+        ))

@@ -1,5 +1,5 @@
 ;;;; Logs extensible (common-lisp based) log/event analysis engine/language
-;;;; Copyright (C) 2003-2008 James Earl Prewett
+;;;; Copyright (C) 2003-2018 James Earl Prewett
 
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
 (defvar *LoGS-version* "0.2.0")
     
 ;; this is a constant so we can optimize out the checks for production runs
-(defconstant +debug+ NIL "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
+(defconstant +debug+ nil "The +debug+ constant causes additional debugging information to be displayed while LoGS is running. Currently, debbuging is either on or off (by default, it is off). Since debugging code is splattered througout LoGS, it is important that this be a compile-time option so that the compiler may remove debugging statements when debugging is not needed.")
 
 (defvar *show-profile* NIL)
 (defvar *environment* NIL)

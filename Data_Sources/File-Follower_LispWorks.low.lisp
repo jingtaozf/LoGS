@@ -15,35 +15,25 @@
 ;;;; along with this program; if not, write to the Free Software
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-;; This file contains low-level OpenMCL specific code
-
 (in-package :org.prewett.LoGS)
 
+(require :sb-posix)
+
+(import '(sb-posix:o-nonblock SB-POSIX:O-RDONLY))
+
 (defun fifo-p (filename)
-  "is the named file a fifo?"
-  (< 0 
-     (logand 4096 
-             (nth-value 1 (ccl::%stat filename)))))
+  (if (logand 4096 (system:file-stat-mode (system:get-file-stat filename)))
+    t
+    ()))
+
+(defun open-fifo (filename)
+  (error "unimplemented"))
 
 (defun get-file-length-from-filename (filename)
   "Given a filename, return the number of bytes currently in the file."
-  #+openmcl
-  (nth-value 2 (ccl::%stat filename)))
-
-(defun open-fifo (filename)
-  "open the fifo with the given filename"
-  (let ((fifofd 
-         (fd-open
-          (filename ff)
-          (logior
-           #$O_RDONLY
-           #$O_NONBLOCK)
-          #o444)))
-    (make-fd-stream fifofd :input t)))
+  (system::file-stat-size (system:get-file-stat filename)))
 
 (defun get-inode-from-filename (Filename)
   "Given a filename, return the inode associated with that filename."
-  (when
-      (probe-file filename)
-    (nth-value 4
-               (CCL::%STAT filename))))
+  (when (probe-file filename)
+    (system:file-stat-inode (system:get-file-stat filename))))
